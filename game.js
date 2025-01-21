@@ -19,6 +19,12 @@ function initializeGame() {
         y: canvas.height / 2 - 30,
         width: 60, // Adjusted size for logo
         height: 60, // Adjusted size for logo
+        hitbox: {
+            xOffset: 10, // Offset to account for transparency
+            yOffset: 10,
+            width: 40, // Smaller hitbox width
+            height: 40, // Smaller hitbox height
+        },
         image: new Image(),
     };
     player.image.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/blue-wheel-with-crown.png";
@@ -78,8 +84,14 @@ function initializeGame() {
     function createObstacle() {
         const type = Math.random() < 0.5 ? "tree" : "rock";
         const image = type === "tree" ? treeImage : rockImage;
-        const width = type === "tree" ? 50 : 75; // Adjusted hitbox width
-        const height = type === "tree" ? 50 : 50; // Adjusted hitbox height
+        const width = 100; // Full image width
+        const height = type === "tree" ? 100 : 75; // Tree and rock heights
+        const hitbox = {
+            xOffset: type === "tree" ? 25 : 10, // Adjusted for transparency
+            yOffset: type === "tree" ? 25 : 10,
+            width: type === "tree" ? 50 : 80, // Adjusted hitbox width
+            height: type === "tree" ? 50 : 55, // Adjusted hitbox height
+        };
         const y = Math.random() * (canvas.height - height);
 
         obstacles.push({
@@ -87,6 +99,7 @@ function initializeGame() {
             y: y,
             width: width,
             height: height,
+            hitbox: hitbox,
             image: image,
             type: type,
             speed: 3 + Math.random() * 2,
@@ -112,17 +125,17 @@ function initializeGame() {
 
             // Check for collisions using hitboxes
             const playerHitbox = {
-                x: player.x,
-                y: player.y,
-                width: player.width * 0.8, // Adjust for transparent areas
-                height: player.height * 0.8,
+                x: player.x + player.hitbox.xOffset,
+                y: player.y + player.hitbox.yOffset,
+                width: player.hitbox.width,
+                height: player.hitbox.height,
             };
 
             const obstacleHitbox = {
-                x: obstacle.x,
-                y: obstacle.y + (obstacle.type === "tree" ? 25 : 12.5), // Centered smaller hitbox
-                width: obstacle.width * 0.8,
-                height: obstacle.height * 0.8,
+                x: obstacle.x + obstacle.hitbox.xOffset,
+                y: obstacle.y + obstacle.hitbox.yOffset,
+                width: obstacle.hitbox.width,
+                height: obstacle.hitbox.height,
             };
 
             if (
