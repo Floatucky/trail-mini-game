@@ -2,19 +2,20 @@ function initializeGame() {
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    const backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
-    const collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+const backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
+const track = audioContext.createMediaElementSource(backgroundMusic);
+track.connect(audioContext.destination);
 
-    let musicStarted = false;
-
-    // Trigger background music on canvas click
-    canvas.addEventListener("click", () => {
-        if (!musicStarted) {
-            backgroundMusic.loop = true;
-            backgroundMusic.volume = 0.5;
-            backgroundMusic.play().catch((error) => console.error("Background music play error:", error));
-            musicStarted = true;
-            console.log("Background music started");
+canvas.addEventListener("click", () => {
+    if (audioContext.state === "suspended") {
+        audioContext.resume();
+    }
+    if (!musicStarted) {
+        backgroundMusic.loop = true;
+        backgroundMusic.volume = 0.5;
+        backgroundMusic.play().catch((error) => console.error("Background music play error:", error));
+        musicStarted = true;
         }
     });
 
