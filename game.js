@@ -227,14 +227,13 @@ function gameLoop() {
         ctx.fillText("Game Over!", canvas.width / 2, canvas.height / 2 - 50);
         ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
 
-        // Create "Play Again" button if it doesn't already exist
-        if (!document.getElementById("playAgainButton")) {
-            const playAgainButton = document.createElement("button");
+        // Create or position "Play Again" button
+        let playAgainButton = document.getElementById("playAgainButton");
+        if (!playAgainButton) {
+            playAgainButton = document.createElement("button");
             playAgainButton.id = "playAgainButton";
             playAgainButton.textContent = "Play Again";
-            playAgainButton.style.position = "absolute";
-            playAgainButton.style.left = `${canvas.getBoundingClientRect().left + canvas.width / 2 - 50}px`;
-            playAgainButton.style.top = `${canvas.getBoundingClientRect().top + canvas.height / 2 + 50}px`;
+            playAgainButton.style.position = "fixed";
             playAgainButton.style.zIndex = "1000";
             playAgainButton.style.padding = "10px 20px";
             playAgainButton.style.fontSize = "16px";
@@ -243,13 +242,9 @@ function gameLoop() {
             playAgainButton.style.borderRadius = "5px";
             playAgainButton.style.backgroundColor = "#4CAF50";
             playAgainButton.style.color = "#FFF";
-
-            document.body.appendChild(playAgainButton);
-
-            // Restart the game when the button is clicked
             playAgainButton.addEventListener("click", () => {
                 // Remove the button
-                document.body.removeChild(playAgainButton);
+                playAgainButton.remove();
 
                 // Reset game variables
                 gameOver = false;
@@ -263,7 +258,14 @@ function gameLoop() {
                 startSpawnLoop();
                 gameLoop();
             });
+
+            document.body.appendChild(playAgainButton);
         }
+
+        // Reposition the button
+        const canvasRect = canvas.getBoundingClientRect();
+        playAgainButton.style.left = `${canvasRect.left + canvas.width / 2 - playAgainButton.offsetWidth / 2}px`;
+        playAgainButton.style.top = `${canvasRect.top + canvas.height / 2 + 50}px`;
     }
 }
 
