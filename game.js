@@ -143,94 +143,137 @@ function initializeGame() {
     }
 
     function createObstacle() {
-        const type = Math.random() < 0.5 ? "tree" : "rock";
-        const image = type === "tree" ? treeImage : rockImage;
+    const type = Math.random() < 0.5 ? "tree" : "rock";
+    const image = type === "tree" ? treeImage : rockImage;
 
-        const isSmall = Math.random() < 0.5;
-        const width = isSmall ? (type === "tree" ? 50 : 60) : (type === "tree" ? 100 : 80);
-        const height = isSmall ? (type === "tree" ? 50 : 40) : (type === "tree" ? 100 : 75);
-        const y = Math.random() * (canvas.height - height);
+    const isSmall = Math.random() < 0.5;
+    const width = isSmall ? (type === "tree" ? 50 : 60) : (type === "tree" ? 100 : 80);
+    const height = isSmall ? (type === "tree" ? 50 : 40) : (type === "tree" ? 100 : 75);
+    const y = Math.random() * (canvas.height - height);
 
-        const hitbox = type === "tree"
-            ? {
-                  xOffset: width * 0.35,
-                  yOffset: height * 0.15,
-                  width: width * 0.3,
-                  height: height * 0.7,
-              }
-            : {
-                  xOffset: width * 0.15,
-                  yOffset: height * 0.2,
-                  width: width * 0.7,
-                  height: height * 0.6,
-              };
+    const hitbox = type === "tree"
+        ? {
+              xOffset: width * 0.35,
+              yOffset: height * 0.15,
+              width: width * 0.3,
+              height: height * 0.7,
+          }
+        : {
+              xOffset: width * 0.15,
+              yOffset: height * 0.2,
+              width: width * 0.7,
+              height: height * 0.6,
+          };
+
+    obstacles.push({
+        x: -width,
+        y: y,
+        width: width,
+        height: height,
+        image: image,
+        hitbox: hitbox,
+        speed: obstacleSpeed,
+    });
+
+    // Random chance to spawn a second obstacle
+    if (Math.random() < 0.5) { // Adjust the probability as needed
+        const type2 = Math.random() < 0.5 ? "tree" : "rock";
+        const image2 = type2 === "tree" ? treeImage : rockImage;
+
+        const isSmall2 = Math.random() < 0.5;
+        const width2 = isSmall2 ? (type2 === "tree" ? 50 : 60) : (type2 === "tree" ? 100 : 80);
+        const height2 = isSmall2 ? (type2 === "tree" ? 50 : 40) : (type2 === "tree" ? 100 : 75);
+
+        let y2;
+        if (y < canvas.height / 2) {
+            y2 = Math.random() * ((canvas.height - height2) / 2) + canvas.height / 2;
+        } else {
+            y2 = Math.random() * ((canvas.height - height2) / 2);
+        }
 
         obstacles.push({
-            x: -width,
-            y: y,
-            width: width,
-            height: height,
-            image: image,
-            hitbox: hitbox,
+            x: -width2,
+            y: y2,
+            width: width2,
+            height: height2,
+            image: image2,
+            hitbox: type2 === "tree"
+                ? {
+                      xOffset: width2 * 0.35,
+                      yOffset: height2 * 0.15,
+                      width: width2 * 0.3,
+                      height: height2 * 0.7,
+                  }
+                : {
+                      xOffset: width2 * 0.15,
+                      yOffset: height2 * 0.2,
+                      width: width2 * 0.7,
+                      height: height2 * 0.6,
+                  },
             speed: obstacleSpeed,
         });
     }
+}
 
-    function update() {
-        if (gameOver) return;
+  function update() {
+    if (gameOver) return;
 
-        if (keys.ArrowUp && player.y > 0) player.y -= 5;
-        if (keys.ArrowDown && player.y < canvas.height - player.height) player.y += 5;
+    if (keys.ArrowUp && player.y > 0) player.y -= 5;
+    if (keys.ArrowDown && player.y < canvas.height - player.height) player.y += 5;
 
-        obstacles.forEach((obstacle, index) => {
-            obstacle.x += obstacle.speed;
-
-            if (obstacle.x > canvas.width) {
-                obstacles.splice(index, 1);
-                score++;
-                if (audioEnabled && !gameOver) {
-                    pointSound.currentTime = 0;
-                    pointSound.play().catch((error) => console.error("Point sound error:", error));
-                }
-            }
-
-            const playerHitbox = {
-                x: player.x + player.hitbox.xOffset,
-                y: player.y + player.hitbox.yOffset,
-                width: player.hitbox.width,
-                height: player.hitbox.height,
-            };
-
-            const obstacleHitbox = {
-                x: obstacle.x + obstacle.hitbox.xOffset,
-                y: obstacle.y + obstacle.hitbox.yOffset,
-                width: obstacle.hitbox.width,
-                height: obstacle.hitbox.height,
-            };
-
-            if (
-                playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
-                playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
-                playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
-                playerHitbox.y + playerHitbox.height > obstacleHitbox.y
-            ) {
-                if (audioEnabled && !gameOver) {
-                    console.log("Collision detected. Playing collision sound.");
-
-                    // Force collision sound playback
-                    audioContext.resume().then(() => {
-                        collisionSound.pause(); // Stop any ongoing playback
-                        collisionSound.currentTime = 0; // Reset playback position
-                        collisionSound.play()
-                            .then(() => console.log("Collision sound played successfully."))
-                            .catch((error) => console.error("Collision sound play error:", error));
-                    });
-                }
-
-                gameOver = true; // Ensure no more updates after collision
-            }
-        });
+    // Increase difficulty over time
+    if (score % 10 === 0 && score > 0) { // Adjust difficulty every 10 points
+        obstacleSpeed += 0.1; // Increase obstacle speed slightly
+        spawnInterval = Math.max(500, spawnInterval - 50); // Decrease spawn interval but not below 500ms
+        clearInterval(spawnIntervalId); // Reset spawn interval
+        startSpawnLoop(); // Restart spawning with new interval
     }
+
+    obstacles.forEach((obstacle, index) => {
+        obstacle.x += obstacle.speed;
+
+        if (obstacle.x > canvas.width) {
+            obstacles.splice(index, 1);
+            score++;
+            if (audioEnabled && !gameOver) {
+                pointSound.currentTime = 0;
+                pointSound.play().catch((error) => console.error("Point sound error:", error));
+            }
+        }
+
+        const playerHitbox = {
+            x: player.x + player.hitbox.xOffset,
+            y: player.y + player.hitbox.yOffset,
+            width: player.hitbox.width,
+            height: player.hitbox.height,
+        };
+
+        const obstacleHitbox = {
+            x: obstacle.x + obstacle.hitbox.xOffset,
+            y: obstacle.y + obstacle.hitbox.yOffset,
+            width: obstacle.hitbox.width,
+            height: obstacle.hitbox.height,
+        };
+
+        if (
+            playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
+            playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
+            playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
+            playerHitbox.y + playerHitbox.height > obstacleHitbox.y
+        ) {
+            if (audioEnabled && !gameOver) {
+                console.log("Collision detected. Playing collision sound.");
+                audioContext.resume().then(() => {
+                    collisionSound.currentTime = 0;
+                    collisionSound.play()
+                        .then(() => console.log("Collision sound played successfully."))
+                        .catch((error) => console.error("Collision sound play error:", error));
+                });
+            }
+            gameOver = true;
+        }
+    });
+}
 
     function draw() {
         ctx.fillStyle = "#D2B48C";
