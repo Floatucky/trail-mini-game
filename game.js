@@ -34,11 +34,53 @@ function initializeGame() {
     let gameOver = false;
     let score = 0;
 
+    // Input state
+    const keys = { ArrowUp: false, ArrowDown: false };
+    let touchStartY = null;
+
+    // Add event listeners for PC controls
+    document.addEventListener("keydown", (e) => {
+        if (e.key in keys) keys[e.key] = true;
+    });
+
+    document.addEventListener("keyup", (e) => {
+        if (e.key in keys) keys[e.key] = false;
+    });
+
+    // Add event listeners for mobile controls
+    if (/Mobi|Android/i.test(navigator.userAgent)) {
+        canvas.addEventListener("touchstart", (e) => {
+            touchStartY = e.touches[0].clientY;
+        });
+
+        canvas.addEventListener("touchmove", (e) => {
+            const currentTouchY = e.touches[0].clientY;
+            if (touchStartY !== null) {
+                const swipeDistance = currentTouchY - touchStartY;
+
+                if (Math.abs(swipeDistance) > 10) {
+                    const moveDistance = swipeDistance * 0.6;
+                    if (swipeDistance > 0) {
+                        player.y = Math.min(player.y + moveDistance, canvas.height - player.height);
+                    } else {
+                        player.y = Math.max(player.y + moveDistance, 0);
+                    }
+
+                    touchStartY = currentTouchY;
+                }
+            }
+        });
+
+        canvas.addEventListener("touchend", () => {
+            touchStartY = null;
+        });
+    }
+
     function createObstacle() {
-        const type = Math.random() < 0.5 ? "tree" : "rock"; // Randomly choose obstacle type
+        const type = Math.random() < 0.5 ? "tree" : "rock";
         const image = type === "tree" ? treeImage : rockImage;
-        const width = type === "tree" ? 100 : 100; // Tree and rock widths
-        const height = type === "tree" ? 100 : 75; // Tree and rock heights
+        const width = type === "tree" ? 100 : 100;
+        const height = type === "tree" ? 100 : 75;
         const y = Math.random() * (canvas.height - height);
 
         obstacles.push({
@@ -53,6 +95,10 @@ function initializeGame() {
 
     function update() {
         if (gameOver) return;
+
+        // Move player (Keyboard controls for PC)
+        if (keys.ArrowUp && player.y > 0) player.y -= 5;
+        if (keys.ArrowDown && player.y < canvas.height - player.height) player.y += 5;
 
         // Move obstacles
         obstacles.forEach((obstacle, index) => {
