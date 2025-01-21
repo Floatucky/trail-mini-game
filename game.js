@@ -97,21 +97,21 @@ function createObstacle() {
     // Define hitbox based on type
     const hitbox = type === "tree"
         ? {
-              xOffset: width * 0.35, // Exclude the empty left and right space for trees
-              yOffset: height * 0.15, // Start below the empty top corners
-              width: width * 0.3, // Narrow to the trunk and circular leaf area
-              height: height * 0.7, // Cover the trunk and lower part
+              xOffset: width * 0.35,
+              yOffset: height * 0.15,
+              width: width * 0.3,
+              height: height * 0.7,
           }
         : {
-              xOffset: 10, // Placeholder hitbox for rocks
+              xOffset: 10,
               yOffset: 10,
               width: width - 20,
               height: height - 20,
           };
 
-    // Push the first obstacle into the obstacles array
+    // Add the first obstacle
     obstacles.push({
-        x: -width, // Start off-screen
+        x: -width,
         y: y,
         width: width,
         height: height,
@@ -119,6 +119,39 @@ function createObstacle() {
         hitbox: hitbox,
         speed: obstacleSpeed,
     });
+
+    // Random chance to spawn a second obstacle
+    if (Math.random() < 0.3) {
+        const type2 = Math.random() < 0.5 ? "tree" : "rock";
+        const image2 = type2 === "tree" ? treeImage : rockImage;
+
+        const isSmall2 = Math.random() < 0.5;
+        const width2 = isSmall2 ? (type2 === "tree" ? 50 : 60) : (type2 === "tree" ? 100 : 80);
+        const height2 = isSmall2 ? (type2 === "tree" ? 50 : 40) : (type2 === "tree" ? 100 : 75);
+
+        let y2;
+        if (y < canvas.height / 2) {
+            y2 = Math.random() * ((canvas.height - height2) / 2) + canvas.height / 2;
+        } else {
+            y2 = Math.random() * ((canvas.height - height2) / 2);
+        }
+
+        obstacles.push({
+            x: -width2,
+            y: y2,
+            width: width2,
+            height: height2,
+            image: image2,
+            hitbox: {
+                xOffset: 10,
+                yOffset: 10,
+                width: width2 - 20,
+                height: height2 - 20,
+            },
+            speed: obstacleSpeed,
+        });
+    }
+}
 
     // Random chance to spawn a second obstacle
     if (Math.random() < 0.3) { // 30% chance to spawn a second obstacle
