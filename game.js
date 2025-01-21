@@ -19,7 +19,7 @@ function initializeGame() {
         width: 30,
         height: 30,
         color: "#4CAF50",
-        speed: 5
+        speed: 5 // Speed for keyboard controls
     };
 
     let obstacles = [];
@@ -31,7 +31,7 @@ function initializeGame() {
         ArrowDown: false
     };
 
-    // Touch Controls for Mobile
+    // Enhanced Touch Controls for Mobile
     let touchStartY = null;
     let touchEndY = null;
 
@@ -39,20 +39,25 @@ function initializeGame() {
         touchStartY = e.touches[0].clientY;
     });
 
-    canvas.addEventListener("touchmove", (e) => {
-        touchEndY = e.touches[0].clientY;
+    canvas.addEventListener("touchend", (e) => {
+        touchEndY = e.changedTouches[0].clientY;
 
         if (touchStartY && touchEndY) {
             const swipeDistance = touchEndY - touchStartY;
+
             if (swipeDistance > 30) {
-                // Swipe Down
-                if (player.y < canvas.height - player.height) player.y += player.speed;
-                touchStartY = touchEndY; // Reset for continuous swipe
+                // Swipe Down: Move the player based on swipe distance
+                const moveDistance = Math.min(swipeDistance / 2, canvas.height - player.y - player.height);
+                player.y += moveDistance;
             } else if (swipeDistance < -30) {
-                // Swipe Up
-                if (player.y > 0) player.y -= player.speed;
-                touchStartY = touchEndY; // Reset for continuous swipe
+                // Swipe Up: Move the player based on swipe distance
+                const moveDistance = Math.min(Math.abs(swipeDistance) / 2, player.y);
+                player.y -= moveDistance;
             }
+
+            // Reset touch start and end values
+            touchStartY = null;
+            touchEndY = null;
         }
     });
 
