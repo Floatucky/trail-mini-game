@@ -14,19 +14,19 @@ function initializeGame() {
     resizeCanvas();
 
     const player = {
-        x: canvas.width - 150, // Position near the right edge
-        y: canvas.height / 2 - 20, // Center vertically (adjusted for 40px height)
-        width: 100, // Updated width for the new logo
-        height: 40, // Updated height for the new logo
-        hitbox: {
-            xOffset: 5, // Adjusted for visible portion
-            yOffset: 5,
-            width: 90, // Reduced to exclude transparent areas
-            height: 30, // Reduced height for accurate collision detection
-        },
-        image: new Image(),
-    };
-    player.image.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/Blue-wheel.png";
+    x: canvas.width - 150, // Position near the right edge
+    y: canvas.height / 2 - 20, // Center vertically (adjusted for 40px height)
+    width: 100, // Correct width for the logo
+    height: 40, // Correct height for the logo
+    hitbox: {
+        xOffset: 5, // Adjusted for visible portion
+        yOffset: 5,
+        width: 90, // Reduced to exclude transparent areas
+        height: 30, // Reduced height for accurate collision detection
+    },
+    image: new Image(),
+};
+player.image.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/Blue-wheel.png";
 
     const treeImage = new Image();
     treeImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/tree.png";
