@@ -35,34 +35,34 @@ function initializeGame() {
     };
 
     // Enhanced Touch Controls for Mobile
-    let touchStartY = null;
-    let touchEndY = null;
+    let lastTouchY = null;
 
     if (isMobile) {
         canvas.addEventListener("touchstart", (e) => {
-            touchStartY = e.touches[0].clientY;
+            lastTouchY = e.touches[0].clientY; // Record initial touch position
         });
 
-        canvas.addEventListener("touchend", (e) => {
-            touchEndY = e.changedTouches[0].clientY;
+        canvas.addEventListener("touchmove", (e) => {
+            const currentTouchY = e.touches[0].clientY;
+            if (lastTouchY !== null) {
+                const swipeDistance = currentTouchY - lastTouchY;
 
-            if (touchStartY && touchEndY) {
-                const swipeDistance = touchEndY - touchStartY;
-
-                if (swipeDistance > 30) {
-                    // Swipe Down: Move the player a larger distance on mobile
-                    const moveDistance = Math.min(swipeDistance * 10, canvas.height - player.y - player.height);
+                if (swipeDistance > 5) {
+                    // Swipe Down
+                    const moveDistance = Math.min(swipeDistance * 3, canvas.height - player.y - player.height);
                     player.y += moveDistance;
-                } else if (swipeDistance < -30) {
-                    // Swipe Up: Move the player a larger distance on mobile
-                    const moveDistance = Math.min(Math.abs(swipeDistance) * 10, player.y);
+                } else if (swipeDistance < -5) {
+                    // Swipe Up
+                    const moveDistance = Math.min(Math.abs(swipeDistance) * 3, player.y);
                     player.y -= moveDistance;
                 }
 
-                // Reset touch start and end values
-                touchStartY = null;
-                touchEndY = null;
+                lastTouchY = currentTouchY; // Update last touch position
             }
+        });
+
+        canvas.addEventListener("touchend", () => {
+            lastTouchY = null; // Reset touch tracking on touch release
         });
     }
 
