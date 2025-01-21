@@ -14,7 +14,7 @@ function initializeGame() {
     resizeCanvas();
 
     const player = {
-        x: 50,
+        x: canvas.width - 110, // Start near the right edge
         y: canvas.height / 2 - 30,
         width: 60,
         height: 60,
@@ -37,9 +37,9 @@ function initializeGame() {
     let obstacles = [];
     let gameOver = false;
     let score = 0;
-    let obstacleSpeed = 3; // Initial speed
-    let spawnInterval = 1500; // Original spawn interval
-    let difficultyIncrement = 0; // Track difficulty progression
+    let obstacleSpeed = 3;
+    let spawnInterval = 1500;
+    let difficultyIncrement = 0;
     let spawnIntervalId;
 
     const keys = { ArrowUp: false, ArrowDown: false };
@@ -97,7 +97,7 @@ function initializeGame() {
         const y = Math.random() * (canvas.height - height);
 
         obstacles.push({
-            x: canvas.width,
+            x: -width, // Start on the left, off-screen
             y: y,
             width: width,
             height: height,
@@ -114,9 +114,9 @@ function initializeGame() {
         if (keys.ArrowDown && player.y < canvas.height - player.height) player.y += 5;
 
         obstacles.forEach((obstacle, index) => {
-            obstacle.x -= obstacle.speed;
+            obstacle.x += obstacle.speed; // Move right towards the player
 
-            if (obstacle.x + obstacle.width < 0) {
+            if (obstacle.x > canvas.width) {
                 obstacles.splice(index, 1);
                 score++;
             }
@@ -162,10 +162,10 @@ function initializeGame() {
     function increaseDifficulty() {
         difficultyIncrement++;
         if (difficultyIncrement % 5 === 0) {
-            obstacleSpeed += 0.2; // Increase speed every 5 spawns
+            obstacleSpeed += 0.2;
         }
         if (difficultyIncrement % 10 === 0 && spawnInterval > 800) {
-            spawnInterval -= 100; // Decrease spawn interval every 10 spawns
+            spawnInterval -= 100;
             clearInterval(spawnIntervalId);
             startSpawnLoop();
         }
