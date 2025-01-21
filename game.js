@@ -192,12 +192,14 @@ if (
     playerHitbox.y + playerHitbox.height > obstacleHitbox.y
 ) {
     if (audioEnabled) {
-        // Create a new audio instance for collision sound
+        // Play collision sound as a one-time event
         const collisionSoundInstance = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
-        collisionSoundInstance.volume = 1.0; // Adjust volume if needed
-        collisionSoundInstance.play().catch((error) => console.error("Collision sound error:", error));
+        collisionSoundInstance.volume = 1.0;
+        collisionSoundInstance.play()
+            .then(() => console.log("Collision sound playing"))
+            .catch((error) => console.error("Collision sound error:", error));
     }
-    gameOver = true;
+    gameOver = true; // End the game after playing the sound
             }
         });
     }
