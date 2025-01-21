@@ -84,50 +84,22 @@ player.image.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/B
     }
 
 function createObstacle() {
-    // Generate the first obstacle
-    const type1 = Math.random() < 0.5 ? "tree" : "rock";
-    const image1 = type1 === "tree" ? treeImage : rockImage;
+    const type = Math.random() < 0.5 ? "tree" : "rock";
+    const image = type === "tree" ? treeImage : rockImage;
 
-    const width1 = Math.random() < 0.5 ? 50 : 100; // Small or large
-    const height1 = type1 === "tree" ? 100 : 75; // Tree: 100px; Rock: 75px
-    const y1 = Math.random() * (canvas.height - height1);
+    // Randomize size for obstacles
+    const width = Math.random() < 0.5 ? 50 : 100; // Small or large width
+    const height = type === "tree" ? 100 : 75; // Fixed aspect ratio for tree and rock
+    const y = Math.random() * (canvas.height - height);
 
     obstacles.push({
-        x: -width1, // Start off-screen
-        y: y1,
-        width: width1,
-        height: height1,
-        image: image1,
+        x: -width, // Start off-screen
+        y: y,
+        width: width,
+        height: height,
+        image: image,
         speed: obstacleSpeed,
     });
-
-    // Occasionally add a second obstacle
-    if (Math.random() < 0.3) { // 30% chance for a second obstacle
-        const type2 = Math.random() < 0.5 ? "tree" : "rock";
-        const image2 = type2 === "tree" ? treeImage : rockImage;
-
-        const width2 = Math.random() < 0.5 ? 50 : 100;
-        const height2 = type2 === "tree" ? 100 : 75;
-
-        // Place the second obstacle in a separate region
-        let y2;
-        if (y1 < canvas.height / 2) {
-            // If the first obstacle is in the top half, place the second in the bottom half
-            y2 = Math.random() * ((canvas.height - height2) / 2) + canvas.height / 2;
-        } else {
-            // If the first obstacle is in the bottom half, place the second in the top half
-            y2 = Math.random() * ((canvas.height - height2) / 2);
-        }
-
-        obstacles.push({
-            x: -width2, // Start off-screen
-            y: y2,
-            width: width2,
-            height: height2,
-            image: image2,
-            speed: obstacleSpeed,
-        });
-    }
 }
 
     function update() {
