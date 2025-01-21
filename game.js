@@ -84,15 +84,14 @@ player.image.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/B
     }
 
 function createObstacle() {
+    // Generate the first obstacle
     const type1 = Math.random() < 0.5 ? "tree" : "rock";
     const image1 = type1 === "tree" ? treeImage : rockImage;
 
-    // Randomize size for the first obstacle
     const width1 = Math.random() < 0.5 ? 50 : 100; // Small or large
-    const height1 = type1 === "tree" ? 100 : 75; // Tree: consistent height; Rock: fixed ratio
+    const height1 = type1 === "tree" ? 100 : 75; // Tree: 100px; Rock: 75px
     const y1 = Math.random() * (canvas.height - height1);
 
-    // Add the first obstacle
     obstacles.push({
         x: -width1, // Start off-screen
         y: y1,
@@ -103,20 +102,21 @@ function createObstacle() {
     });
 
     // Occasionally add a second obstacle
-    if (Math.random() < 0.3) { // 30% chance to spawn two obstacles
+    if (Math.random() < 0.3) { // 30% chance for a second obstacle
         const type2 = Math.random() < 0.5 ? "tree" : "rock";
         const image2 = type2 === "tree" ? treeImage : rockImage;
 
-        // Randomize size for the second obstacle
-        const width2 = Math.random() < 0.5 ? 50 : 100; // Small or large
-        const height2 = type2 === "tree" ? 100 : 75; // Tree: consistent height; Rock: fixed ratio
+        const width2 = Math.random() < 0.5 ? 50 : 100;
+        const height2 = type2 === "tree" ? 100 : 75;
 
-        // Place the second obstacle above or below the first one
+        // Place the second obstacle in a separate region
         let y2;
-        if (Math.random() < 0.5) {
-            y2 = Math.max(0, y1 - height2 - 10); // Place above
+        if (y1 < canvas.height / 2) {
+            // If the first obstacle is in the top half, place the second in the bottom half
+            y2 = Math.random() * ((canvas.height - height2) / 2) + canvas.height / 2;
         } else {
-            y2 = Math.min(canvas.height - height2, y1 + height1 + 10); // Place below
+            // If the first obstacle is in the bottom half, place the second in the top half
+            y2 = Math.random() * ((canvas.height - height2) / 2);
         }
 
         obstacles.push({
