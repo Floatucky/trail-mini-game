@@ -227,55 +227,55 @@ function gameLoop() {
         ctx.fillText("Game Over!", canvas.width / 2, canvas.height / 2 - 50);
         ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
 
-        // Wait briefly for popup activation
-        setTimeout(() => {
-            const popupContent = document.querySelector('.pum-active-popup .pum-content');
+        // Find the popup container using the updated selector
+        const popupContent = document.querySelector('.pum-content.popmake-content');
 
-            if (!popupContent) {
-                console.warn("Popup content not found. Ensure the popup is active.");
-                return;
-            }
+        if (!popupContent) {
+            console.warn("Popup content not found. Ensure the popup is active.");
+            return;
+        }
 
-            // Create "Play Again" button if it doesn't already exist
-            let playAgainButton = document.getElementById("playAgainButton");
-            if (!playAgainButton) {
-                console.log("Creating 'Play Again' button...");
-                playAgainButton = document.createElement("button");
-                playAgainButton.id = "playAgainButton";
-                playAgainButton.textContent = "Play Again";
-                playAgainButton.style.position = "relative";
-                playAgainButton.style.display = "block";
-                playAgainButton.style.margin = "20px auto";
-                playAgainButton.style.padding = "10px 20px";
-                playAgainButton.style.fontSize = "16px";
-                playAgainButton.style.cursor = "pointer";
-                playAgainButton.style.border = "none";
-                playAgainButton.style.borderRadius = "5px";
-                playAgainButton.style.backgroundColor = "#4CAF50";
-                playAgainButton.style.color = "#FFF";
+        // Ensure the "Play Again" button is created and appended inside the popup
+        let playAgainButton = document.getElementById("playAgainButton");
+        if (!playAgainButton) {
+            console.log("Creating 'Play Again' button...");
+            playAgainButton = document.createElement("button");
+            playAgainButton.id = "playAgainButton";
+            playAgainButton.textContent = "Play Again";
+            playAgainButton.style.position = "relative";
+            playAgainButton.style.display = "block";
+            playAgainButton.style.margin = "20px auto";
+            playAgainButton.style.padding = "10px 20px";
+            playAgainButton.style.fontSize = "16px";
+            playAgainButton.style.cursor = "pointer";
+            playAgainButton.style.border = "none";
+            playAgainButton.style.borderRadius = "5px";
+            playAgainButton.style.backgroundColor = "#4CAF50";
+            playAgainButton.style.color = "#FFF";
 
-                popupContent.appendChild(playAgainButton);
+            popupContent.appendChild(playAgainButton);
 
-                // Restart the game when the button is clicked
-                playAgainButton.addEventListener("click", () => {
-                    console.log("'Play Again' clicked. Restarting game...");
-                    // Remove the button
-                    playAgainButton.remove();
+            // Restart the game when the button is clicked
+            playAgainButton.addEventListener("click", () => {
+                console.log("'Play Again' clicked. Restarting game...");
+                // Remove the button
+                playAgainButton.remove();
 
-                    // Reset game variables
-                    gameOver = false;
-                    score = 0;
-                    obstacles = [];
-                    obstacleSpeed = 3;
-                    spawnInterval = 1500;
+                // Reset game variables
+                gameOver = false;
+                score = 0;
+                obstacles = [];
+                obstacleSpeed = 3;
+                spawnInterval = 1500;
 
-                    // Restart the spawn loop and game loop
-                    clearInterval(spawnIntervalId);
-                    startSpawnLoop();
-                    gameLoop();
-                });
-            }
-        }, 200); // Delay to allow popup activation
+                // Restart the spawn loop and game loop
+                clearInterval(spawnIntervalId);
+                startSpawnLoop();
+                gameLoop();
+            });
+        } else {
+            console.log("'Play Again' button already exists.");
+        }
     }
 }
 
