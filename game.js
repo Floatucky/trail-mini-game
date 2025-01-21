@@ -2,31 +2,22 @@ function initializeGame() {
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-const backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
-const track = audioContext.createMediaElementSource(backgroundMusic);
-track.connect(audioContext.destination);
+    // Audio setup
+    const backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
+    const collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
+    let musicStarted = false;
 
-canvas.addEventListener("click", () => {
-    if (audioContext.state === "suspended") {
-        audioContext.resume();
-    }
-    if (!musicStarted) {
-        backgroundMusic.loop = true;
-        backgroundMusic.volume = 0.5;
-        backgroundMusic.play().catch((error) => console.error("Background music play error:", error));
-        musicStarted = true;
+    // Trigger background music with user interaction
+    canvas.addEventListener("click", () => {
+        if (!musicStarted) {
+            backgroundMusic.loop = true;
+            backgroundMusic.volume = 0.5; // Adjust volume
+            backgroundMusic.play()
+                .then(() => console.log("Background music playing"))
+                .catch((error) => console.error("Background music play error:", error));
+            musicStarted = true;
         }
     });
-
-    // Log background music status for debugging
-    backgroundMusic.addEventListener("play", () => {
-        console.log("Background music is playing");
-    });
-    backgroundMusic.addEventListener("error", (e) => {
-        console.error("Background music error:", e);
-    });
-}
 
     // Dynamically resize canvas for mobile
     function resizeCanvas() {
@@ -114,16 +105,16 @@ canvas.addEventListener("click", () => {
 
         const hitbox = type === "tree"
             ? {
-                  xOffset: width * 0.35, // Exclude the empty left/right space for trees
-                  yOffset: height * 0.15, // Start below the empty top corners
-                  width: width * 0.3, // Narrow to the trunk and circular leaf area
-                  height: height * 0.7, // Cover the trunk and lower part
+                  xOffset: width * 0.35,
+                  yOffset: height * 0.15,
+                  width: width * 0.3,
+                  height: height * 0.7,
               }
             : {
-                  xOffset: width * 0.15, // Exclude the top-left and top-right corners
-                  yOffset: height * 0.2, // Start below the top-middle rounded area
-                  width: width * 0.7, // Cover the central bulk of the rock
-                  height: height * 0.6, // Exclude the rounded bottom-left and bottom-right
+                  xOffset: width * 0.15,
+                  yOffset: height * 0.2,
+                  width: width * 0.7,
+                  height: height * 0.6,
               };
 
         obstacles.push({
@@ -135,38 +126,6 @@ canvas.addEventListener("click", () => {
             hitbox: hitbox,
             speed: obstacleSpeed,
         });
-
-        // Random chance to spawn a second obstacle
-        if (Math.random() < 0.3) {
-            const type2 = Math.random() < 0.5 ? "tree" : "rock";
-            const image2 = type2 === "tree" ? treeImage : rockImage;
-
-            const isSmall2 = Math.random() < 0.5;
-            const width2 = isSmall2 ? (type2 === "tree" ? 50 : 60) : (type2 === "tree" ? 100 : 80);
-            const height2 = isSmall2 ? (type2 === "tree" ? 50 : 40) : (type2 === "tree" ? 100 : 75);
-
-            let y2;
-            if (y < canvas.height / 2) {
-                y2 = Math.random() * ((canvas.height - height2) / 2) + canvas.height / 2;
-            } else {
-                y2 = Math.random() * ((canvas.height - height2) / 2);
-            }
-
-            obstacles.push({
-                x: -width2,
-                y: y2,
-                width: width2,
-                height: height2,
-                image: image2,
-                hitbox: {
-                    xOffset: type2 === "tree" ? width2 * 0.35 : width2 * 0.15,
-                    yOffset: type2 === "tree" ? height2 * 0.15 : height2 * 0.2,
-                    width: type2 === "tree" ? width2 * 0.3 : width2 * 0.7,
-                    height: type2 === "tree" ? height2 * 0.7 : height2 * 0.6,
-                },
-                speed: obstacleSpeed,
-            });
-        }
     }
 
     function update() {
