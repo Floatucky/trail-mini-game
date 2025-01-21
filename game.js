@@ -84,26 +84,30 @@ player.image.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/B
     }
 
 function createObstacle() {
-    // Determine the type of obstacle (tree or rock)
     const type = Math.random() < 0.5 ? "tree" : "rock";
     const image = type === "tree" ? treeImage : rockImage;
 
     // Randomize size for the obstacle
     const isSmall = Math.random() < 0.5; // 50% chance for small or large size
     const width = isSmall ? 50 : 100; // Small: 50px, Large: 100px
-    const height = type === "tree" ? 100 : 75; // Tree: fixed height, Rock: fixed ratio
+    const height = type === "tree" ? 100 : 75; // Fixed heights for tree and rock
     const y = Math.random() * (canvas.height - height);
 
-    // Log obstacle details for debugging
-    console.log("Obstacle Created:", { type, width, height, y });
+    // Define the hitbox for the obstacle
+    const hitbox = {
+        xOffset: 10, // Reduced size for collision detection
+        yOffset: 10,
+        width: width - 20, // Slightly smaller than the actual width
+        height: height - 20, // Slightly smaller than the actual height
+    };
 
-    // Add the obstacle to the list
     obstacles.push({
         x: -width, // Start off-screen
         y: y,
         width: width,
         height: height,
         image: image,
+        hitbox: hitbox, // Include the hitbox
         speed: obstacleSpeed,
     });
 }
