@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+function initializeGame() {
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
         width: 30,
         height: 30,
         color: "#4CAF50",
-        speed: 5
+        speed: 5,
     };
 
     let obstacles = [];
@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const keys = {
         ArrowUp: false,
-        ArrowDown: false
+        ArrowDown: false,
     };
 
     document.addEventListener("keydown", (e) => {
@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
             width: size,
             height: size,
             color: "#FF5733",
-            speed: 3 + Math.random() * 2
+            speed: 3 + Math.random() * 2,
         });
     }
 
@@ -49,7 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         obstacles.forEach((obstacle, index) => {
             obstacle.x -= obstacle.speed;
-
             if (obstacle.x + obstacle.width < 0) {
                 obstacles.splice(index, 1);
                 score++;
@@ -100,4 +99,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
     setInterval(createObstacle, 2000);
     gameLoop();
-});
+}
+
