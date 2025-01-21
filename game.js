@@ -204,19 +204,24 @@ function initializeGame() {
                 height: obstacle.hitbox.height,
             };
 
-            if (
-                playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
-                playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
-                playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
-                playerHitbox.y + playerHitbox.height > obstacleHitbox.y
-            ) {
-                if (audioEnabled && !gameOver) {
-                    console.log("Playing collision sound.");
-                    collisionSound.currentTime = 0;
-                    collisionSound.play().catch((error) => console.error("Collision sound error:", error));
-                }
-                gameOver = true; // Ensure no more sounds after game ends
-            }
+if (
+    playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
+    playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
+    playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
+    playerHitbox.y + playerHitbox.height > obstacleHitbox.y
+) {
+    if (audioEnabled && !gameOver) {
+        console.log("Collision detected. Playing collision sound.");
+        // Force collision sound playback
+        audioContext.resume().then(() => {
+            collisionSound.currentTime = 0; // Reset playback position
+            collisionSound.play()
+                .then(() => console.log("Collision sound played successfully."))
+                .catch((error) => console.error("Collision sound play error:", error));
+        });
+    }
+    gameOver = true; // Ensure no more updates after collision
+}
         });
     }
 
