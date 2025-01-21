@@ -211,6 +211,7 @@ function initializeGame() {
                 playerHitbox.y + playerHitbox.height > obstacleHitbox.y
             ) {
                 if (audioEnabled && !gameOver) {
+                    console.log("Playing collision sound.");
                     collisionSound.currentTime = 0;
                     collisionSound.play().catch((error) => console.error("Collision sound error:", error));
                 }
