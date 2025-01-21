@@ -38,7 +38,8 @@ function initializeGame() {
     let gameOver = false;
     let score = 0;
     let obstacleSpeed = 3; // Initial speed
-    let spawnInterval = 2000; // Initial spawn interval
+    let spawnInterval = 1500; // Original spawn interval
+    let difficultyIncrement = 0; // Track difficulty progression
     let spawnIntervalId;
 
     const keys = { ArrowUp: false, ArrowDown: false };
@@ -104,9 +105,6 @@ function initializeGame() {
             image: image,
             speed: obstacleSpeed,
         });
-
-        // Increase difficulty
-        obstacleSpeed += 0.1; // Increment speed slightly with each spawn
     }
 
     function update() {
@@ -161,6 +159,18 @@ function initializeGame() {
         ctx.fillText(`Score: ${score}`, 10, 30);
     }
 
+    function increaseDifficulty() {
+        difficultyIncrement++;
+        if (difficultyIncrement % 5 === 0) {
+            obstacleSpeed += 0.2; // Increase speed every 5 spawns
+        }
+        if (difficultyIncrement % 10 === 0 && spawnInterval > 800) {
+            spawnInterval -= 100; // Decrease spawn interval every 10 spawns
+            clearInterval(spawnIntervalId);
+            startSpawnLoop();
+        }
+    }
+
     function gameLoop() {
         if (!gameOver) {
             update();
@@ -181,12 +191,7 @@ function initializeGame() {
     function startSpawnLoop() {
         spawnIntervalId = setInterval(() => {
             createObstacle();
-
-            if (spawnInterval > 800) {
-                spawnInterval -= 50; // Decrease spawn interval gradually
-                clearInterval(spawnIntervalId);
-                startSpawnLoop(); // Restart loop with the updated interval
-            }
+            increaseDifficulty();
         }, spawnInterval);
     }
 
