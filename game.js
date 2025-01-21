@@ -103,12 +103,13 @@ function createObstacle() {
               height: height * 0.7, // Cover the trunk and lower part
           }
         : {
-              xOffset: 10, // Placeholder for now, refine rock hitbox later
+              xOffset: 10, // Placeholder hitbox for rocks
               yOffset: 10,
               width: width - 20,
               height: height - 20,
           };
 
+    // Push the obstacle into the obstacles array
     obstacles.push({
         x: -width, // Start off-screen
         y: y,
