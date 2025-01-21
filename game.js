@@ -7,17 +7,22 @@ function initializeGame() {
     const collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
     let musicStarted = false;
 
-    // Trigger background music with user interaction
-    canvas.addEventListener("click", () => {
+    function startBackgroundMusic() {
         if (!musicStarted) {
             backgroundMusic.loop = true;
-            backgroundMusic.volume = 0.5; // Adjust volume
+            backgroundMusic.volume = 0.5;
             backgroundMusic.play()
-                .then(() => console.log("Background music playing"))
-                .catch((error) => console.error("Background music play error:", error));
+                .then(() => console.log("Background music started"))
+                .catch((error) => console.error("Background music error:", error));
             musicStarted = true;
         }
-    });
+    }
+
+    function stopBackgroundMusic() {
+        backgroundMusic.pause();
+        backgroundMusic.currentTime = 0;
+        musicStarted = false;
+    }
 
     // Dynamically resize canvas for mobile
     function resizeCanvas() {
@@ -63,7 +68,10 @@ function initializeGame() {
 
     // Event listeners for PC controls
     document.addEventListener("keydown", (e) => {
-        if (e.key in keys) keys[e.key] = true;
+        if (e.key in keys) {
+            keys[e.key] = true;
+            startBackgroundMusic();
+        }
     });
 
     document.addEventListener("keyup", (e) => {
@@ -74,6 +82,7 @@ function initializeGame() {
     if (/Mobi|Android/i.test(navigator.userAgent)) {
         canvas.addEventListener("touchstart", (e) => {
             touchStartY = e.touches[0].clientY;
+            startBackgroundMusic();
         });
 
         canvas.addEventListener("touchmove", (e) => {
@@ -162,7 +171,7 @@ function initializeGame() {
                 playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
                 playerHitbox.y + playerHitbox.height > obstacleHitbox.y
             ) {
-                collisionSound.play().catch((error) => console.error("Collision sound play error:", error));
+                collisionSound.play().catch((error) => console.error("Collision sound error:", error));
                 gameOver = true;
             }
         });
@@ -189,7 +198,7 @@ function initializeGame() {
             draw();
             requestAnimationFrame(gameLoop);
         } else {
-            backgroundMusic.pause();
+            stopBackgroundMusic(); // Stop music on game over
             ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "#FFF";
@@ -197,6 +206,22 @@ function initializeGame() {
             ctx.textAlign = "center";
             ctx.fillText("Game Over!", canvas.width / 2, canvas.height / 2 - 50);
             ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
+
+            // Add Play Again button dynamically
+            const popupContent = document.querySelector(".pum-content.popmake-content");
+            if (popupContent && !document.getElementById("playAgainButton")) {
+                const playAgainButton = document.createElement("button");
+                playAgainButton.id = "playAgainButton";
+                playAgainButton.textContent = "Play Again";
+                playAgainButton.style.cssText =
+                    "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
+                popupContent.appendChild(playAgainButton);
+
+                playAgainButton.addEventListener("click", () => {
+                    playAgainButton.remove();
+                    resetGame();
+                });
+            }
         }
     }
 
@@ -206,7 +231,7 @@ function initializeGame() {
         obstacles = [];
         obstacleSpeed = 3;
         spawnInterval = 1500;
-        backgroundMusic.play().catch((error) => console.error("Background music play error:", error));
+        startBackgroundMusic(); // Restart background music
         resizeCanvas();
         clearInterval(spawnIntervalId);
         startSpawnLoop();
@@ -218,6 +243,11 @@ function initializeGame() {
             createObstacle();
         }, spawnInterval);
     }
+
+    // Event to stop music when popup is closed
+    window.addEventListener("popmakeClose", () => {
+        stopBackgroundMusic();
+    });
 
     startSpawnLoop();
     gameLoop();
