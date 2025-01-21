@@ -36,14 +36,15 @@ function initializeGame() {
 
     function stopAllSounds() {
         console.log("Stopping all sounds.");
-        backgroundMusic.pause();
-        backgroundMusic.currentTime = 0;
+        if (!collisionSound.paused) {
+            console.log("Collision sound is playing. Let it finish.");
+        } else {
+            backgroundMusic.pause();
+            backgroundMusic.currentTime = 0;
 
-        collisionSound.pause();
-        collisionSound.currentTime = 0;
-
-        pointSound.pause();
-        pointSound.currentTime = 0;
+            pointSound.pause();
+            pointSound.currentTime = 0;
+        }
 
         audioContext.suspend().then(() => console.log("Audio context suspended."));
         musicStarted = false;
@@ -204,24 +205,24 @@ function initializeGame() {
                 height: obstacle.hitbox.height,
             };
 
-if (
-    playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
-    playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
-    playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
-    playerHitbox.y + playerHitbox.height > obstacleHitbox.y
-) {
-    if (audioEnabled && !gameOver) {
-        console.log("Collision detected. Playing collision sound.");
-        // Force collision sound playback
-        audioContext.resume().then(() => {
-            collisionSound.currentTime = 0; // Reset playback position
-            collisionSound.play()
-                .then(() => console.log("Collision sound played successfully."))
-                .catch((error) => console.error("Collision sound play error:", error));
-        });
-    }
-    gameOver = true; // Ensure no more updates after collision
-}
+            if (
+                playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
+                playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
+                playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
+                playerHitbox.y + playerHitbox.height > obstacleHitbox.y
+            ) {
+                if (audioEnabled && !gameOver) {
+                    console.log("Collision detected. Playing collision sound.");
+                    // Force collision sound playback
+                    audioContext.resume().then(() => {
+                        collisionSound.currentTime = 0; // Reset playback position
+                        collisionSound.play()
+                            .then(() => console.log("Collision sound played successfully."))
+                            .catch((error) => console.error("Collision sound play error:", error));
+                    });
+                }
+                gameOver = true; // Ensure no more updates after collision
+            }
         });
     }
 
