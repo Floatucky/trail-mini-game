@@ -185,17 +185,19 @@ function initializeGame() {
                 height: obstacle.hitbox.height,
             };
 
-            if (
-                playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
-                playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
-                playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
-                playerHitbox.y + playerHitbox.height > obstacleHitbox.y
-            ) {
-                if (audioEnabled) {
-                    collisionSound.currentTime = 0;
-                    collisionSound.play().catch((error) => console.error("Collision sound error:", error));
-                }
-                gameOver = true;
+if (
+    playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
+    playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
+    playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
+    playerHitbox.y + playerHitbox.height > obstacleHitbox.y
+) {
+    if (audioEnabled) {
+        // Create a new audio instance for collision sound
+        const collisionSoundInstance = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
+        collisionSoundInstance.volume = 1.0; // Adjust volume if needed
+        collisionSoundInstance.play().catch((error) => console.error("Collision sound error:", error));
+    }
+    gameOver = true;
             }
         });
     }
