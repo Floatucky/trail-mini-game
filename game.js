@@ -4,32 +4,30 @@ function initializeGame() {
 
     // Dynamically resize canvas for mobile
     function resizeCanvas() {
-        const maxWidth = 800; // Max width for larger screens
-        const maxHeight = 600; // Max height for larger screens
-        canvas.width = Math.min(window.innerWidth * 0.9, maxWidth); // 90% of the screen width or maxWidth
-        canvas.height = Math.min(window.innerHeight * 0.7, maxHeight); // 70% of the screen height or maxHeight
+        const maxWidth = 800;
+        const maxHeight = 600;
+        canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
+        canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
     }
 
     window.addEventListener("resize", resizeCanvas);
-    resizeCanvas(); // Initial resize
+    resizeCanvas();
 
-    // Player setup
     const player = {
         x: 50,
         y: canvas.height / 2 - 30,
-        width: 60, // Adjusted size for logo
-        height: 60, // Adjusted size for logo
+        width: 60,
+        height: 60,
         hitbox: {
-            xOffset: 10, // Offset to account for transparency
+            xOffset: 10,
             yOffset: 10,
-            width: 40, // Smaller hitbox width
-            height: 40, // Smaller hitbox height
+            width: 40,
+            height: 40,
         },
         image: new Image(),
     };
     player.image.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/blue-wheel-with-crown.png";
 
-    // Obstacle images
     const treeImage = new Image();
     treeImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/tree.png";
 
@@ -39,6 +37,9 @@ function initializeGame() {
     let obstacles = [];
     let gameOver = false;
     let score = 0;
+    let obstacleSpeed = 3; // Initial speed
+    let spawnInterval = 2000; // Initial spawn interval
+    let spawnIntervalId;
 
     const keys = { ArrowUp: false, ArrowDown: false };
     let touchStartY = null;
@@ -84,13 +85,13 @@ function initializeGame() {
     function createObstacle() {
         const type = Math.random() < 0.5 ? "tree" : "rock";
         const image = type === "tree" ? treeImage : rockImage;
-        const width = 100; // Full image width
-        const height = type === "tree" ? 100 : 75; // Tree and rock heights
+        const width = 100;
+        const height = type === "tree" ? 100 : 75;
         const hitbox = {
-            xOffset: type === "tree" ? 25 : 10, // Adjusted for transparency
+            xOffset: type === "tree" ? 25 : 10,
             yOffset: type === "tree" ? 25 : 10,
-            width: type === "tree" ? 50 : 80, // Adjusted hitbox width
-            height: type === "tree" ? 50 : 55, // Adjusted hitbox height
+            width: type === "tree" ? 50 : 80,
+            height: type === "tree" ? 50 : 55,
         };
         const y = Math.random() * (canvas.height - height);
 
@@ -101,29 +102,27 @@ function initializeGame() {
             height: height,
             hitbox: hitbox,
             image: image,
-            type: type,
-            speed: 3 + Math.random() * 2,
+            speed: obstacleSpeed,
         });
+
+        // Increase difficulty
+        obstacleSpeed += 0.1; // Increment speed slightly with each spawn
     }
 
     function update() {
         if (gameOver) return;
 
-        // Move player (PC controls)
         if (keys.ArrowUp && player.y > 0) player.y -= 5;
         if (keys.ArrowDown && player.y < canvas.height - player.height) player.y += 5;
 
-        // Move obstacles
         obstacles.forEach((obstacle, index) => {
             obstacle.x -= obstacle.speed;
 
-            // Remove obstacles that leave the screen
             if (obstacle.x + obstacle.width < 0) {
                 obstacles.splice(index, 1);
                 score++;
             }
 
-            // Check for collisions using hitboxes
             const playerHitbox = {
                 x: player.x + player.hitbox.xOffset,
                 y: player.y + player.hitbox.yOffset,
@@ -151,16 +150,12 @@ function initializeGame() {
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Draw player
         ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
 
-        // Draw obstacles
         obstacles.forEach((obstacle) => {
             ctx.drawImage(obstacle.image, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
         });
 
-        // Draw score
         ctx.fillStyle = "#000";
         ctx.font = "20px Arial";
         ctx.fillText(`Score: ${score}`, 10, 30);
@@ -172,6 +167,7 @@ function initializeGame() {
             draw();
             requestAnimationFrame(gameLoop);
         } else {
+            clearInterval(spawnIntervalId);
             ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "#FFF";
@@ -182,6 +178,18 @@ function initializeGame() {
         }
     }
 
-    setInterval(createObstacle, 2000);
+    function startSpawnLoop() {
+        spawnIntervalId = setInterval(() => {
+            createObstacle();
+
+            if (spawnInterval > 800) {
+                spawnInterval -= 50; // Decrease spawn interval gradually
+                clearInterval(spawnIntervalId);
+                startSpawnLoop(); // Restart loop with the updated interval
+            }
+        }, spawnInterval);
+    }
+
+    startSpawnLoop();
     gameLoop();
 }
