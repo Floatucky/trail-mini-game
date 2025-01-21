@@ -19,16 +19,10 @@ const player = {
     width: 100, // Full logo width
     height: 40, // Full logo height
     hitbox: {
-        xOffset: 10, // Start 10px from the left edge to align with the visible left side
-        yOffset: 5,  // Start 5px from the top edge
-        width: 70,   // Focus primarily on the left portion of the logo
-        height: 30,  // Reduce height slightly for alignment
-    },
-    slantedHitbox: {
-        x1: 10,  // Top-left x position of the hitbox
-        y1: 5,   // Top-left y position of the hitbox
-        x2: 80,  // Bottom-right x position of the visible slant
-        y2: 35,  // Bottom-right y position
+        xOffset: 5,   // Align closely to the left edge
+        yOffset: 10,  // Adjust down slightly to avoid the top-right empty space
+        width: 85,    // Cover most of the left and middle portions, excluding the top-right
+        height: 25,   // Reduced to avoid the empty top-right and align with the bottom-right
     },
     image: new Image(),
 };
