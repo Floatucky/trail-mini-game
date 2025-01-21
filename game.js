@@ -49,7 +49,7 @@ function initializeGame() {
 
                 if (Math.abs(swipeDistance) > 10) {
                     // Move the player incrementally during swipe
-                    const moveDistance = swipeDistance * 0.3; // Adjust sensitivity
+                    const moveDistance = swipeDistance * 0.6; // Increased sensitivity
                     if (swipeDistance > 0) {
                         // Swipe Down
                         player.y = Math.min(player.y + moveDistance, canvas.height - player.height);
