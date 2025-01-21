@@ -229,6 +229,22 @@ function initializeGame() {
             ctx.textAlign = "center";
             ctx.fillText("Game Over!", canvas.width / 2, canvas.height / 2 - 50);
             ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
+
+            // Add Play Again button dynamically
+            const popupContent = document.querySelector(".pum-content.popmake-content");
+            if (popupContent && !document.getElementById("playAgainButton")) {
+                const playAgainButton = document.createElement("button");
+                playAgainButton.id = "playAgainButton";
+                playAgainButton.textContent = "Play Again";
+                playAgainButton.style.cssText =
+                    "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
+                popupContent.appendChild(playAgainButton);
+
+                playAgainButton.addEventListener("click", () => {
+                    playAgainButton.remove();
+                    resetGame();
+                });
+            }
         }
     }
 
