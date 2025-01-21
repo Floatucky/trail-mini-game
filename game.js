@@ -2,13 +2,24 @@ function initializeGame() {
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
+    // Dynamically resize canvas for mobile
+    function resizeCanvas() {
+        const maxWidth = 800; // Max width for larger screens
+        const maxHeight = 600; // Max height for larger screens
+        canvas.width = Math.min(window.innerWidth * 0.9, maxWidth); // 90% of the screen width or maxWidth
+        canvas.height = Math.min(window.innerHeight * 0.7, maxHeight); // 70% of the screen height or maxHeight
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas(); // Initial resize
+
     const player = {
         x: 50,
         y: canvas.height / 2 - 15,
         width: 30,
         height: 30,
         color: "#4CAF50",
-        speed: 5,
+        speed: 5
     };
 
     let obstacles = [];
@@ -17,15 +28,32 @@ function initializeGame() {
 
     const keys = {
         ArrowUp: false,
-        ArrowDown: false,
+        ArrowDown: false
     };
 
-    document.addEventListener("keydown", (e) => {
-        if (e.key in keys) keys[e.key] = true;
+    // Touch Controls for Mobile
+    let touchStartY = null;
+    let touchEndY = null;
+
+    canvas.addEventListener("touchstart", (e) => {
+        touchStartY = e.touches[0].clientY;
     });
 
-    document.addEventListener("keyup", (e) => {
-        if (e.key in keys) keys[e.key] = false;
+    canvas.addEventListener("touchmove", (e) => {
+        touchEndY = e.touches[0].clientY;
+
+        if (touchStartY && touchEndY) {
+            const swipeDistance = touchEndY - touchStartY;
+            if (swipeDistance > 30) {
+                // Swipe Down
+                if (player.y < canvas.height - player.height) player.y += player.speed;
+                touchStartY = touchEndY; // Reset for continuous swipe
+            } else if (swipeDistance < -30) {
+                // Swipe Up
+                if (player.y > 0) player.y -= player.speed;
+                touchStartY = touchEndY; // Reset for continuous swipe
+            }
+        }
     });
 
     function createObstacle() {
@@ -37,18 +65,20 @@ function initializeGame() {
             width: size,
             height: size,
             color: "#FF5733",
-            speed: 3 + Math.random() * 2,
+            speed: 3 + Math.random() * 2
         });
     }
 
     function update() {
         if (gameOver) return;
 
+        // Move player
         if (keys.ArrowUp && player.y > 0) player.y -= player.speed;
         if (keys.ArrowDown && player.y < canvas.height - player.height) player.y += player.speed;
 
         obstacles.forEach((obstacle, index) => {
             obstacle.x -= obstacle.speed;
+
             if (obstacle.x + obstacle.width < 0) {
                 obstacles.splice(index, 1);
                 score++;
@@ -100,4 +130,3 @@ function initializeGame() {
     setInterval(createObstacle, 2000);
     gameLoop();
 }
-
