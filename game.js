@@ -88,16 +88,16 @@ function initializeGame() {
 
     const hitbox = type === "tree"
         ? {
-              xOffset: width * 0.4, // Focus on the trunk, exclude left/right empty space
-              yOffset: height * 0.3, // Start at the base of the circular leaves
-              width: width * 0.2, // Narrow trunk width
-              height: height * 0.7, // Cover the trunk and exclude empty top
+              xOffset: width * 0.35, // Exclude the empty left/right space for trees
+              yOffset: height * 0.15, // Start below the empty top corners
+              width: width * 0.3, // Narrow to the trunk and circular leaf area
+              height: height * 0.7, // Cover the trunk and lower part
           }
         : {
-              xOffset: 10, // Placeholder hitbox for rocks
-              yOffset: 10,
-              width: width - 20,
-              height: height - 20,
+              xOffset: width * 0.15, // Exclude the top-left and top-right corners
+              yOffset: height * 0.2, // Start below the top-middle rounded area
+              width: width * 0.7, // Cover the central bulk of the rock
+              height: height * 0.6, // Exclude the rounded bottom-left and bottom-right
           };
 
     obstacles.push({
@@ -133,10 +133,10 @@ function initializeGame() {
             height: height2,
             image: image2,
             hitbox: {
-                xOffset: type2 === "tree" ? width2 * 0.4 : 10,
-                yOffset: type2 === "tree" ? height2 * 0.3 : 10,
-                width: type2 === "tree" ? width2 * 0.2 : width2 - 20,
-                height: type2 === "tree" ? height2 * 0.7 : height2 - 20,
+                xOffset: type2 === "tree" ? width2 * 0.35 : width2 * 0.15,
+                yOffset: type2 === "tree" ? height2 * 0.15 : height2 * 0.2,
+                width: type2 === "tree" ? width2 * 0.3 : width2 * 0.7,
+                height: type2 === "tree" ? height2 * 0.7 : height2 * 0.6,
             },
             speed: obstacleSpeed,
         });
