@@ -2,6 +2,9 @@ function initializeGame() {
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
+    // Detect if the user is on a mobile device
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
     // Dynamically resize canvas for mobile
     function resizeCanvas() {
         const maxWidth = 800; // Max width for larger screens
@@ -35,31 +38,33 @@ function initializeGame() {
     let touchStartY = null;
     let touchEndY = null;
 
-    canvas.addEventListener("touchstart", (e) => {
-        touchStartY = e.touches[0].clientY;
-    });
+    if (isMobile) {
+        canvas.addEventListener("touchstart", (e) => {
+            touchStartY = e.touches[0].clientY;
+        });
 
-    canvas.addEventListener("touchend", (e) => {
-        touchEndY = e.changedTouches[0].clientY;
+        canvas.addEventListener("touchend", (e) => {
+            touchEndY = e.changedTouches[0].clientY;
 
-        if (touchStartY && touchEndY) {
-            const swipeDistance = touchEndY - touchStartY;
+            if (touchStartY && touchEndY) {
+                const swipeDistance = touchEndY - touchStartY;
 
-            if (swipeDistance > 30) {
-                // Swipe Down: Move the player based on swipe distance
-                const moveDistance = Math.min(swipeDistance / 2, canvas.height - player.y - player.height);
-                player.y += moveDistance;
-            } else if (swipeDistance < -30) {
-                // Swipe Up: Move the player based on swipe distance
-                const moveDistance = Math.min(Math.abs(swipeDistance) / 2, player.y);
-                player.y -= moveDistance;
+                if (swipeDistance > 30) {
+                    // Swipe Down: Move the player a larger distance on mobile
+                    const moveDistance = Math.min(swipeDistance * 10, canvas.height - player.y - player.height);
+                    player.y += moveDistance;
+                } else if (swipeDistance < -30) {
+                    // Swipe Up: Move the player a larger distance on mobile
+                    const moveDistance = Math.min(Math.abs(swipeDistance) * 10, player.y);
+                    player.y -= moveDistance;
+                }
+
+                // Reset touch start and end values
+                touchStartY = null;
+                touchEndY = null;
             }
-
-            // Reset touch start and end values
-            touchStartY = null;
-            touchEndY = null;
-        }
-    });
+        });
+    }
 
     function createObstacle() {
         const size = Math.random() * 50 + 20;
@@ -78,8 +83,11 @@ function initializeGame() {
         if (gameOver) return;
 
         // Move player
-        if (keys.ArrowUp && player.y > 0) player.y -= player.speed;
-        if (keys.ArrowDown && player.y < canvas.height - player.height) player.y += player.speed;
+        if (!isMobile) {
+            // Only allow keyboard controls on non-mobile devices
+            if (keys.ArrowUp && player.y > 0) player.y -= player.speed;
+            if (keys.ArrowDown && player.y < canvas.height - player.height) player.y += player.speed;
+        }
 
         obstacles.forEach((obstacle, index) => {
             obstacle.x -= obstacle.speed;
