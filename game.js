@@ -2,9 +2,6 @@ function initializeGame() {
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // Detect if the user is on a mobile device
-    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-
     // Dynamically resize canvas for mobile
     function resizeCanvas() {
         const maxWidth = 800; // Max width for larger screens
@@ -16,97 +13,58 @@ function initializeGame() {
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas(); // Initial resize
 
+    // Player setup
     const player = {
         x: 50,
-        y: canvas.height / 2 - 15,
-        width: 30,
-        height: 30,
-        color: "#4CAF50",
-        speed: 5 // Speed for keyboard controls
+        y: canvas.height / 2 - 30,
+        width: 60, // Adjusted size for logo
+        height: 60, // Adjusted size for logo
+        image: new Image(),
     };
+    player.image.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/blue-wheel-with-crown.png";
+
+    // Obstacle images
+    const treeImage = new Image();
+    treeImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/tree.png";
+
+    const rockImage = new Image();
+    rockImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/rock.png";
 
     let obstacles = [];
     let gameOver = false;
     let score = 0;
 
-    const keys = {
-        ArrowUp: false,
-        ArrowDown: false
-    };
-
-    // Mobile swipe handling
-    let touchStartY = null;
-
-    if (isMobile) {
-        canvas.addEventListener("touchstart", (e) => {
-            touchStartY = e.touches[0].clientY; // Record initial touch position
-        });
-
-        canvas.addEventListener("touchmove", (e) => {
-            const currentTouchY = e.touches[0].clientY;
-            if (touchStartY !== null) {
-                const swipeDistance = currentTouchY - touchStartY;
-
-                if (Math.abs(swipeDistance) > 10) {
-                    // Move the player incrementally during swipe
-                    const moveDistance = swipeDistance * 1.2; // Further increased sensitivity
-                    if (swipeDistance > 0) {
-                        // Swipe Down
-                        player.y = Math.min(player.y + moveDistance, canvas.height - player.height);
-                    } else {
-                        // Swipe Up
-                        player.y = Math.max(player.y + moveDistance, 0);
-                    }
-
-                    touchStartY = currentTouchY; // Update touch position for continuous movement
-                }
-            }
-        });
-
-        canvas.addEventListener("touchend", () => {
-            touchStartY = null; // Reset touch tracking
-        });
-    }
-
-    // Handle keyboard controls for PC
-    document.addEventListener("keydown", (e) => {
-        if (e.key in keys) keys[e.key] = true;
-    });
-
-    document.addEventListener("keyup", (e) => {
-        if (e.key in keys) keys[e.key] = false;
-    });
-
     function createObstacle() {
-        const size = Math.random() * 50 + 20;
-        const y = Math.random() * (canvas.height - size);
+        const type = Math.random() < 0.5 ? "tree" : "rock"; // Randomly choose obstacle type
+        const image = type === "tree" ? treeImage : rockImage;
+        const width = type === "tree" ? 100 : 100; // Tree and rock widths
+        const height = type === "tree" ? 100 : 75; // Tree and rock heights
+        const y = Math.random() * (canvas.height - height);
+
         obstacles.push({
             x: canvas.width,
             y: y,
-            width: size,
-            height: size,
-            color: "#FF5733",
-            speed: 3 + Math.random() * 2
+            width: width,
+            height: height,
+            image: image,
+            speed: 3 + Math.random() * 2,
         });
     }
 
     function update() {
         if (gameOver) return;
 
-        // Move player (Keyboard controls for PC)
-        if (!isMobile) {
-            if (keys.ArrowUp && player.y > 0) player.y -= player.speed;
-            if (keys.ArrowDown && player.y < canvas.height - player.height) player.y += player.speed;
-        }
-
+        // Move obstacles
         obstacles.forEach((obstacle, index) => {
             obstacle.x -= obstacle.speed;
 
+            // Remove obstacles that leave the screen
             if (obstacle.x + obstacle.width < 0) {
                 obstacles.splice(index, 1);
                 score++;
             }
 
+            // Check for collisions
             if (
                 player.x < obstacle.x + obstacle.width &&
                 player.x + player.width > obstacle.x &&
@@ -121,14 +79,15 @@ function initializeGame() {
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        ctx.fillStyle = player.color;
-        ctx.fillRect(player.x, player.y, player.width, player.height);
+        // Draw player
+        ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
 
+        // Draw obstacles
         obstacles.forEach((obstacle) => {
-            ctx.fillStyle = obstacle.color;
-            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            ctx.drawImage(obstacle.image, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
         });
 
+        // Draw score
         ctx.fillStyle = "#000";
         ctx.font = "20px Arial";
         ctx.fillText(`Score: ${score}`, 10, 30);
