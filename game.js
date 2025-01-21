@@ -5,6 +5,7 @@ function initializeGame() {
     // Audio setup
     const backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
     const collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
+    const pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
     let musicStarted = false;
 
     function startBackgroundMusic() {
@@ -149,6 +150,8 @@ function initializeGame() {
             if (obstacle.x > canvas.width) {
                 obstacles.splice(index, 1);
                 score++;
+                // Play point sound
+                pointSound.play().catch((error) => console.error("Point sound error:", error));
             }
 
             const playerHitbox = {
