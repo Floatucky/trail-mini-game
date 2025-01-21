@@ -90,15 +90,15 @@ function createObstacle() {
     // Randomize size for the obstacle
     const isSmall = Math.random() < 0.5; // 50% chance for small or large size
     const width = isSmall ? 50 : 100; // Small: 50px, Large: 100px
-    const height = type === "tree" ? 100 : 75; // Fixed heights for tree and rock
+    const height = type === "tree" ? 100 : 75; // Tree: 100px; Rock: 75px
     const y = Math.random() * (canvas.height - height);
 
-    // Define the hitbox for the obstacle
+    // Define the hitbox for collision detection
     const hitbox = {
-        xOffset: 10, // Reduced size for collision detection
+        xOffset: 10, // Slightly reduce collision area
         yOffset: 10,
-        width: width - 20, // Slightly smaller than the actual width
-        height: height - 20, // Slightly smaller than the actual height
+        width: width - 20,
+        height: height - 20,
     };
 
     obstacles.push({
@@ -107,7 +107,7 @@ function createObstacle() {
         width: width,
         height: height,
         image: image,
-        hitbox: hitbox, // Include the hitbox
+        hitbox: hitbox, // Attach hitbox to the obstacle
         speed: obstacleSpeed,
     });
 }
