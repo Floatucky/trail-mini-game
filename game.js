@@ -84,32 +84,62 @@ player.image.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/B
     }
 
 function createObstacle() {
-    const type = Math.random() < 0.5 ? "tree" : "rock";
-    const image = type === "tree" ? treeImage : rockImage;
+    // Create the first obstacle
+    const type1 = Math.random() < 0.5 ? "tree" : "rock";
+    const image1 = type1 === "tree" ? treeImage : rockImage;
 
-    // Randomize size for the obstacle
-    const isSmall = Math.random() < 0.5; // 50% chance for small or large size
-    const width = isSmall ? 50 : 100; // Small: 50px, Large: 100px
-    const height = isSmall ? (type === "tree" ? 50 : 40) : (type === "tree" ? 100 : 75); // Small or large height
-    const y = Math.random() * (canvas.height - height);
-
-    // Define the hitbox for collision detection
-    const hitbox = {
-        xOffset: 10, // Slightly reduce collision area
-        yOffset: 10,
-        width: width - 20,
-        height: height - 20,
-    };
+    const isSmall1 = Math.random() < 0.5;
+    const width1 = isSmall1 ? 50 : 100;
+    const height1 = isSmall1 ? (type1 === "tree" ? 50 : 40) : (type1 === "tree" ? 100 : 75);
+    const y1 = Math.random() * (canvas.height - height1);
 
     obstacles.push({
-        x: -width, // Start off-screen
-        y: y,
-        width: width,
-        height: height,
-        image: image,
-        hitbox: hitbox, // Attach hitbox to the obstacle
+        x: -width1, // Start off-screen
+        y: y1,
+        width: width1,
+        height: height1,
+        image: image1,
+        hitbox: {
+            xOffset: 10,
+            yOffset: 10,
+            width: width1 - 20,
+            height: height1 - 20,
+        },
         speed: obstacleSpeed,
     });
+
+    // Random chance to spawn a second obstacle
+    if (Math.random() < 0.3) { // 30% chance to spawn two obstacles
+        const type2 = Math.random() < 0.5 ? "tree" : "rock";
+        const image2 = type2 === "tree" ? treeImage : rockImage;
+
+        const isSmall2 = Math.random() < 0.5;
+        const width2 = isSmall2 ? 50 : 100;
+        const height2 = isSmall2 ? (type2 === "tree" ? 50 : 40) : (type2 === "tree" ? 100 : 75);
+
+        // Ensure the second obstacle doesn’t overlap the first
+        let y2;
+        if (y1 < canvas.height / 2) {
+            y2 = Math.random() * ((canvas.height - height2) / 2) + canvas.height / 2; // Place in bottom half
+        } else {
+            y2 = Math.random() * ((canvas.height - height2) / 2); // Place in top half
+        }
+
+        obstacles.push({
+            x: -width2, // Start off-screen
+            y: y2,
+            width: width2,
+            height: height2,
+            image: image2,
+            hitbox: {
+                xOffset: 10,
+                yOffset: 10,
+                width: width2 - 20,
+                height: height2 - 20,
+            },
+            speed: obstacleSpeed,
+        });
+    }
 }
 
     function update() {
