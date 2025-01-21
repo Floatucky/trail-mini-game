@@ -279,18 +279,24 @@ function initializeGame() {
         }
     }
 
-    function resetGame() {
-        gameOver = false;
-        score = 0;
-        obstacles = [];
-        obstacleSpeed = 3;
-        spawnInterval = 1500;
-        startBackgroundMusic(); // Restart background music
-        resizeCanvas();
-        clearInterval(spawnIntervalId);
-        startSpawnLoop();
-        gameLoop();
+function resetGame() {
+    gameOver = false;
+    score = 0;
+    obstacles = [];
+    obstacleSpeed = 3;
+    spawnInterval = 1500;
+
+    // Only restart background music if not already playing
+    if (!musicStarted) {
+        startBackgroundMusic();
     }
+
+    resizeCanvas();
+    clearInterval(spawnIntervalId);
+    startSpawnLoop();
+    gameLoop();
+}
+
 
     function startSpawnLoop() {
         spawnIntervalId = setInterval(() => {
