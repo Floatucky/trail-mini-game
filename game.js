@@ -227,40 +227,43 @@ function gameLoop() {
         ctx.fillText("Game Over!", canvas.width / 2, canvas.height / 2 - 50);
         ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
 
-        // Create "Play Again" button
-        const playAgainButton = document.createElement("button");
-        playAgainButton.textContent = "Play Again";
-        playAgainButton.style.position = "absolute";
-        playAgainButton.style.left = `${canvas.getBoundingClientRect().left + canvas.width / 2 - 50}px`;
-        playAgainButton.style.top = `${canvas.getBoundingClientRect().top + canvas.height / 2 + 50}px`;
-        playAgainButton.style.zIndex = "1000";
-        playAgainButton.style.padding = "10px 20px";
-        playAgainButton.style.fontSize = "16px";
-        playAgainButton.style.cursor = "pointer";
-        playAgainButton.style.border = "none";
-        playAgainButton.style.borderRadius = "5px";
-        playAgainButton.style.backgroundColor = "#4CAF50";
-        playAgainButton.style.color = "#FFF";
+        // Create "Play Again" button if it doesn't already exist
+        if (!document.getElementById("playAgainButton")) {
+            const playAgainButton = document.createElement("button");
+            playAgainButton.id = "playAgainButton";
+            playAgainButton.textContent = "Play Again";
+            playAgainButton.style.position = "absolute";
+            playAgainButton.style.left = `${canvas.getBoundingClientRect().left + canvas.width / 2 - 50}px`;
+            playAgainButton.style.top = `${canvas.getBoundingClientRect().top + canvas.height / 2 + 50}px`;
+            playAgainButton.style.zIndex = "1000";
+            playAgainButton.style.padding = "10px 20px";
+            playAgainButton.style.fontSize = "16px";
+            playAgainButton.style.cursor = "pointer";
+            playAgainButton.style.border = "none";
+            playAgainButton.style.borderRadius = "5px";
+            playAgainButton.style.backgroundColor = "#4CAF50";
+            playAgainButton.style.color = "#FFF";
 
-        document.body.appendChild(playAgainButton);
+            document.body.appendChild(playAgainButton);
 
-        // Restart the game when the button is clicked
-        playAgainButton.addEventListener("click", () => {
-            // Remove the button
-            document.body.removeChild(playAgainButton);
+            // Restart the game when the button is clicked
+            playAgainButton.addEventListener("click", () => {
+                // Remove the button
+                document.body.removeChild(playAgainButton);
 
-            // Reset game variables
-            gameOver = false;
-            score = 0;
-            obstacles = [];
-            obstacleSpeed = 3;
-            spawnInterval = 1500;
+                // Reset game variables
+                gameOver = false;
+                score = 0;
+                obstacles = [];
+                obstacleSpeed = 3;
+                spawnInterval = 1500;
 
-            // Restart the spawn loop and game loop
-            clearInterval(spawnIntervalId);
-            startSpawnLoop();
-            gameLoop();
-        });
+                // Restart the spawn loop and game loop
+                clearInterval(spawnIntervalId);
+                startSpawnLoop();
+                gameLoop();
+            });
+        }
     }
 }
 
