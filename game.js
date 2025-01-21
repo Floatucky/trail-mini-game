@@ -89,7 +89,7 @@ function createObstacle() {
 
     // Randomize size for the first obstacle
     const width1 = Math.random() < 0.5 ? 50 : 100; // Small or large
-    const height1 = type1 === "tree" ? width1 : width1 * 0.75; // Maintain aspect ratio for rock
+    const height1 = type1 === "tree" ? 100 : 75; // Tree: consistent height; Rock: fixed ratio
     const y1 = Math.random() * (canvas.height - height1);
 
     // Add the first obstacle
@@ -109,12 +109,15 @@ function createObstacle() {
 
         // Randomize size for the second obstacle
         const width2 = Math.random() < 0.5 ? 50 : 100; // Small or large
-        const height2 = type2 === "tree" ? width2 : width2 * 0.75; // Maintain aspect ratio for rock
+        const height2 = type2 === "tree" ? 100 : 75; // Tree: consistent height; Rock: fixed ratio
 
-        // Ensure the second obstacle doesn't overlap with the first
-        const y2 = Math.random() < 0.5
-            ? Math.max(0, y1 - height2 - 10) // Above the first obstacle
-            : Math.min(canvas.height - height2, y1 + height1 + 10); // Below the first obstacle
+        // Place the second obstacle above or below the first one
+        let y2;
+        if (Math.random() < 0.5) {
+            y2 = Math.max(0, y1 - height2 - 10); // Place above
+        } else {
+            y2 = Math.min(canvas.height - height2, y1 + height1 + 10); // Place below
+        }
 
         obstacles.push({
             x: -width2, // Start off-screen
