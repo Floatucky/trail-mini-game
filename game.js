@@ -285,7 +285,19 @@ function initializeGame() {
         }, spawnInterval);
     }
 
-    window.addEventListener("popmakeClose", stopAllSounds);
+    // Popup Maker Close Event Handling
+    window.addEventListener("popmakeClose", () => {
+        console.log("Global popmakeClose event triggered.");
+        stopAllSounds();
+    });
+
+    // Fallback Listener for Popup Close Elements
+    document.addEventListener("click", (e) => {
+        if (e.target.matches(".pum-close, .pum-overlay, .pum-overlay-close")) {
+            console.log("Popup close detected via click.");
+            stopAllSounds();
+        }
+    });
 
     startSpawnLoop();
     gameLoop();
