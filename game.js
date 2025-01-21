@@ -2,21 +2,35 @@ function initializeGame() {
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // Audio setup
+    // Audio setup using AudioContext
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
     const collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
     const pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
+
     let musicStarted = false;
     let audioEnabled = false;
+
+    // Attach audio to AudioContext for better control
+    const backgroundMusicNode = audioContext.createMediaElementSource(backgroundMusic);
+    const collisionSoundNode = audioContext.createMediaElementSource(collisionSound);
+    const pointSoundNode = audioContext.createMediaElementSource(pointSound);
+
+    // Connect all nodes to the audio context destination
+    backgroundMusicNode.connect(audioContext.destination);
+    collisionSoundNode.connect(audioContext.destination);
+    pointSoundNode.connect(audioContext.destination);
 
     function startBackgroundMusic() {
         if (!musicStarted) {
             backgroundMusic.loop = true;
             backgroundMusic.volume = 0.5;
-            backgroundMusic.play()
-                .then(() => console.log("Background music started"))
-                .catch((error) => console.error("Background music error:", error));
-            musicStarted = true;
+            audioContext.resume().then(() => {
+                backgroundMusic.play()
+                    .then(() => console.log("Background music started"))
+                    .catch((error) => console.error("Background music error:", error));
+                musicStarted = true;
+            });
         }
     }
 
@@ -31,11 +45,15 @@ function initializeGame() {
         pointSound.pause();
         pointSound.currentTime = 0;
 
+        audioContext.suspend().then(() => console.log("Audio context suspended."));
         musicStarted = false;
         audioEnabled = false;
     }
 
     function enableAudio() {
+        if (audioContext.state === "suspended") {
+            audioContext.resume().then(() => console.log("Audio context resumed."));
+        }
         audioEnabled = true;
     }
 
@@ -193,7 +211,7 @@ function initializeGame() {
                 playerHitbox.y + playerHitbox.height > obstacleHitbox.y
             ) {
                 if (audioEnabled && !gameOver) {
-                    collisionSound.currentTime = 0; // Reset playback
+                    collisionSound.currentTime = 0;
                     collisionSound.play().catch((error) => console.error("Collision sound error:", error));
                 }
                 gameOver = true; // Ensure no more sounds after game ends
