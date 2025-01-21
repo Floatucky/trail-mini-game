@@ -4,8 +4,8 @@ function initializeGame() {
 
     // Audio setup
     const backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
-    const collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
-    const pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
+    const collisionSoundUrl = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3";
+    const pointSoundUrl = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3";
     let musicStarted = false;
     let audioEnabled = false;
 
@@ -23,19 +23,12 @@ function initializeGame() {
     function stopAllSounds() {
         backgroundMusic.pause();
         backgroundMusic.currentTime = 0;
-        collisionSound.pause();
-        collisionSound.currentTime = 0;
-        pointSound.pause();
-        pointSound.currentTime = 0;
         musicStarted = false;
         audioEnabled = false;
     }
 
     function enableAudio() {
         audioEnabled = true;
-        // Preload audio to ensure they play correctly when triggered
-        collisionSound.load();
-        pointSound.load();
     }
 
     // Dynamically resize canvas for mobile
@@ -165,9 +158,10 @@ function initializeGame() {
             if (obstacle.x > canvas.width) {
                 obstacles.splice(index, 1);
                 score++;
-                if (audioEnabled) {
-                    pointSound.currentTime = 0;
-                    pointSound.play().catch((error) => console.error("Point sound error:", error));
+                if (audioEnabled && !gameOver) {
+                    const pointSoundInstance = new Audio(pointSoundUrl);
+                    pointSoundInstance.volume = 1.0;
+                    pointSoundInstance.play().catch((error) => console.error("Point sound error:", error));
                 }
             }
 
@@ -185,21 +179,18 @@ function initializeGame() {
                 height: obstacle.hitbox.height,
             };
 
-if (
-    playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
-    playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
-    playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
-    playerHitbox.y + playerHitbox.height > obstacleHitbox.y
-) {
-    if (audioEnabled) {
-        // Play collision sound as a one-time event
-        const collisionSoundInstance = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
-        collisionSoundInstance.volume = 1.0;
-        collisionSoundInstance.play()
-            .then(() => console.log("Collision sound playing"))
-            .catch((error) => console.error("Collision sound error:", error));
-    }
-    gameOver = true; // End the game after playing the sound
+            if (
+                playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
+                playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
+                playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
+                playerHitbox.y + playerHitbox.height > obstacleHitbox.y
+            ) {
+                if (audioEnabled && !gameOver) {
+                    const collisionSoundInstance = new Audio(collisionSoundUrl);
+                    collisionSoundInstance.volume = 1.0;
+                    collisionSoundInstance.play().catch((error) => console.error("Collision sound error:", error));
+                }
+                gameOver = true; // Ensure no more sounds after game ends
             }
         });
     }
@@ -234,7 +225,6 @@ if (
             ctx.fillText("Game Over!", canvas.width / 2, canvas.height / 2 - 50);
             ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
 
-            // Add Play Again button dynamically
             const popupContent = document.querySelector(".pum-content.popmake-content");
             if (popupContent && !document.getElementById("playAgainButton")) {
                 const playAgainButton = document.createElement("button");
@@ -271,7 +261,6 @@ if (
         }, spawnInterval);
     }
 
-    // Stop audio when popup is closed
     window.addEventListener("popmakeClose", stopAllSounds);
 
     startSpawnLoop();
