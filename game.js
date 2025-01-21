@@ -78,58 +78,70 @@ function initializeGame() {
     }
 
     function createObstacle() {
-        const type = Math.random() < 0.5 ? "tree" : "rock";
-        const image = type === "tree" ? treeImage : rockImage;
+    const type = Math.random() < 0.5 ? "tree" : "rock";
+    const image = type === "tree" ? treeImage : rockImage;
 
-        const width = type === "tree" ? 100 : 80;
-        const height = type === "tree" ? 100 : 75;
-        const y = Math.random() * (canvas.height - height);
+    const isSmall = Math.random() < 0.5;
+    const width = isSmall ? (type === "tree" ? 50 : 60) : (type === "tree" ? 100 : 80);
+    const height = isSmall ? (type === "tree" ? 50 : 40) : (type === "tree" ? 100 : 75);
+    const y = Math.random() * (canvas.height - height);
 
-        const hitbox = {
-            xOffset: type === "tree" ? 35 : 10,
-            yOffset: type === "tree" ? 15 : 10,
-            width: type === "tree" ? 30 : width - 20,
-            height: type === "tree" ? 70 : height - 20,
-        };
+    const hitbox = type === "tree"
+        ? {
+              xOffset: width * 0.4, // Focus on the trunk, exclude left/right empty space
+              yOffset: height * 0.3, // Start at the base of the circular leaves
+              width: width * 0.2, // Narrow trunk width
+              height: height * 0.7, // Cover the trunk and exclude empty top
+          }
+        : {
+              xOffset: 10, // Placeholder hitbox for rocks
+              yOffset: 10,
+              width: width - 20,
+              height: height - 20,
+          };
+
+    obstacles.push({
+        x: -width,
+        y: y,
+        width: width,
+        height: height,
+        image: image,
+        hitbox: hitbox,
+        speed: obstacleSpeed,
+    });
+
+    // Random chance to spawn a second obstacle
+    if (Math.random() < 0.3) {
+        const type2 = Math.random() < 0.5 ? "tree" : "rock";
+        const image2 = type2 === "tree" ? treeImage : rockImage;
+
+        const isSmall2 = Math.random() < 0.5;
+        const width2 = isSmall2 ? (type2 === "tree" ? 50 : 60) : (type2 === "tree" ? 100 : 80);
+        const height2 = isSmall2 ? (type2 === "tree" ? 50 : 40) : (type2 === "tree" ? 100 : 75);
+
+        let y2;
+        if (y < canvas.height / 2) {
+            y2 = Math.random() * ((canvas.height - height2) / 2) + canvas.height / 2;
+        } else {
+            y2 = Math.random() * ((canvas.height - height2) / 2);
+        }
 
         obstacles.push({
-            x: -width,
-            y,
-            width,
-            height,
-            image,
-            hitbox,
+            x: -width2,
+            y: y2,
+            width: width2,
+            height: height2,
+            image: image2,
+            hitbox: {
+                xOffset: type2 === "tree" ? width2 * 0.4 : 10,
+                yOffset: type2 === "tree" ? height2 * 0.3 : 10,
+                width: type2 === "tree" ? width2 * 0.2 : width2 - 20,
+                height: type2 === "tree" ? height2 * 0.7 : height2 - 20,
+            },
             speed: obstacleSpeed,
         });
-
-        // Randomly spawn a second obstacle
-        if (Math.random() < 0.3) {
-            const type2 = Math.random() < 0.5 ? "tree" : "rock";
-            const image2 = type2 === "tree" ? treeImage : rockImage;
-
-            const width2 = type2 === "tree" ? 100 : 80;
-            const height2 = type2 === "tree" ? 100 : 75;
-            const y2 =
-                y < canvas.height / 2
-                    ? Math.random() * ((canvas.height - height2) / 2) + canvas.height / 2
-                    : Math.random() * ((canvas.height - height2) / 2);
-
-            obstacles.push({
-                x: -width2,
-                y: y2,
-                width: width2,
-                height: height2,
-                image: image2,
-                hitbox: {
-                    xOffset: 10,
-                    yOffset: 10,
-                    width: width2 - 20,
-                    height: height2 - 20,
-                },
-                speed: obstacleSpeed,
-            });
-        }
     }
+}
 
     function update() {
         if (gameOver) return;
