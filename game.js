@@ -13,20 +13,21 @@ function initializeGame() {
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
 
-    const player = {
+const player = {
     x: canvas.width - 150, // Position near the right edge
     y: canvas.height / 2 - 20, // Center vertically (adjusted for 40px height)
-    width: 100, // Correct width for the logo
-    height: 40, // Correct height for the logo
+    width: 100, // Full logo width
+    height: 40, // Full logo height
     hitbox: {
-        xOffset: 5, // Adjusted for visible portion
-        yOffset: 5,
-        width: 90, // Reduced to exclude transparent areas
-        height: 30, // Reduced height for accurate collision detection
+        xOffset: 30, // Start 30px from the left to skip the empty left side
+        yOffset: 5,  // Start 5px from the top edge
+        width: 65,   // Cover the right portion with content
+        height: 30,  // Reduce height slightly for better alignment
     },
     image: new Image(),
 };
 player.image.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/Blue-wheel.png";
+
 
     const treeImage = new Image();
     treeImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/tree.png";
