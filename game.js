@@ -256,23 +256,27 @@ function gameLoop() {
             popupContent.appendChild(playAgainButton);
 
             // Restart the game when the button is clicked
-            playAgainButton.addEventListener("click", () => {
-                console.log("'Play Again' clicked. Restarting game...");
-                // Remove the button
-                playAgainButton.remove();
+playAgainButton.addEventListener("click", () => {
+    console.log("'Play Again' clicked. Restarting game...");
+    // Remove the button
+    playAgainButton.remove();
 
-                // Reset game variables
-                gameOver = false;
-                score = 0;
-                obstacles = [];
-                obstacleSpeed = 3;
-                spawnInterval = 1500;
+    // Reset game variables
+    gameOver = false;
+    score = 0;
+    obstacles = [];
+    obstacleSpeed = 3;
+    spawnInterval = 1500;
 
-                // Restart the spawn loop and game loop
-                clearInterval(spawnIntervalId);
-                startSpawnLoop();
-                gameLoop();
-            });
+    // Force canvas to resize
+    resizeCanvas();
+
+    // Restart the spawn loop and game loop
+    clearInterval(spawnIntervalId);
+    startSpawnLoop();
+    gameLoop();
+});
+
         } else {
             console.log("'Play Again' button already exists.");
         }
