@@ -14,15 +14,15 @@ function initializeGame() {
     resizeCanvas();
 
     const player = {
-        x: canvas.width - 110, // Start near the right edge
-        y: canvas.height / 2 - 30,
-        width: 60,
-        height: 60,
+        x: canvas.width - 150, // Position near the right edge
+        y: canvas.height / 2 - 20, // Center vertically (adjusted for 40px height)
+        width: 100, // Updated width for the new logo
+        height: 40, // Updated height for the new logo
         hitbox: {
-            xOffset: 10,
-            yOffset: 10,
-            width: 40,
-            height: 40,
+            xOffset: 5, // Adjusted for visible portion
+            yOffset: 5,
+            width: 90, // Reduced to exclude transparent areas
+            height: 30, // Reduced height for accurate collision detection
         },
         image: new Image(),
     };
