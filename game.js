@@ -4,8 +4,8 @@ function initializeGame() {
 
     // Audio setup
     const backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
-    const collisionSoundUrl = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3";
-    const pointSoundUrl = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3";
+    let collisionSoundInstance = null; // Global reference for collision sound
+    let pointSoundInstance = null; // Global reference for point sound
     let musicStarted = false;
     let audioEnabled = false;
 
@@ -21,8 +21,22 @@ function initializeGame() {
     }
 
     function stopAllSounds() {
+        console.log("Stopping all sounds.");
         backgroundMusic.pause();
         backgroundMusic.currentTime = 0;
+
+        if (collisionSoundInstance) {
+            collisionSoundInstance.pause();
+            collisionSoundInstance.currentTime = 0;
+            console.log("Collision sound stopped.");
+        }
+
+        if (pointSoundInstance) {
+            pointSoundInstance.pause();
+            pointSoundInstance.currentTime = 0;
+            console.log("Point sound stopped.");
+        }
+
         musicStarted = false;
         audioEnabled = false;
     }
@@ -159,7 +173,7 @@ function initializeGame() {
                 obstacles.splice(index, 1);
                 score++;
                 if (audioEnabled && !gameOver) {
-                    const pointSoundInstance = new Audio(pointSoundUrl);
+                    pointSoundInstance = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
                     pointSoundInstance.volume = 1.0;
                     pointSoundInstance.play().catch((error) => console.error("Point sound error:", error));
                 }
@@ -186,7 +200,7 @@ function initializeGame() {
                 playerHitbox.y + playerHitbox.height > obstacleHitbox.y
             ) {
                 if (audioEnabled && !gameOver) {
-                    const collisionSoundInstance = new Audio(collisionSoundUrl);
+                    collisionSoundInstance = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
                     collisionSoundInstance.volume = 1.0;
                     collisionSoundInstance.play().catch((error) => console.error("Collision sound error:", error));
                 }
