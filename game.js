@@ -7,6 +7,7 @@ function initializeGame() {
     const collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
     const pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
     let musicStarted = false;
+    let audioEnabled = false;
 
     function startBackgroundMusic() {
         if (!musicStarted) {
@@ -19,10 +20,22 @@ function initializeGame() {
         }
     }
 
-    function stopBackgroundMusic() {
+    function stopAllSounds() {
         backgroundMusic.pause();
         backgroundMusic.currentTime = 0;
+        collisionSound.pause();
+        collisionSound.currentTime = 0;
+        pointSound.pause();
+        pointSound.currentTime = 0;
         musicStarted = false;
+        audioEnabled = false;
+    }
+
+    function enableAudio() {
+        audioEnabled = true;
+        // Preload audio to ensure they play correctly when triggered
+        collisionSound.load();
+        pointSound.load();
     }
 
     // Dynamically resize canvas for mobile
@@ -72,6 +85,7 @@ function initializeGame() {
         if (e.key in keys) {
             keys[e.key] = true;
             startBackgroundMusic();
+            if (!audioEnabled) enableAudio();
         }
     });
 
@@ -84,6 +98,7 @@ function initializeGame() {
         canvas.addEventListener("touchstart", (e) => {
             touchStartY = e.touches[0].clientY;
             startBackgroundMusic();
+            if (!audioEnabled) enableAudio();
         });
 
         canvas.addEventListener("touchmove", (e) => {
@@ -150,8 +165,10 @@ function initializeGame() {
             if (obstacle.x > canvas.width) {
                 obstacles.splice(index, 1);
                 score++;
-                // Play point sound
-                pointSound.play().catch((error) => console.error("Point sound error:", error));
+                if (audioEnabled) {
+                    pointSound.currentTime = 0;
+                    pointSound.play().catch((error) => console.error("Point sound error:", error));
+                }
             }
 
             const playerHitbox = {
@@ -174,7 +191,10 @@ function initializeGame() {
                 playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
                 playerHitbox.y + playerHitbox.height > obstacleHitbox.y
             ) {
-                collisionSound.play().catch((error) => console.error("Collision sound error:", error));
+                if (audioEnabled) {
+                    collisionSound.currentTime = 0;
+                    collisionSound.play().catch((error) => console.error("Collision sound error:", error));
+                }
                 gameOver = true;
             }
         });
@@ -201,7 +221,7 @@ function initializeGame() {
             draw();
             requestAnimationFrame(gameLoop);
         } else {
-            stopBackgroundMusic(); // Stop music on game over
+            stopAllSounds(); // Stop all audio on game over
             ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "#FFF";
@@ -209,22 +229,6 @@ function initializeGame() {
             ctx.textAlign = "center";
             ctx.fillText("Game Over!", canvas.width / 2, canvas.height / 2 - 50);
             ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
-
-            // Add Play Again button dynamically
-            const popupContent = document.querySelector(".pum-content.popmake-content");
-            if (popupContent && !document.getElementById("playAgainButton")) {
-                const playAgainButton = document.createElement("button");
-                playAgainButton.id = "playAgainButton";
-                playAgainButton.textContent = "Play Again";
-                playAgainButton.style.cssText =
-                    "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
-                popupContent.appendChild(playAgainButton);
-
-                playAgainButton.addEventListener("click", () => {
-                    playAgainButton.remove();
-                    resetGame();
-                });
-            }
         }
     }
 
@@ -247,10 +251,8 @@ function initializeGame() {
         }, spawnInterval);
     }
 
-    // Event to stop music when popup is closed
-    window.addEventListener("popmakeClose", () => {
-        stopBackgroundMusic();
-    });
+    // Stop audio when popup is closed
+    window.addEventListener("popmakeClose", stopAllSounds);
 
     startSpawnLoop();
     gameLoop();
