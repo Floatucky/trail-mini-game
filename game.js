@@ -34,35 +34,37 @@ function initializeGame() {
         ArrowDown: false
     };
 
-    // Handle touch for mobile
-    let lastTouchY = null;
+    // Mobile swipe handling
+    let touchStartY = null;
 
     if (isMobile) {
         canvas.addEventListener("touchstart", (e) => {
-            lastTouchY = e.touches[0].clientY; // Record initial touch position
+            touchStartY = e.touches[0].clientY; // Record initial touch position
         });
 
         canvas.addEventListener("touchmove", (e) => {
             const currentTouchY = e.touches[0].clientY;
-            if (lastTouchY !== null) {
-                const swipeDistance = currentTouchY - lastTouchY;
+            if (touchStartY !== null) {
+                const swipeDistance = currentTouchY - touchStartY;
 
-                if (swipeDistance > 2) {
-                    // Swipe Down
-                    const moveDistance = Math.min(swipeDistance * 0.5, canvas.height - player.y - player.height);
-                    player.y += moveDistance;
-                } else if (swipeDistance < -2) {
-                    // Swipe Up
-                    const moveDistance = Math.min(Math.abs(swipeDistance) * 0.5, player.y);
-                    player.y -= moveDistance;
+                if (Math.abs(swipeDistance) > 10) {
+                    // Move the player incrementally during swipe
+                    const moveDistance = swipeDistance * 0.3; // Adjust sensitivity
+                    if (swipeDistance > 0) {
+                        // Swipe Down
+                        player.y = Math.min(player.y + moveDistance, canvas.height - player.height);
+                    } else {
+                        // Swipe Up
+                        player.y = Math.max(player.y + moveDistance, 0);
+                    }
+
+                    touchStartY = currentTouchY; // Update touch position for continuous movement
                 }
-
-                lastTouchY = currentTouchY; // Update last touch position for continuous movement
             }
         });
 
         canvas.addEventListener("touchend", () => {
-            lastTouchY = null; // Reset touch tracking on touch release
+            touchStartY = null; // Reset touch tracking
         });
     }
 
