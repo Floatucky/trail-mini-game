@@ -146,18 +146,24 @@ player.image.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/B
         });
     }
 
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
+function draw() {
+    // Clear canvas with the new background color
+    ctx.fillStyle = "#D2B48C"; // Trail-like tan
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        obstacles.forEach((obstacle) => {
-            ctx.drawImage(obstacle.image, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-        });
+    // Draw player
+    ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
 
-        ctx.fillStyle = "#000";
-        ctx.font = "20px Arial";
-        ctx.fillText(`Score: ${score}`, 10, 30);
-    }
+    // Draw obstacles
+    obstacles.forEach((obstacle) => {
+        ctx.drawImage(obstacle.image, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+    });
+
+    // Draw score
+    ctx.fillStyle = "#000";
+    ctx.font = "20px Arial";
+    ctx.fillText(`Score: ${score}`, 10, 30);
+}
 
     function increaseDifficulty() {
         difficultyIncrement++;
