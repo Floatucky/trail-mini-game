@@ -34,11 +34,10 @@ function initializeGame() {
     let gameOver = false;
     let score = 0;
 
-    // Input state
     const keys = { ArrowUp: false, ArrowDown: false };
     let touchStartY = null;
 
-    // Add event listeners for PC controls
+    // Event listeners for PC controls
     document.addEventListener("keydown", (e) => {
         if (e.key in keys) keys[e.key] = true;
     });
@@ -47,7 +46,7 @@ function initializeGame() {
         if (e.key in keys) keys[e.key] = false;
     });
 
-    // Add event listeners for mobile controls
+    // Event listeners for mobile controls
     if (/Mobi|Android/i.test(navigator.userAgent)) {
         canvas.addEventListener("touchstart", (e) => {
             touchStartY = e.touches[0].clientY;
@@ -79,8 +78,8 @@ function initializeGame() {
     function createObstacle() {
         const type = Math.random() < 0.5 ? "tree" : "rock";
         const image = type === "tree" ? treeImage : rockImage;
-        const width = type === "tree" ? 100 : 100;
-        const height = type === "tree" ? 100 : 75;
+        const width = type === "tree" ? 50 : 75; // Adjusted hitbox width
+        const height = type === "tree" ? 50 : 50; // Adjusted hitbox height
         const y = Math.random() * (canvas.height - height);
 
         obstacles.push({
@@ -89,6 +88,7 @@ function initializeGame() {
             width: width,
             height: height,
             image: image,
+            type: type,
             speed: 3 + Math.random() * 2,
         });
     }
@@ -96,7 +96,7 @@ function initializeGame() {
     function update() {
         if (gameOver) return;
 
-        // Move player (Keyboard controls for PC)
+        // Move player (PC controls)
         if (keys.ArrowUp && player.y > 0) player.y -= 5;
         if (keys.ArrowDown && player.y < canvas.height - player.height) player.y += 5;
 
@@ -110,12 +110,26 @@ function initializeGame() {
                 score++;
             }
 
-            // Check for collisions
+            // Check for collisions using hitboxes
+            const playerHitbox = {
+                x: player.x,
+                y: player.y,
+                width: player.width * 0.8, // Adjust for transparent areas
+                height: player.height * 0.8,
+            };
+
+            const obstacleHitbox = {
+                x: obstacle.x,
+                y: obstacle.y + (obstacle.type === "tree" ? 25 : 12.5), // Centered smaller hitbox
+                width: obstacle.width * 0.8,
+                height: obstacle.height * 0.8,
+            };
+
             if (
-                player.x < obstacle.x + obstacle.width &&
-                player.x + player.width > obstacle.x &&
-                player.y < obstacle.y + obstacle.height &&
-                player.y + player.height > obstacle.y
+                playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
+                playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
+                playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
+                playerHitbox.y + playerHitbox.height > obstacleHitbox.y
             ) {
                 gameOver = true;
             }
