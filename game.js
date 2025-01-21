@@ -227,7 +227,7 @@ function gameLoop() {
         ctx.fillText("Game Over!", canvas.width / 2, canvas.height / 2 - 50);
         ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
 
-        // Ensure the "Play Again" button is created
+        // Ensure the "Play Again" button is created and positioned correctly
         let playAgainButton = document.getElementById("playAgainButton");
         if (!playAgainButton) {
             playAgainButton = document.createElement("button");
@@ -243,6 +243,9 @@ function gameLoop() {
             playAgainButton.style.backgroundColor = "#4CAF50";
             playAgainButton.style.color = "#FFF";
 
+            document.body.appendChild(playAgainButton);
+
+            // Restart the game when the button is clicked
             playAgainButton.addEventListener("click", () => {
                 // Remove the button
                 document.body.removeChild(playAgainButton);
@@ -259,8 +262,6 @@ function gameLoop() {
                 startSpawnLoop();
                 gameLoop();
             });
-
-            document.body.appendChild(playAgainButton);
         }
 
         // Position the button relative to the canvas
