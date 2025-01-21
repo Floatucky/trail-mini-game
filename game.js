@@ -19,15 +19,20 @@ const player = {
     width: 100, // Full logo width
     height: 40, // Full logo height
     hitbox: {
-        xOffset: 30, // Start 30px from the left to skip the empty left side
+        xOffset: 10, // Start 10px from the left edge to align with the visible left side
         yOffset: 5,  // Start 5px from the top edge
-        width: 65,   // Cover the right portion with content
-        height: 30,  // Reduce height slightly for better alignment
+        width: 70,   // Focus primarily on the left portion of the logo
+        height: 30,  // Reduce height slightly for alignment
+    },
+    slantedHitbox: {
+        x1: 10,  // Top-left x position of the hitbox
+        y1: 5,   // Top-left y position of the hitbox
+        x2: 80,  // Bottom-right x position of the visible slant
+        y2: 35,  // Bottom-right y position
     },
     image: new Image(),
 };
 player.image.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/Blue-wheel.png";
-
 
     const treeImage = new Image();
     treeImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/tree.png";
