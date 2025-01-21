@@ -34,7 +34,7 @@ function initializeGame() {
         ArrowDown: false
     };
 
-    // Enhanced Touch Controls for Mobile
+    // Handle touch for mobile
     let lastTouchY = null;
 
     if (isMobile) {
@@ -47,17 +47,17 @@ function initializeGame() {
             if (lastTouchY !== null) {
                 const swipeDistance = currentTouchY - lastTouchY;
 
-                if (swipeDistance > 5) {
+                if (swipeDistance > 2) {
                     // Swipe Down
-                    const moveDistance = Math.min(swipeDistance * 3, canvas.height - player.y - player.height);
+                    const moveDistance = Math.min(swipeDistance * 0.5, canvas.height - player.y - player.height);
                     player.y += moveDistance;
-                } else if (swipeDistance < -5) {
+                } else if (swipeDistance < -2) {
                     // Swipe Up
-                    const moveDistance = Math.min(Math.abs(swipeDistance) * 3, player.y);
+                    const moveDistance = Math.min(Math.abs(swipeDistance) * 0.5, player.y);
                     player.y -= moveDistance;
                 }
 
-                lastTouchY = currentTouchY; // Update last touch position
+                lastTouchY = currentTouchY; // Update last touch position for continuous movement
             }
         });
 
@@ -65,6 +65,15 @@ function initializeGame() {
             lastTouchY = null; // Reset touch tracking on touch release
         });
     }
+
+    // Handle keyboard controls for PC
+    document.addEventListener("keydown", (e) => {
+        if (e.key in keys) keys[e.key] = true;
+    });
+
+    document.addEventListener("keyup", (e) => {
+        if (e.key in keys) keys[e.key] = false;
+    });
 
     function createObstacle() {
         const size = Math.random() * 50 + 20;
@@ -82,9 +91,8 @@ function initializeGame() {
     function update() {
         if (gameOver) return;
 
-        // Move player
+        // Move player (Keyboard controls for PC)
         if (!isMobile) {
-            // Only allow keyboard controls on non-mobile devices
             if (keys.ArrowUp && player.y > 0) player.y -= player.speed;
             if (keys.ArrowDown && player.y < canvas.height - player.height) player.y += player.speed;
         }
