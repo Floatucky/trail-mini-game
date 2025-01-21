@@ -84,29 +84,41 @@ player.image.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/B
     }
 
 function createObstacle() {
-    // Create the first obstacle
-    const type1 = Math.random() < 0.5 ? "tree" : "rock";
-    const image1 = type1 === "tree" ? treeImage : rockImage;
+    // Randomly decide obstacle type (tree or rock)
+    const type = Math.random() < 0.5 ? "tree" : "rock";
+    const image = type === "tree" ? treeImage : rockImage;
 
-    const isSmall1 = Math.random() < 0.5;
-    const width1 = isSmall1 ? 50 : 100;
-    const height1 = isSmall1 ? (type1 === "tree" ? 50 : 40) : (type1 === "tree" ? 100 : 75);
-    const y1 = Math.random() * (canvas.height - height1);
+    // Randomize size
+    const isSmall = Math.random() < 0.5;
+    const width = isSmall ? (type === "tree" ? 50 : 60) : (type === "tree" ? 100 : 80);
+    const height = isSmall ? (type === "tree" ? 50 : 40) : (type === "tree" ? 100 : 75);
+    const y = Math.random() * (canvas.height - height);
+
+    // Define hitbox based on type
+    const hitbox = type === "tree"
+        ? {
+              xOffset: width * 0.35, // Exclude the empty left and right space for trees
+              yOffset: height * 0.15, // Start below the empty top corners
+              width: width * 0.3, // Narrow to the trunk and circular leaf area
+              height: height * 0.7, // Cover the trunk and lower part
+          }
+        : {
+              xOffset: 10, // Placeholder for now, refine rock hitbox later
+              yOffset: 10,
+              width: width - 20,
+              height: height - 20,
+          };
 
     obstacles.push({
-        x: -width1, // Start off-screen
-        y: y1,
-        width: width1,
-        height: height1,
-        image: image1,
-        hitbox: {
-            xOffset: 10,
-            yOffset: 10,
-            width: width1 - 20,
-            height: height1 - 20,
-        },
+        x: -width, // Start off-screen
+        y: y,
+        width: width,
+        height: height,
+        image: image,
+        hitbox: hitbox,
         speed: obstacleSpeed,
     });
+}
 
     // Random chance to spawn a second obstacle
     if (Math.random() < 0.3) { // 30% chance to spawn two obstacles
