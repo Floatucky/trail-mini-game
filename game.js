@@ -90,7 +90,7 @@ function createObstacle() {
     // Randomize size for the obstacle
     const isSmall = Math.random() < 0.5; // 50% chance for small or large size
     const width = isSmall ? 50 : 100; // Small: 50px, Large: 100px
-    const height = type === "tree" ? 100 : 75; // Tree: 100px; Rock: 75px
+    const height = isSmall ? (type === "tree" ? 50 : 40) : (type === "tree" ? 100 : 75); // Small or large height
     const y = Math.random() * (canvas.height - height);
 
     // Define the hitbox for collision detection
