@@ -46,7 +46,10 @@ function initializeGame() {
             pointSound.currentTime = 0;
         }
 
-        audioContext.suspend().then(() => console.log("Audio context suspended."));
+        // Suspend the AudioContext only if no sounds are playing
+        if (collisionSound.paused) {
+            audioContext.suspend().then(() => console.log("Audio context suspended."));
+        }
         musicStarted = false;
         audioEnabled = false;
     }
@@ -213,14 +216,17 @@ function initializeGame() {
             ) {
                 if (audioEnabled && !gameOver) {
                     console.log("Collision detected. Playing collision sound.");
+
                     // Force collision sound playback
                     audioContext.resume().then(() => {
+                        collisionSound.pause(); // Stop any ongoing playback
                         collisionSound.currentTime = 0; // Reset playback position
                         collisionSound.play()
                             .then(() => console.log("Collision sound played successfully."))
                             .catch((error) => console.error("Collision sound play error:", error));
                     });
                 }
+
                 gameOver = true; // Ensure no more updates after collision
             }
         });
