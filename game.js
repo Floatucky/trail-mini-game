@@ -211,6 +211,11 @@ enableAudio() {
 }
 
 createObstacle(numObstacles = 1, targetY = null) {
+    if (this.obstacles.length >= 50) { // Limit to 50 obstacles
+        console.warn("Maximum obstacle count reached. Skipping generation.");
+        return;
+    }
+
     const generatedObstacles = [];
     let attempts = 0;
 
@@ -246,7 +251,6 @@ createObstacle(numObstacles = 1, targetY = null) {
     }
 
     this.obstacles.push(...generatedObstacles);
-    console.log(`${generatedObstacles.length} obstacles created at Y positions:`, generatedObstacles.map(o => o.y));
 }
 
     createPowerUp() {
@@ -266,12 +270,16 @@ createObstacle(numObstacles = 1, targetY = null) {
         }
     }
 
-    activateFullSendMode() {
+activateFullSendMode() {
+    if (!this.isFullSendMode) {
         this.isFullSendMode = true;
         this.fullSendModeTimer = 300;
         this.powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
         console.log("Full send mode activated.");
+    } else {
+        console.log("Full send mode already active. Skipping reactivation.");
     }
+}
 
 update(deltaTime) {
     const currentTime = performance.now();
@@ -321,17 +329,17 @@ update(deltaTime) {
             }
         }
 
-        this.obstacles.forEach((obstacle, index) => {
-            obstacle.x += this.obstacleSpeed;
-            if (obstacle.x > this.canvas.width) {
-                this.obstacles.splice(index, 1);
-                this.score++;
-                console.log("Obstacle removed. Score updated to:", this.score);
-                if (this.audioEnabled) {
-                    this.pointSound.currentTime = 0;
-                    this.pointSound.play().catch((error) => console.error("Point sound error:", error));
-                }
+    this.obstacles.forEach((obstacle, index) => {
+        obstacle.x += this.obstacleSpeed;
+        if (obstacle.x > this.canvas.width) {
+            this.obstacles.splice(index, 1);
+            this.score++;
+            if (this.audioEnabled) {
+                this.pointSound.currentTime = 0;
+                this.pointSound.play().catch(() => {});
             }
+        }
+    });
 
             const playerHitbox = this.player.getHitbox();
             const obstacleHitbox = obstacle.getHitbox();
@@ -380,14 +388,12 @@ update(deltaTime) {
             }
         });
 
-        this.explosions.forEach((explosion, index) => {
-            explosion.timer -= deltaTime / 16.67;
-            console.log("Explosion timer:", explosion.timer);
-            if (explosion.timer <= 0) {
-                this.explosions.splice(index, 1);
-                console.log("Explosion removed.");
-            }
-        });
+    this.explosions.forEach((explosion, index) => {
+        explosion.timer -= deltaTime / 16.67;
+        if (explosion.timer <= 0) {
+            this.explosions.splice(index, 1);
+        }
+    });
     }
 
 draw() {
