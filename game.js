@@ -7,66 +7,27 @@ function initializeGame() {
     const backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
     const collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
     const pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
+    const powerUpSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/powerup-recieved.mp3");
 
     let musicStarted = false;
     let audioEnabled = false;
 
-    // Attach audio to AudioContext for better control
-    const backgroundMusicNode = audioContext.createMediaElementSource(backgroundMusic);
-    const collisionSoundNode = audioContext.createMediaElementSource(collisionSound);
-    const pointSoundNode = audioContext.createMediaElementSource(pointSound);
+    const powerUpImage = new Image();
+    powerUpImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/Chicken-Bucket.png";
 
-    // Connect all nodes to the audio context destination
-    backgroundMusicNode.connect(audioContext.destination);
-    collisionSoundNode.connect(audioContext.destination);
-    pointSoundNode.connect(audioContext.destination);
+    // Game state variables
+    let obstacles = [];
+    let powerUps = [];
+    let gameOver = false;
+    let score = 0;
+    let obstacleSpeed = 3;
+    let spawnInterval = 1500;
+    let spawnIntervalId;
+    let isFullSendMode = false;
+    let fullSendModeTimer = 0;
 
-    function startBackgroundMusic() {
-        if (!musicStarted) {
-            backgroundMusic.loop = true;
-            backgroundMusic.volume = 0.5;
-            audioContext.resume().then(() => {
-                backgroundMusic.play()
-                    .then(() => console.log("Background music started"))
-                    .catch((error) => console.error("Background music error:", error));
-                musicStarted = true;
-            });
-        }
-    }
-
-    function stopAllSounds() {
-        console.log("Stopping all sounds.");
-        backgroundMusic.pause();
-        backgroundMusic.currentTime = 0;
-
-        collisionSound.pause();
-        collisionSound.currentTime = 0;
-
-        pointSound.pause();
-        pointSound.currentTime = 0;
-
-        audioContext.suspend().then(() => console.log("Audio context suspended."));
-        musicStarted = false;
-        audioEnabled = false;
-    }
-
-    function enableAudio() {
-        if (audioContext.state === "suspended") {
-            audioContext.resume().then(() => console.log("Audio context resumed."));
-        }
-        audioEnabled = true;
-    }
-
-    // Dynamically resize canvas for mobile
-    function resizeCanvas() {
-        const maxWidth = 800;
-        const maxHeight = 600;
-        canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
-        canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
-    }
-
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
+    const keys = { ArrowUp: false, ArrowDown: false };
+    let touchStartY = null;
 
     const player = {
         x: canvas.width - 150,
@@ -89,53 +50,48 @@ function initializeGame() {
     const rockImage = new Image();
     rockImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/rock.png";
 
-    let obstacles = [];
-    let gameOver = false;
-    let score = 0;
-    let obstacleSpeed = 3;
-    let spawnInterval = 1500;
-    let spawnIntervalId;
-
-    const keys = { ArrowUp: false, ArrowDown: false };
-    let touchStartY = null;
-
-    // Event listeners for PC controls
-    document.addEventListener("keydown", (e) => {
-        if (e.key in keys) {
-            keys[e.key] = true;
-            startBackgroundMusic();
-            if (!audioEnabled) enableAudio();
+    function startBackgroundMusic() {
+        if (!musicStarted) {
+            backgroundMusic.loop = true;
+            backgroundMusic.volume = 0.5;
+            audioContext.resume().then(() => {
+                backgroundMusic.play().then(() => {
+                    console.log("Background music started");
+                    musicStarted = true;
+                }).catch((error) => console.error("Background music error:", error));
+            });
         }
-    });
+    }
 
-    document.addEventListener("keyup", (e) => {
-        if (e.key in keys) keys[e.key] = false;
-    });
+    function stopAllSounds() {
+        backgroundMusic.pause();
+        backgroundMusic.currentTime = 0;
+        collisionSound.pause();
+        collisionSound.currentTime = 0;
+        pointSound.pause();
+        pointSound.currentTime = 0;
+        powerUpSound.pause();
+        powerUpSound.currentTime = 0;
+        audioContext.suspend().then(() => console.log("Audio context suspended."));
+        musicStarted = false;
+        audioEnabled = false;
+    }
 
-    // Event listeners for mobile controls
-    if (/Mobi|Android/i.test(navigator.userAgent)) {
-        canvas.addEventListener("touchstart", (e) => {
-            touchStartY = e.touches[0].clientY;
-            startBackgroundMusic();
-            if (!audioEnabled) enableAudio();
-        });
+    function enableAudio() {
+        if (audioContext.state === "suspended") {
+            audioContext.resume().then(() => console.log("Audio context resumed."));
+        }
+        audioEnabled = true;
+    }
 
-        canvas.addEventListener("touchmove", (e) => {
-            const currentTouchY = e.touches[0].clientY;
-            if (touchStartY !== null) {
-                const swipeDistance = currentTouchY - touchStartY;
-                const moveDistance = swipeDistance * 0.6;
-                player.y = Math.max(
-                    0,
-                    Math.min(canvas.height - player.height, player.y + moveDistance)
-                );
-                touchStartY = currentTouchY;
-            }
-        });
+    function createPowerUp() {
+        if (Math.random() < 0.1) { // 10% chance to spawn a power-up
+            const size = 50;
+            const x = Math.random() * (canvas.width - size);
+            const y = Math.random() * (canvas.height - size);
 
-        canvas.addEventListener("touchend", () => {
-            touchStartY = null;
-        });
+            powerUps.push({ x, y, size });
+        }
     }
 
     function createObstacle() {
@@ -216,17 +172,26 @@ function initializeGame() {
         }
     }
 
+    function activateFullSendMode() {
+        console.log("Activating Full Send Mode!");
+        isFullSendMode = true;
+        fullSendModeTimer = 300; // Full Send Mode lasts for 5 seconds (300 frames at 60 FPS)
+        canvas.style.backgroundColor = "#FF4500"; // Change background to indicate Full Send Mode
+        powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
+    }
+
     function update() {
         if (gameOver) return;
 
         if (keys.ArrowUp && player.y > 0) player.y -= 5;
         if (keys.ArrowDown && player.y < canvas.height - player.height) player.y += 5;
 
-        // Increase difficulty over time
-        if (score % 10 === 0 && score > 0) { // Adjust difficulty every 10 points
-            obstacleSpeed = Math.min(10, obstacleSpeed + 0.1); // Slowly increase speed, cap at 10
-            spawnInterval = Math.max(500, spawnInterval - 20); // Decrease spawn interval, min 500ms
-            startSpawnLoop(); // Restart spawning with the updated interval
+        if (isFullSendMode) {
+            fullSendModeTimer--;
+            if (fullSendModeTimer <= 0) {
+                isFullSendMode = false;
+                canvas.style.backgroundColor = "#D2B48C"; // Reset to default background
+            }
         }
 
         obstacles.forEach((obstacle, index) => {
@@ -261,16 +226,29 @@ function initializeGame() {
                 playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
                 playerHitbox.y + playerHitbox.height > obstacleHitbox.y
             ) {
-                if (audioEnabled && !gameOver) {
-                    console.log("Collision detected. Playing collision sound.");
-                    audioContext.resume().then(() => {
+                if (isFullSendMode) {
+                    obstacles.splice(index, 1);
+                    score += 2;
+                } else {
+                    if (audioEnabled && !gameOver) {
                         collisionSound.currentTime = 0;
-                        collisionSound.play()
-                            .then(() => console.log("Collision sound played successfully."))
-                            .catch((error) => console.error("Collision sound play error:", error));
-                    });
+                        collisionSound.play().catch((error) => console.error("Collision sound error:", error));
+                    }
+                    gameOver = true;
                 }
-                gameOver = true;
+            }
+        });
+
+        powerUps.forEach((powerUp, index) => {
+            const powerUpHitbox = { x: powerUp.x, y: powerUp.y, size: powerUp.size };
+            if (
+                player.x < powerUp.x + powerUp.size &&
+                player.x + player.width > powerUp.x &&
+                player.y < powerUp.y + powerUp.size &&
+                player.y + player.height > powerUp.y
+            ) {
+                powerUps.splice(index, 1);
+                activateFullSendMode();
             }
         });
     }
@@ -285,9 +263,19 @@ function initializeGame() {
             ctx.drawImage(obstacle.image, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
         });
 
+        powerUps.forEach((powerUp) => {
+            ctx.drawImage(powerUpImage, powerUp.x, powerUp.y, powerUp.size, powerUp.size);
+        });
+
         ctx.fillStyle = "#000";
         ctx.font = "20px Arial";
         ctx.fillText(`Score: ${score}`, 10, 30);
+
+        if (isFullSendMode) {
+            ctx.fillStyle = "#FFF";
+            ctx.font = "30px Arial";
+            ctx.fillText(`FULL SEND MODE! Ends in: ${Math.ceil(fullSendModeTimer / 60)}`, canvas.width / 2, 50);
+        }
     }
 
     function gameLoop() {
@@ -296,7 +284,7 @@ function initializeGame() {
             draw();
             requestAnimationFrame(gameLoop);
         } else {
-            stopAllSounds(); // Stop all audio on game over
+            stopAllSounds();
             ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "#FFF";
@@ -326,6 +314,7 @@ function initializeGame() {
         gameOver = false;
         score = 0;
         obstacles = [];
+        powerUps = [];
         obstacleSpeed = 3;
         spawnInterval = 1500;
 
@@ -343,19 +332,17 @@ function initializeGame() {
         if (spawnIntervalId) clearInterval(spawnIntervalId);
         spawnIntervalId = setInterval(() => {
             createObstacle();
+            createPowerUp();
         }, Math.max(500, spawnInterval));
     }
 
     // Popup Maker Close Event Handling
     window.addEventListener("popmakeClose", () => {
-        console.log("Global popmakeClose event triggered.");
         stopAllSounds();
     });
 
-    // Fallback Listener for Popup Close Elements
     document.addEventListener("click", (e) => {
         if (e.target.matches(".pum-close, .pum-overlay, .pum-overlay-close")) {
-            console.log("Popup close detected via click.");
             stopAllSounds();
         }
     });
