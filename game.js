@@ -1,4 +1,4 @@
-// Updated Game Code with Fixes and Additional Features with Console Logs
+// Updated Game Code with Fixes and Additional Features
 class GameObject {
     constructor(x, y, width, height, image, hitbox) {
         this.x = x;
@@ -43,7 +43,7 @@ class Game {
         };
 
         this.player = new GameObject(
-            this.canvas.width - 220, // Adjusted padding to the right edge
+            this.canvas.width - 240, // Adjusted padding to the right edge
             this.canvas.height / 2 - 20,
             100,
             40,
@@ -96,7 +96,7 @@ class Game {
         this.canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
         this.canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
 
-        this.player.x = Math.max(this.canvas.width - 220, this.canvas.width - this.player.width); // Ensure player position with padding
+        this.player.x = Math.max(this.canvas.width - 240, this.canvas.width - this.player.width); // Ensure player position with padding
         this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
 
         console.log("Canvas resized. Player position:", this.player.x, this.player.y);
@@ -213,10 +213,8 @@ class Game {
     activateFullSendMode() {
         this.isFullSendMode = true;
         this.fullSendModeTimer = 300;
-        this.canvas.style.transition = "background-color 0.5s";
-        this.canvas.style.backgroundColor = "#FFEA00"; // Yellow for full send mode
         this.powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
-        console.log("Full send mode activated. Background color set to #FFEA00.");
+        console.log("Full send mode activated.");
     }
 
     update(deltaTime) {
@@ -227,7 +225,6 @@ class Game {
             this.createPowerUp();
             this.lastSpawnTime = currentTime;
 
-            // Gradually decrease spawn interval over time
             if (this.spawnInterval > 500) {
                 this.spawnInterval -= 10;
                 console.log("Spawn interval decreased to:", this.spawnInterval);
@@ -244,12 +241,11 @@ class Game {
         }
 
         if (this.isFullSendMode) {
-            this.fullSendModeTimer -= deltaTime / 16.67; // Normalize to 60 FPS
+            this.fullSendModeTimer -= deltaTime / 16.67;
             console.log("Full send mode timer:", this.fullSendModeTimer);
             if (this.fullSendModeTimer <= 0) {
                 this.isFullSendMode = false;
-                this.canvas.style.backgroundColor = "#D2B48C";
-                console.log("Full send mode ended. Background color reverted.");
+                console.log("Full send mode ended.");
             }
         }
 
@@ -323,7 +319,7 @@ class Game {
     }
 
     draw() {
-        this.ctx.fillStyle = "#D2B48C";
+        this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         this.player.draw(this.ctx);
@@ -347,7 +343,7 @@ class Game {
             );
         }
 
-               if (this.gameOver) {
+        if (this.gameOver) {
             this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             this.ctx.fillStyle = "#FFF";
@@ -355,21 +351,6 @@ class Game {
             this.ctx.textAlign = "center";
             this.ctx.fillText("Game Over!", this.canvas.width / 2, this.canvas.height / 2 - 50);
             this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2);
-
-            const popupContent = document.querySelector(".pum-content.popmake-content");
-            if (popupContent && !document.getElementById("playAgainButton")) {
-                const playAgainButton = document.createElement("button");
-                playAgainButton.id = "playAgainButton";
-                playAgainButton.textContent = "Play Again";
-                playAgainButton.style.cssText =
-                    "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
-                popupContent.appendChild(playAgainButton);
-
-                playAgainButton.addEventListener("click", () => {
-                    playAgainButton.remove();
-                    this.resetGame();
-                });
-            }
         }
     }
 
@@ -384,7 +365,7 @@ class Game {
 
         this.resizeCanvas();
         this.lastSpawnTime = performance.now();
-        this.musicStarted = false; // Ensure music restarts
+        this.musicStarted = false;
         this.startBackgroundMusic();
         this.startGameLoop();
     }
@@ -407,5 +388,5 @@ class Game {
     }
 }
 
-// Initialize the game
 window.onload = () => new Game("gameCanvas");
+
