@@ -327,57 +327,70 @@ class Game {
         });
     }
 
-    draw() {
-        this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
+draw() {
+    this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // Draw player
+    this.player.draw(this.ctx);
+
+    // Draw obstacles
+    this.obstacles.forEach((obstacle) => obstacle.draw(this.ctx));
+
+    // Draw power-ups
+    this.powerUps.forEach((powerUp) => powerUp.draw(this.ctx));
+
+    // Draw explosions
+    this.explosions.forEach((explosion) => explosion.draw(this.ctx));
+
+    // Draw score
+    this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
+    this.ctx.font = "20px Arial";
+    this.ctx.textAlign = "left";
+    this.ctx.fillText(`Score: ${this.score}`, 10, 30);
+
+    // Display full send mode timer if active
+    if (this.isFullSendMode) {
+        this.ctx.fillStyle = "#FFF";
+        const fontSize = Math.min(30, this.canvas.width / 15); // Dynamically resize font
+        this.ctx.font = `${fontSize}px Arial`;
+        this.ctx.textAlign = "center";
+
+        const text = `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`;
+        const words = text.split(" ");
+        const line1 = words.slice(0, 3).join(" ");
+        const line2 = words.slice(3).join(" ");
+
+        this.ctx.fillText(line1, this.canvas.width / 2, this.canvas.height / 2 - fontSize);
+        this.ctx.fillText(line2, this.canvas.width / 2, this.canvas.height / 2 + fontSize);
+    }
+
+    // Display game over screen if applicable
+    if (this.gameOver) {
+        this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillStyle = "#FFF";
+        this.ctx.font = "40px Arial";
+        this.ctx.textAlign = "center";
+        this.ctx.fillText("Game Over!", this.canvas.width / 2, this.canvas.height / 2 - 50);
+        this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2);
 
-        this.player.draw(this.ctx);
+        const popupContent = document.querySelector(".pum-content.popmake-content");
+        if (popupContent && !document.getElementById("playAgainButton")) {
+            const playAgainButton = document.createElement("button");
+            playAgainButton.id = "playAgainButton";
+            playAgainButton.textContent = "Play Again";
+            playAgainButton.style.cssText =
+                "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
+            popupContent.appendChild(playAgainButton);
 
-        this.obstacles.forEach((obstacle) => obstacle.draw(this.ctx));
-        this.powerUps.forEach((powerUp) => powerUp.draw(this.ctx));
-        this.explosions.forEach((explosion) => explosion.draw(this.ctx));
-
-        this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
-        this.ctx.font = "20px Arial";
-        this.ctx.textAlign = "left";
-        this.ctx.fillText(`Score: ${this.score}`, 10, 30); // Reset alignment after full send mode
-
-        if (this.isFullSendMode) {
-            this.ctx.fillStyle = "#FFF";
-            this.ctx.font = "30px Arial";
-            this.ctx.textAlign = "center";
-            this.ctx.fillText(
-                `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`,
-                this.canvas.width / 2,
-                this.canvas.height / 2
-            );
-        }
-
-        if (this.gameOver) {
-            this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            this.ctx.fillStyle = "#FFF";
-            this.ctx.font = "40px Arial";
-            this.ctx.textAlign = "center";
-            this.ctx.fillText("Game Over!", this.canvas.width / 2, this.canvas.height / 2 - 50);
-            this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2);
-
-            const popupContent = document.querySelector(".pum-content.popmake-content");
-            if (popupContent && !document.getElementById("playAgainButton")) {
-                const playAgainButton = document.createElement("button");
-                playAgainButton.id = "playAgainButton";
-                playAgainButton.textContent = "Play Again";
-                playAgainButton.style.cssText =
-                    "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
-                popupContent.appendChild(playAgainButton);
-
-                playAgainButton.addEventListener("click", () => {
-                    playAgainButton.remove();
-                    this.resetGame();
-                });
-            }
+            playAgainButton.addEventListener("click", () => {
+                playAgainButton.remove();
+                this.resetGame();
+            });
         }
     }
+}
 
     resetGame() {
         this.gameOver = false;
