@@ -142,6 +142,41 @@ function initializeGame() {
             hitbox: hitbox,
             speed: obstacleSpeed,
         });
+
+        const spawnChance = score > 100 ? 0.4 : 0.2;
+        const additionalObstacles = score > 100 ? 2 : 1;
+
+        for (let i = 0; i < additionalObstacles; i++) {
+            if (Math.random() < spawnChance) {
+                const type2 = Math.random() < 0.5 ? "tree" : "rock";
+                const image2 = type2 === "tree" ? treeImage : rockImage;
+                const width2 = isSmall ? (type2 === "tree" ? 50 : 60) : (type2 === "tree" ? 100 : 80);
+                const height2 = isSmall ? (type2 === "tree" ? 50 : 40) : (type2 === "tree" ? 100 : 75);
+
+                let y2 = Math.random() * (canvas.height - height2);
+                obstacles.push({
+                    x: -width2,
+                    y: y2,
+                    width: width2,
+                    height: height2,
+                    image: image2,
+                    hitbox: type2 === "tree"
+                        ? {
+                              xOffset: width2 * 0.35,
+                              yOffset: height2 * 0.15,
+                              width: width2 * 0.3,
+                              height: height2 * 0.7,
+                          }
+                        : {
+                              xOffset: width2 * 0.15,
+                              yOffset: height2 * 0.2,
+                              width: width2 * 0.7,
+                              height: height2 * 0.6,
+                          },
+                    speed: obstacleSpeed,
+                });
+            }
+        }
     }
 
     function createPowerUp() {
@@ -185,163 +220,6 @@ function initializeGame() {
                     pointSound.play().catch((error) => console.error("Point sound error:", error));
                 }
             }
-
-            const playerHitbox = {
-                x: player.x + player.hitbox.xOffset,
-                y: player.y + player.hitbox.yOffset,
-                width: player.hitbox.width,
-                height: player.hitbox.height,
-            };
-
-            const obstacleHitbox = {
-                x: obstacle.x + obstacle.hitbox.xOffset,
-                y: obstacle.y + obstacle.hitbox.yOffset,
-                width: obstacle.hitbox.width,
-                height: obstacle.hitbox.height,
-            };
-
-            if (
-                playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
-                playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
-                playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
-                playerHitbox.y + playerHitbox.height > obstacleHitbox.y
-            ) {
-                if (isFullSendMode) {
-                    explosions.push({ x: obstacle.x, y: obstacle.y, timer: 30 });
-                    const explosionSound = new Audio(explosionSoundUrl);
-                    explosionSound.play().catch((error) => console.error("Explosion sound error:", error));
-                    obstacles.splice(index, 1);
-                    score += 2;
-                } else {
-                    if (audioEnabled && !gameOver) {
-                        collisionSound.currentTime = 0;
-                        collisionSound.play().catch((error) => console.error("Collision sound error:", error));
-                    }
-                    gameOver = true;
-                }
-            }
-        });
-
-        powerUps.forEach((powerUp, index) => {
-            powerUp.x += powerUp.speed;
-            if (powerUp.x > canvas.width) {
-                powerUps.splice(index, 1);
-            }
-
-            const powerUpHitbox = { x: powerUp.x, y: powerUp.y, size: powerUp.size };
-            if (
-                player.x < powerUp.x + powerUp.size &&
-                player.x + player.width > powerUp.x &&
-                player.y < powerUp.y + powerUp.size &&
-                player.y + player.height > powerUp.y
-            ) {
-                powerUps.splice(index, 1);
-                activateFullSendMode();
-            }
-        });
-
-        explosions.forEach((explosion, index) => {
-            explosion.timer--;
-            if (explosion.timer <= 0) {
-                explosions.splice(index, 1);
-            }
         });
     }
-
-    function draw() {
-        ctx.fillStyle = isFullSendMode ? "#FF4500" : "#D2B48C";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
-
-        obstacles.forEach((obstacle) => {
-            ctx.drawImage(obstacle.image, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-        });
-
-        powerUps.forEach((powerUp) => {
-            ctx.drawImage(powerUpImage, powerUp.x, powerUp.y, powerUp.size, powerUp.size);
-        });
-
-        explosions.forEach((explosion) => {
-            ctx.drawImage(explosionImage, explosion.x, explosion.y, 50, 50);
-        });
-
-        ctx.fillStyle = "#000";
-        ctx.font = "20px Arial";
-        ctx.fillText(`Score: ${score}`, 10, 30);
-
-        if (isFullSendMode) {
-            ctx.fillStyle = "#FFF";
-            ctx.font = "30px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText(
-                `FULL SEND MODE! Ends in: ${Math.ceil(fullSendModeTimer / 60)}`,
-                canvas.width / 2,
-                canvas.height / 2
-            );
-        }
-    }
-
-    function gameLoop() {
-        if (!gameOver) {
-            update();
-            draw();
-            requestAnimationFrame(gameLoop);
-        } else {
-            stopAllSounds();
-            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "#FFF";
-            ctx.font = "40px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText("Game Over!", canvas.width / 2, canvas.height / 2 - 50);
-            ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
-        }
-    }
-
-    function startSpawnLoop() {
-        if (spawnIntervalId) clearInterval(spawnIntervalId);
-        spawnIntervalId = setInterval(() => {
-            createObstacle();
-            createPowerUp();
-        }, Math.max(500, spawnInterval));
-    }
-
-    document.addEventListener("keydown", (e) => {
-        if (e.key in keys) {
-            keys[e.key] = true;
-            startBackgroundMusic();
-            if (!audioEnabled) enableAudio();
-        }
-    });
-
-    document.addEventListener("keyup", (e) => {
-        if (e.key in keys) keys[e.key] = false;
-    });
-
-    canvas.addEventListener("touchstart", (e) => {
-        touchStartY = e.touches[0].clientY;
-        startBackgroundMusic();
-        if (!audioEnabled) enableAudio();
-    });
-
-    canvas.addEventListener("touchmove", (e) => {
-        const currentTouchY = e.touches[0].clientY;
-        if (touchStartY !== null) {
-            const swipeDistance = currentTouchY - touchStartY;
-            const moveDistance = swipeDistance * 0.6;
-            player.y = Math.max(
-                0,
-                Math.min(canvas.height - player.height, player.y + moveDistance)
-            );
-            touchStartY = currentTouchY;
-        }
-    });
-
-    canvas.addEventListener("touchend", () => {
-        touchStartY = null;
-    });
-
-    startSpawnLoop();
-    gameLoop();
 }
