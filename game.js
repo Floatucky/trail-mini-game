@@ -41,14 +41,14 @@ class Game {
             explosion: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Explosion.png"),
         };
 
-        this.player = new GameObject(
-            this.canvas.width - 150,
-            this.canvas.height / 2 - 20,
-            100,
-            40,
-            this.images.player,
-            { xOffset: 5, yOffset: 10, width: 85, height: 25 }
-        );
+this.player = new GameObject(
+    this.canvas.width - 180, // Added padding on the right edge
+    this.canvas.height / 2 - 20,
+    100,
+    40,
+    this.images.player,
+    { xOffset: 5, yOffset: 10, width: 85, height: 25 }
+);
 
         this.obstacles = [];
         this.powerUps = [];
@@ -203,13 +203,13 @@ class Game {
         }
     }
 
-    activateFullSendMode() {
-        this.isFullSendMode = true;
-        this.fullSendModeTimer = 300;
-        this.canvas.style.transition = "background-color 0.5s";
-        this.canvas.style.backgroundColor = "#FFEA00";
-        this.powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
-    }
+activateFullSendMode() {
+    this.isFullSendMode = true;
+    this.fullSendModeTimer = 300;
+    this.canvas.style.transition = "background-color 0.5s";
+    this.canvas.style.backgroundColor = "#FFEA00"; // Changed background color to yellow
+    this.powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
+}
 
     update(deltaTime) {
         const currentTime = performance.now();
@@ -290,12 +290,13 @@ class Game {
             }
         });
 
-        this.explosions.forEach((explosion, index) => {
-            explosion.timer -= deltaTime / 16.67;
-            if (explosion.timer <= 0) {
-                this.explosions.splice(index, 1);
-            }
-        });
+this.explosions.forEach((explosion, index) => {
+    explosion.timer -= deltaTime / 16.67;
+    if (explosion.timer <= 0) {
+        this.explosions.splice(index, 1); // Explosion disappears after timer expires
+    }
+});
+
     }
 
     draw() {
