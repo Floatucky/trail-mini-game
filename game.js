@@ -96,6 +96,10 @@ function initializeGame() {
         const maxHeight = 600;
         canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
         canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
+
+        // Ensure player is within bounds
+        player.x = Math.min(player.x, canvas.width - player.width);
+        player.y = Math.min(player.y, canvas.height - player.height);
     }
 
     window.addEventListener("resize", resizeCanvas);
@@ -191,7 +195,7 @@ function initializeGame() {
         console.log("Background color changed to #FF4500 for Full Send Mode.");
         powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
     }
-
+    
     function update() {
         if (gameOver) return;
 
