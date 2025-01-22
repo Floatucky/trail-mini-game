@@ -205,7 +205,7 @@ enableAudio() {
 }
 
 createObstacle(numObstacles = 1, targetY = null) {
-    if (this.obstacles.length >= 50) { // Limit to 50 obstacles
+    if (this.obstacles.length >= 30) { // Limit to 30 obstacles
         console.warn("Maximum obstacle count reached. Skipping generation.");
         return;
     }
@@ -293,17 +293,18 @@ update(deltaTime) {
     }
 
     // Adjust for regular spawning
-    if (currentTime - this.lastSpawnTime > this.spawnInterval) {
-        const numObstacles = Math.random() < 0.5 ? 1 : (this.score > 100 ? 3 : 2);
-        this.createObstacle(numObstacles);
-        this.createPowerUp();
-        this.lastSpawnTime = currentTime;
+if (currentTime - this.lastSpawnTime > this.spawnInterval) {
+    const numObstacles = this.score > 150 ? 1 : Math.random() < 0.5 ? 1 : 2;
+    this.createObstacle(numObstacles);
+    this.createPowerUp();
+    this.lastSpawnTime = currentTime;
 
-        if (this.spawnInterval > 500) {
-            this.spawnInterval -= 10;
-            console.log("Spawn interval decreased to:", this.spawnInterval);
-        }
+    if (this.spawnInterval > 500) {
+        this.spawnInterval -= 10;
+    } else if (this.score > 150) {
+        this.spawnInterval = Math.max(1000, this.spawnInterval); // Set a floor for spawn intervals
     }
+}
 
     if (this.keys.ArrowUp && this.player.y > 0) {
         this.player.y -= 5;
@@ -323,21 +324,10 @@ update(deltaTime) {
         }
     }
 
-    this.obstacles.forEach((obstacle, index) => {
-        obstacle.x += this.obstacleSpeed;
-        if (obstacle.x > this.canvas.width) {
-            this.obstacles.splice(index, 1);
-            this.score++;
-            if (this.audioEnabled) {
-                this.pointSound.currentTime = 0;
-                this.pointSound.play().catch(() => {});
-            }
-        }
-
-        // Move hitbox collision detection inside the loop
+this.obstacles.forEach((obstacle, index) => {
+    if (Math.abs(obstacle.x - this.player.x) < 200) { // Only check nearby obstacles
         const playerHitbox = this.player.getHitbox();
         const obstacleHitbox = obstacle.getHitbox();
-
         if (
             playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
             playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
