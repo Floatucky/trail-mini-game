@@ -61,7 +61,17 @@ class Game {
         this.musicStarted = false;
         this.audioEnabled = false;
 
-        this.resizeCanvas();
+        // Initialize the player object BEFORE resizing the canvas
+        this.player = new GameObject(
+            0, // Temporary X position; will be adjusted in `resizeCanvas`
+            0, // Temporary Y position; will be adjusted in `resizeCanvas`
+            100,
+            40,
+            this.images.player,
+            { xOffset: 5, yOffset: 10, width: 85, height: 25 }
+        );
+
+        this.resizeCanvas(); // Now safe to call after player initialization
         window.addEventListener("resize", this.resizeCanvas.bind(this));
         document.addEventListener("keydown", this.handleKeyDown.bind(this));
         document.addEventListener("keyup", this.handleKeyUp.bind(this));
@@ -72,19 +82,10 @@ class Game {
         document.addEventListener("visibilitychange", this.handleVisibilityChange.bind(this));
         document.addEventListener("popupclose", this.handlePopupClose.bind(this));
 
-        // Initialize the player object after canvas dimensions are set
-        this.player = new GameObject(
-            this.canvas.width - 125,
-            this.canvas.height / 2 - 20,
-            100,
-            40,
-            this.images.player,
-            { xOffset: 5, yOffset: 10, width: 85, height: 25 }
-        );
-
         console.log("Game initialized.");
         this.startGameLoop();
     }
+}
         loadImage(src) {
         const img = new Image();
         img.src = src;
