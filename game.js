@@ -2,7 +2,7 @@ function initializeGame() {
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // Audio setup using AudioContext
+    // Audio setup
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
     const collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
@@ -15,19 +15,11 @@ function initializeGame() {
     const powerUpImage = new Image();
     powerUpImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/Chicken-Bucket.png";
 
-    // Game state variables
-    let obstacles = [];
-    let powerUps = [];
-    let gameOver = false;
-    let score = 0;
-    let obstacleSpeed = 3;
-    let spawnInterval = 1500;
-    let spawnIntervalId;
-    let isFullSendMode = false;
-    let fullSendModeTimer = 0;
+    const treeImage = new Image();
+    treeImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/tree.png";
 
-    const keys = { ArrowUp: false, ArrowDown: false };
-    let touchStartY = null;
+    const rockImage = new Image();
+    rockImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/rock.png";
 
     const player = {
         x: canvas.width - 150,
@@ -44,11 +36,19 @@ function initializeGame() {
     };
     player.image.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/Blue-wheel.png";
 
-    const treeImage = new Image();
-    treeImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/tree.png";
+    // Game state variables
+    let obstacles = [];
+    let powerUps = [];
+    let gameOver = false;
+    let score = 0;
+    let obstacleSpeed = 3;
+    let spawnInterval = 1500;
+    let spawnIntervalId;
+    let isFullSendMode = false;
+    let fullSendModeTimer = 0;
 
-    const rockImage = new Image();
-    rockImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/rock.png";
+    const keys = { ArrowUp: false, ArrowDown: false };
+    let touchStartY = null;
 
     function startBackgroundMusic() {
         if (!musicStarted) {
@@ -56,8 +56,8 @@ function initializeGame() {
             backgroundMusic.volume = 0.5;
             audioContext.resume().then(() => {
                 backgroundMusic.play().then(() => {
-                    console.log("Background music started");
                     musicStarted = true;
+                    console.log("Background music started");
                 }).catch((error) => console.error("Background music error:", error));
             });
         }
@@ -84,16 +84,6 @@ function initializeGame() {
         audioEnabled = true;
     }
 
-    function createPowerUp() {
-        if (Math.random() < 0.1) { // 10% chance to spawn a power-up
-            const size = 50;
-            const x = Math.random() * (canvas.width - size);
-            const y = Math.random() * (canvas.height - size);
-
-            powerUps.push({ x, y, size });
-        }
-    }
-
     function createObstacle() {
         const type = Math.random() < 0.5 ? "tree" : "rock";
         const image = type === "tree" ? treeImage : rockImage;
@@ -102,7 +92,6 @@ function initializeGame() {
         const width = isSmall ? (type === "tree" ? 50 : 60) : (type === "tree" ? 100 : 80);
         const height = isSmall ? (type === "tree" ? 50 : 40) : (type === "tree" ? 100 : 75);
 
-        // Occasionally target the player
         let y;
         if (Math.random() < 0.3) { // 30% chance to target player
             const offset = Math.random() * 40 - 20; // Small random offset
@@ -134,41 +123,13 @@ function initializeGame() {
             hitbox: hitbox,
             speed: obstacleSpeed,
         });
+    }
 
-        // Additional obstacles occasionally
-        const spawnChance = score > 100 ? 0.4 : 0.2;
-        const additionalObstacles = score > 100 ? 2 : 1;
-
-        for (let i = 0; i < additionalObstacles; i++) {
-            if (Math.random() < spawnChance) {
-                const type2 = Math.random() < 0.5 ? "tree" : "rock";
-                const image2 = type2 === "tree" ? treeImage : rockImage;
-                const width2 = isSmall ? (type2 === "tree" ? 50 : 60) : (type2 === "tree" ? 100 : 80);
-                const height2 = isSmall ? (type2 === "tree" ? 50 : 40) : (type2 === "tree" ? 100 : 75);
-
-                let y2 = Math.random() * (canvas.height - height2);
-                obstacles.push({
-                    x: -width2,
-                    y: y2,
-                    width: width2,
-                    height: height2,
-                    image: image2,
-                    hitbox: type2 === "tree"
-                        ? {
-                              xOffset: width2 * 0.35,
-                              yOffset: height2 * 0.15,
-                              width: width2 * 0.3,
-                              height: height2 * 0.7,
-                          }
-                        : {
-                              xOffset: width2 * 0.15,
-                              yOffset: height2 * 0.2,
-                              width: width2 * 0.7,
-                              height: height2 * 0.6,
-                          },
-                    speed: obstacleSpeed,
-                });
-            }
+    function createPowerUp() {
+        if (Math.random() < 0.1) { // 10% chance to spawn a power-up
+            const size = 50;
+            const y = Math.random() * (canvas.height - size);
+            powerUps.push({ x: -size, y, size, speed: obstacleSpeed });
         }
     }
 
@@ -240,6 +201,11 @@ function initializeGame() {
         });
 
         powerUps.forEach((powerUp, index) => {
+            powerUp.x += powerUp.speed;
+            if (powerUp.x > canvas.width) {
+                powerUps.splice(index, 1);
+            }
+
             const powerUpHitbox = { x: powerUp.x, y: powerUp.y, size: powerUp.size };
             if (
                 player.x < powerUp.x + powerUp.size &&
@@ -292,40 +258,7 @@ function initializeGame() {
             ctx.textAlign = "center";
             ctx.fillText("Game Over!", canvas.width / 2, canvas.height / 2 - 50);
             ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
-
-            const popupContent = document.querySelector(".pum-content.popmake-content");
-            if (popupContent && !document.getElementById("playAgainButton")) {
-                const playAgainButton = document.createElement("button");
-                playAgainButton.id = "playAgainButton";
-                playAgainButton.textContent = "Play Again";
-                playAgainButton.style.cssText =
-                    "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
-                popupContent.appendChild(playAgainButton);
-
-                playAgainButton.addEventListener("click", () => {
-                    playAgainButton.remove();
-                    resetGame();
-                });
-            }
         }
-    }
-
-    function resetGame() {
-        gameOver = false;
-        score = 0;
-        obstacles = [];
-        powerUps = [];
-        obstacleSpeed = 3;
-        spawnInterval = 1500;
-
-        if (!musicStarted) {
-            startBackgroundMusic();
-        }
-
-        resizeCanvas();
-        clearInterval(spawnIntervalId);
-        startSpawnLoop();
-        gameLoop();
     }
 
     function startSpawnLoop() {
@@ -336,15 +269,39 @@ function initializeGame() {
         }, Math.max(500, spawnInterval));
     }
 
-    // Popup Maker Close Event Handling
-    window.addEventListener("popmakeClose", () => {
-        stopAllSounds();
+    document.addEventListener("keydown", (e) => {
+        if (e.key in keys) {
+            keys[e.key] = true;
+            startBackgroundMusic();
+            if (!audioEnabled) enableAudio();
+        }
     });
 
-    document.addEventListener("click", (e) => {
-        if (e.target.matches(".pum-close, .pum-overlay, .pum-overlay-close")) {
-            stopAllSounds();
+    document.addEventListener("keyup", (e) => {
+        if (e.key in keys) keys[e.key] = false;
+    });
+
+    canvas.addEventListener("touchstart", (e) => {
+        touchStartY = e.touches[0].clientY;
+        startBackgroundMusic();
+        if (!audioEnabled) enableAudio();
+    });
+
+    canvas.addEventListener("touchmove", (e) => {
+        const currentTouchY = e.touches[0].clientY;
+        if (touchStartY !== null) {
+            const swipeDistance = currentTouchY - touchStartY;
+            const moveDistance = swipeDistance * 0.6;
+            player.y = Math.max(
+                0,
+                Math.min(canvas.height - player.height, player.y + moveDistance)
+            );
+            touchStartY = currentTouchY;
         }
+    });
+
+    canvas.addEventListener("touchend", () => {
+        touchStartY = null;
     });
 
     startSpawnLoop();
