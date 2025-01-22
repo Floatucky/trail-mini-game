@@ -323,41 +323,42 @@ update(deltaTime) {
             }
         }
 
-    this.obstacles.forEach((obstacle, index) => {
-        obstacle.x += this.obstacleSpeed;
-        if (obstacle.x > this.canvas.width) {
-            this.obstacles.splice(index, 1);
-            this.score++;
-            if (this.audioEnabled) {
-                this.pointSound.currentTime = 0;
-                this.pointSound.play().catch(() => {});
-            }
+this.obstacles.forEach((obstacle, index) => {
+    obstacle.x += this.obstacleSpeed;
+    if (obstacle.x > this.canvas.width) {
+        this.obstacles.splice(index, 1);
+        this.score++;
+        if (this.audioEnabled) {
+            this.pointSound.currentTime = 0;
+            this.pointSound.play().catch(() => {});
         }
-    });
+    }
 
-            const playerHitbox = this.player.getHitbox();
-            const obstacleHitbox = obstacle.getHitbox();
+    // Move hitbox collision detection inside the loop
+    const playerHitbox = this.player.getHitbox();
+    const obstacleHitbox = obstacle.getHitbox();
 
-            if (
-                playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
-                playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
-                playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
-                playerHitbox.y + playerHitbox.height > obstacleHitbox.y
-            ) {
-                if (this.isFullSendMode) {
-                    this.explosions.push(new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50 }));
-                    this.explosionSound.currentTime = 0;
-                    this.explosionSound.play().catch((error) => console.error("Explosion sound error:", error));
-                    this.obstacles.splice(index, 1);
-                    this.score += 2;
-                    console.log("Obstacle hit during full send mode. Explosion added. Score updated to:", this.score);
-                } else {
-                    this.collisionSound.currentTime = 0;
-                    this.collisionSound.play().catch((error) => console.error("Collision sound error:", error));
-                    this.gameOver = true;
-                    console.log("Collision detected. Game over.");
-                }
-        };
+    if (
+        playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
+        playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
+        playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
+        playerHitbox.y + playerHitbox.height > obstacleHitbox.y
+    ) {
+        if (this.isFullSendMode) {
+            this.explosions.push(new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50 }));
+            this.explosionSound.currentTime = 0;
+            this.explosionSound.play().catch((error) => console.error("Explosion sound error:", error));
+            this.obstacles.splice(index, 1);
+            this.score += 2;
+            console.log("Obstacle hit during full send mode. Explosion added. Score updated to:", this.score);
+        } else {
+            this.collisionSound.currentTime = 0;
+            this.collisionSound.play().catch((error) => console.error("Collision sound error:", error));
+            this.gameOver = true;
+            console.log("Collision detected. Game over.");
+        }
+    }
+});
 
         this.powerUps.forEach((powerUp, index) => {
             powerUp.x += this.obstacleSpeed;
