@@ -42,7 +42,7 @@ class Game {
         };
 
         this.player = new GameObject(
-            150,
+            this.canvas.width - 150,
             this.canvas.height / 2 - 20,
             100,
             40,
@@ -94,7 +94,7 @@ class Game {
         this.canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
         this.canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
 
-        this.player.x = Math.min(this.player.x, this.canvas.width - this.player.width);
+        this.player.x = Math.max(this.canvas.width - 150, this.canvas.width - this.player.width);
         this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
     }
 
@@ -172,7 +172,7 @@ class Game {
             : { xOffset: width * 0.15, yOffset: height * 0.2, width: width * 0.7, height: height * 0.6 };
 
         this.obstacles.push(
-            new GameObject(-width, y, width, height, image, hitbox)
+            new GameObject(this.canvas.width, y, width, height, image, hitbox)
         );
     }
 
@@ -180,7 +180,7 @@ class Game {
         if (Math.random() < 0.1) {
             const size = 50;
             const y = Math.random() * (this.canvas.height - size);
-            this.powerUps.push(new GameObject(-size, y, size, size, this.images.powerUp, { xOffset: 0, yOffset: 0, width: size, height: size }));
+            this.powerUps.push(new GameObject(this.canvas.width, y, size, size, this.images.powerUp, { xOffset: 0, yOffset: 0, width: size, height: size }));
         }
     }
 
@@ -188,7 +188,7 @@ class Game {
         this.isFullSendMode = true;
         this.fullSendModeTimer = 300;
         this.canvas.style.transition = "background-color 0.5s";
-        this.canvas.style.backgroundColor = "#FF4500";
+        this.canvas.style.backgroundColor = "#FFEA00";
         this.powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
     }
 
@@ -213,8 +213,8 @@ class Game {
         }
 
         this.obstacles.forEach((obstacle, index) => {
-            obstacle.x += this.obstacleSpeed;
-            if (obstacle.x > this.canvas.width) {
+            obstacle.x -= this.obstacleSpeed;
+            if (obstacle.x + obstacle.width < 0) {
                 this.obstacles.splice(index, 1);
                 this.score++;
                 if (this.audioEnabled) {
@@ -247,8 +247,8 @@ class Game {
         });
 
         this.powerUps.forEach((powerUp, index) => {
-            powerUp.x += this.obstacleSpeed;
-            if (powerUp.x > this.canvas.width) {
+            powerUp.x -= this.obstacleSpeed;
+            if (powerUp.x + powerUp.width < 0) {
                 this.powerUps.splice(index, 1);
             }
 
