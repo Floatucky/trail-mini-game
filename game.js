@@ -208,7 +208,11 @@ enableAudio() {
     console.log("Audio enabled and preloaded.");
 }
 
-    createObstacle() {
+createObstacle(numObstacles = 1) {
+    const generatedObstacles = [];
+    let attempts = 0;
+
+    while (generatedObstacles.length < numObstacles && attempts < 10) {
         const type = Math.random() < 0.5 ? "tree" : "rock";
         const image = this.images[type];
         const isSmall = Math.random() < 0.5;
@@ -220,12 +224,24 @@ enableAudio() {
             ? { xOffset: width * 0.35, yOffset: height * 0.15, width: width * 0.3, height: height * 0.7 }
             : { xOffset: width * 0.15, yOffset: height * 0.2, width: width * 0.7, height: height * 0.6 };
 
-        this.obstacles.push(
-            new GameObject(-width, y, width, height, image, hitbox)
-        );
+        // Check for overlap
+        const isOverlapping = this.obstacles.concat(generatedObstacles).some(obstacle => {
+            return (
+                y < obstacle.y + obstacle.height &&
+                y + height > obstacle.y
+            );
+        });
 
-        console.log("Obstacle created:", type, "at Y:", y);
+        if (!isOverlapping) {
+            generatedObstacles.push(new GameObject(-width, y, width, height, image, hitbox));
+        }
+
+        attempts++;
     }
+
+    this.obstacles.push(...generatedObstacles);
+    console.log(`${generatedObstacles.length} obstacles created at Y positions:`, generatedObstacles.map(o => o.y));
+}
 
     createPowerUp() {
         if (Math.random() < 0.1) {
@@ -254,16 +270,17 @@ enableAudio() {
     update(deltaTime) {
         const currentTime = performance.now();
 
-        if (currentTime - this.lastSpawnTime > this.spawnInterval) {
-            this.createObstacle();
-            this.createPowerUp();
-            this.lastSpawnTime = currentTime;
+if (currentTime - this.lastSpawnTime > this.spawnInterval) {
+    const numObstacles = this.score > 100 ? 3 : 2; // Spawn 2 or 3 obstacles based on score
+    this.createObstacle(numObstacles);
+    this.createPowerUp();
+    this.lastSpawnTime = currentTime;
 
-            if (this.spawnInterval > 500) {
-                this.spawnInterval -= 10;
-                console.log("Spawn interval decreased to:", this.spawnInterval);
-            }
-        }
+    if (this.spawnInterval > 500) {
+        this.spawnInterval -= 10;
+        console.log("Spawn interval decreased to:", this.spawnInterval);
+    }
+}
 
         if (this.keys.ArrowUp && this.player.y > 0) {
             this.player.y -= 5;
