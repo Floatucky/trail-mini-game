@@ -79,6 +79,7 @@ class Game {
 
         document.addEventListener("visibilitychange", this.handleVisibilityChange.bind(this));
 
+        console.log("Game initialized.");
         this.startGameLoop();
     }
 
@@ -96,6 +97,8 @@ class Game {
 
         this.player.x = Math.max(this.canvas.width - 220, this.canvas.width - this.player.width); // Ensure player position with padding
         this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
+
+        console.log("Canvas resized. Player position:", this.player.x, this.player.y);
     }
 
     handleKeyDown(e) {
@@ -103,17 +106,22 @@ class Game {
             this.keys[e.key] = true;
             this.startBackgroundMusic();
             if (!this.audioEnabled) this.enableAudio();
+            console.log("Key down:", e.key);
         }
     }
 
     handleKeyUp(e) {
-        if (e.key in this.keys) this.keys[e.key] = false;
+        if (e.key in this.keys) {
+            this.keys[e.key] = false;
+            console.log("Key up:", e.key);
+        }
     }
 
     handleTouchStart(e) {
         this.touchStartY = e.touches[0].clientY;
         this.startBackgroundMusic();
         if (!this.audioEnabled) this.enableAudio();
+        console.log("Touch start at Y:", this.touchStartY);
     }
 
     handleTouchMove(e) {
@@ -126,18 +134,22 @@ class Game {
                 Math.min(this.canvas.height - this.player.height, this.player.y + moveDistance)
             );
             this.touchStartY = currentTouchY;
+            console.log("Touch move. New player Y:", this.player.y);
         }
     }
 
     handleTouchEnd() {
+        console.log("Touch end.");
         this.touchStartY = null;
     }
 
     handleVisibilityChange() {
         if (document.hidden && this.musicStarted) {
             this.backgroundMusic.pause();
+            console.log("Game hidden. Background music paused.");
         } else if (!document.hidden && this.musicStarted) {
             this.backgroundMusic.play();
+            console.log("Game visible. Background music resumed.");
         }
     }
 
@@ -148,6 +160,7 @@ class Game {
             this.audioContext.resume().then(() => {
                 this.backgroundMusic.play().catch((error) => console.error("Background music error:", error));
                 this.musicStarted = true;
+                console.log("Background music started.");
             });
         }
     }
@@ -155,6 +168,7 @@ class Game {
     enableAudio() {
         if (this.audioContext.state === "suspended") {
             this.audioContext.resume();
+            console.log("Audio context resumed.");
         }
         this.audioEnabled = true;
     }
@@ -174,6 +188,8 @@ class Game {
         this.obstacles.push(
             new GameObject(-width, y, width, height, image, hitbox)
         );
+
+        console.log("Obstacle created:", type, "at Y:", y);
     }
 
     createPowerUp() {
@@ -189,6 +205,7 @@ class Game {
             } while (isOverlapping);
 
             this.powerUps.push(new GameObject(-size, y, size, size, this.images.powerUp, { xOffset: 0, yOffset: 0, width: size, height: size }));
+            console.log("Power-up created at Y:", y);
         }
     }
 
@@ -198,6 +215,7 @@ class Game {
         this.canvas.style.transition = "background-color 0.5s";
         this.canvas.style.backgroundColor = "#FFEA00"; // Yellow for full send mode
         this.powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
+        console.log("Full send mode activated. Background color set to #FFEA00.");
     }
 
     update(deltaTime) {
@@ -211,17 +229,26 @@ class Game {
             // Gradually decrease spawn interval over time
             if (this.spawnInterval > 500) {
                 this.spawnInterval -= 10;
+                console.log("Spawn interval decreased to:", this.spawnInterval);
             }
         }
 
-        if (this.keys.ArrowUp && this.player.y > 0) this.player.y -= 5;
-        if (this.keys.ArrowDown && this.player.y < this.canvas.height - this.player.height) this.player.y += 5;
+        if (this.keys.ArrowUp && this.player.y > 0) {
+            this.player.y -= 5;
+            console.log("Player moved up. New Y:", this.player.y);
+        }
+        if (this.keys.ArrowDown && this.player.y < this.canvas.height - this.player.height) {
+            this.player.y += 5;
+            console.log("Player moved down. New Y:", this.player.y);
+        }
 
         if (this.isFullSendMode) {
             this.fullSendModeTimer -= deltaTime / 16.67; // Normalize to 60 FPS
+            console.log("Full send mode timer:", this.fullSendModeTimer);
             if (this.fullSendModeTimer <= 0) {
                 this.isFullSendMode = false;
                 this.canvas.style.backgroundColor = "#D2B48C";
+                console.log("Full send mode ended. Background color reverted to #D2B48C.");
             }
         }
 
@@ -230,6 +257,7 @@ class Game {
             if (obstacle.x > this.canvas.width) {
                 this.obstacles.splice(index, 1);
                 this.score++;
+                console.log("Obstacle removed. Score updated to:", this.score);
                 if (this.audioEnabled) {
                     this.pointSound.currentTime = 0;
                     this.pointSound.play().catch((error) => console.error("Point sound error:", error));
@@ -251,10 +279,12 @@ class Game {
                     this.explosionSound.play().catch((error) => console.error("Explosion sound error:", error));
                     this.obstacles.splice(index, 1);
                     this.score += 2;
+                    console.log("Obstacle hit during full send mode. Explosion added. Score updated to:", this.score);
                 } else {
                     this.collisionSound.currentTime = 0;
                     this.collisionSound.play().catch((error) => console.error("Collision sound error:", error));
                     this.gameOver = true;
+                    console.log("Collision detected. Game over.");
                 }
             }
         });
@@ -263,6 +293,7 @@ class Game {
             powerUp.x += this.obstacleSpeed;
             if (powerUp.x > this.canvas.width) {
                 this.powerUps.splice(index, 1);
+                console.log("Power-up removed after crossing screen.");
             }
 
             const playerHitbox = this.player.getHitbox();
@@ -276,13 +307,16 @@ class Game {
             ) {
                 this.powerUps.splice(index, 1);
                 this.activateFullSendMode();
+                console.log("Power-up collected. Full send mode activated.");
             }
         });
 
         this.explosions.forEach((explosion, index) => {
             explosion.timer -= deltaTime / 16.67;
+            console.log("Explosion timer:", explosion.timer);
             if (explosion.timer <= 0) {
                 this.explosions.splice(index, 1);
+                console.log("Explosion removed after timer expired.");
             }
         });
     }
@@ -319,7 +353,7 @@ class Game {
             this.ctx.font = "40px Arial";
             this.ctx.textAlign = "center";
             this.ctx.fillText("Game Over!", this.canvas.width / 2, this.canvas.height / 2 - 50);
-            this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2);
+            this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2
 
             const popupContent = document.querySelector(".pum-content.popmake-content");
             if (popupContent && !document.getElementById("playAgainButton")) {
