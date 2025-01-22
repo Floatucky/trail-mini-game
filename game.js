@@ -8,12 +8,16 @@ function initializeGame() {
     const collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
     const pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
     const powerUpSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/powerup-recieved.mp3");
+    const explosionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/explosion.mp3");
 
     let musicStarted = false;
     let audioEnabled = false;
 
     const powerUpImage = new Image();
     powerUpImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/Chicken-Bucket.png";
+
+    const explosionImage = new Image();
+    explosionImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/Explosion.png";
 
     const treeImage = new Image();
     treeImage.src = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/tree.png";
@@ -39,6 +43,7 @@ function initializeGame() {
     // Game state variables
     let obstacles = [];
     let powerUps = [];
+    let explosions = [];
     let gameOver = false;
     let score = 0;
     let obstacleSpeed = 3;
@@ -72,6 +77,8 @@ function initializeGame() {
         pointSound.currentTime = 0;
         powerUpSound.pause();
         powerUpSound.currentTime = 0;
+        explosionSound.pause();
+        explosionSound.currentTime = 0;
         audioContext.suspend().then(() => console.log("Audio context suspended."));
         musicStarted = false;
         audioEnabled = false;
@@ -188,6 +195,8 @@ function initializeGame() {
                 playerHitbox.y + playerHitbox.height > obstacleHitbox.y
             ) {
                 if (isFullSendMode) {
+                    explosions.push({ x: obstacle.x, y: obstacle.y, timer: 30 });
+                    explosionSound.play().catch((error) => console.error("Explosion sound error:", error));
                     obstacles.splice(index, 1);
                     score += 2;
                 } else {
@@ -217,6 +226,13 @@ function initializeGame() {
                 activateFullSendMode();
             }
         });
+
+        explosions.forEach((explosion, index) => {
+            explosion.timer--;
+            if (explosion.timer <= 0) {
+                explosions.splice(index, 1);
+            }
+        });
     }
 
     function draw() {
@@ -233,6 +249,10 @@ function initializeGame() {
             ctx.drawImage(powerUpImage, powerUp.x, powerUp.y, powerUp.size, powerUp.size);
         });
 
+        explosions.forEach((explosion) => {
+            ctx.drawImage(explosionImage, explosion.x, explosion.y, 50, 50);
+        });
+
         ctx.fillStyle = "#000";
         ctx.font = "20px Arial";
         ctx.fillText(`Score: ${score}`, 10, 30);
@@ -240,7 +260,12 @@ function initializeGame() {
         if (isFullSendMode) {
             ctx.fillStyle = "#FFF";
             ctx.font = "30px Arial";
-            ctx.fillText(`FULL SEND MODE! Ends in: ${Math.ceil(fullSendModeTimer / 60)}`, canvas.width / 2, 50);
+            ctx.textAlign = "center";
+            ctx.fillText(
+                `FULL SEND MODE! Ends in: ${Math.ceil(fullSendModeTimer / 60)}`,
+                canvas.width / 2,
+                canvas.height / 2
+            );
         }
     }
 
