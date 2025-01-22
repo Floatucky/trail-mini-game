@@ -350,20 +350,19 @@ draw() {
     this.ctx.fillText(`Score: ${this.score}`, 10, 30);
 
     // Display full send mode timer if active
-    if (this.isFullSendMode) {
-        this.ctx.fillStyle = "#FFF";
-        const fontSize = Math.min(30, this.canvas.width / 15); // Dynamically resize font
-        this.ctx.font = `${fontSize}px Arial`;
-        this.ctx.textAlign = "center";
+if (this.isFullSendMode) {
+    this.ctx.fillStyle = "#FFF";
+    const fontSize = Math.min(20, this.canvas.width / 20); // Resize font dynamically for mobile
+    this.ctx.font = `${fontSize}px Arial`;
+    this.ctx.textAlign = "center";
 
-        const text = `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`;
-        const words = text.split(" ");
-        const line1 = words.slice(0, 3).join(" ");
-        const line2 = words.slice(3).join(" ");
+    const text = `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`;
+    const lines = text.split("! ");
 
-        this.ctx.fillText(line1, this.canvas.width / 2, this.canvas.height / 2 - fontSize);
-        this.ctx.fillText(line2, this.canvas.width / 2, this.canvas.height / 2 + fontSize);
-    }
+    lines.forEach((line, index) => {
+        this.ctx.fillText(line, this.canvas.width / 2, this.canvas.height / 2 + fontSize * index - fontSize);
+    });
+}
 
     // Display game over screen if applicable
     if (this.gameOver) {
