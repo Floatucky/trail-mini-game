@@ -273,13 +273,15 @@ createObstacle(numObstacles = 1) {
         const currentTime = performance.now();
 
 if (currentTime - this.lastSpawnTime > this.spawnInterval) {
-    const numObstacles = this.score > 100 ? 3 : 2; // Determine the number of obstacles
-    this.createObstacle(numObstacles); // Create obstacles based on difficulty
+    // Determine number of obstacles with less than 50% probability for multiple obstacles
+    const numObstacles = Math.random() < 0.5 ? 1 : (this.score > 100 ? 3 : 2); 
+
+    this.createObstacle(numObstacles); // Generate obstacles
     this.createPowerUp(); // Optionally spawn a power-up
     this.lastSpawnTime = currentTime;
 
     if (this.spawnInterval > 500) {
-        this.spawnInterval -= 10; // Gradually decrease the spawn interval
+        this.spawnInterval -= 10; // Gradually decrease spawn interval
         console.log("Spawn interval decreased to:", this.spawnInterval);
     }
 }
