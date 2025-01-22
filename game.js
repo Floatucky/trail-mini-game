@@ -34,6 +34,8 @@ class Game {
         this.pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
         this.powerUpSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/powerup-recieved.mp3");
         this.explosionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/explosion.mp3");
+        this.stationaryTime = 0; // Time player has stayed in the same position
+        this.lastPlayerY = this.player.y; // Track the player's last position
 
         this.images = {
             player: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Blue-wheel.png"),
@@ -208,17 +210,19 @@ enableAudio() {
     console.log("Audio enabled and preloaded.");
 }
 
-createObstacle(numObstacles = 1) {
+createObstacle(numObstacles = 1, targetY = null) {
     const generatedObstacles = [];
     let attempts = 0;
 
-    while (generatedObstacles.length < numObstacles && attempts < 50) { // Increase attempts to reduce overlap failure
+    while (generatedObstacles.length < numObstacles && attempts < 50) {
         const type = Math.random() < 0.5 ? "tree" : "rock";
         const image = this.images[type];
         const isSmall = Math.random() < 0.5;
         const width = isSmall ? (type === "tree" ? 50 : 60) : (type === "tree" ? 100 : 80);
         const height = isSmall ? (type === "tree" ? 50 : 40) : (type === "tree" ? 100 : 75);
-        const y = Math.random() * (this.canvas.height - height);
+        const y = targetY !== null
+            ? Math.min(Math.max(targetY - height / 2, 0), this.canvas.height - height)
+            : Math.random() * (this.canvas.height - height);
 
         const hitbox = type === "tree"
             ? { xOffset: width * 0.35, yOffset: height * 0.15, width: width * 0.3, height: height * 0.7 }
@@ -269,22 +273,35 @@ createObstacle(numObstacles = 1) {
         console.log("Full send mode activated.");
     }
 
-    update(deltaTime) {
-        const currentTime = performance.now();
+update(deltaTime) {
+    const currentTime = performance.now();
 
-if (currentTime - this.lastSpawnTime > this.spawnInterval) {
-    // Determine number of obstacles with less than 50% probability for multiple obstacles
-    const numObstacles = Math.random() < 0.5 ? 1 : (this.score > 100 ? 3 : 2); 
-
-    this.createObstacle(numObstacles); // Generate obstacles
-    this.createPowerUp(); // Optionally spawn a power-up
-    this.lastSpawnTime = currentTime;
-
-    if (this.spawnInterval > 500) {
-        this.spawnInterval -= 10; // Gradually decrease spawn interval
-        console.log("Spawn interval decreased to:", this.spawnInterval);
+    // Check if the player is stationary
+    if (this.player.y === this.lastPlayerY) {
+        this.stationaryTime += deltaTime / 16.67; // Increment time if stationary
+    } else {
+        this.stationaryTime = 0; // Reset timer if player moves
+        this.lastPlayerY = this.player.y; // Update last position
     }
-}
+
+    // Spawn targeted obstacles if stationary too long
+    if (this.stationaryTime > 120) { // 2 seconds of stationary time
+        this.createObstacle(1, this.player.y); // Spawn obstacle near player
+        this.stationaryTime = 0; // Reset timer
+    }
+
+    // Adjust for regular spawning
+    if (currentTime - this.lastSpawnTime > this.spawnInterval) {
+        const numObstacles = Math.random() < 0.5 ? 1 : (this.score > 100 ? 3 : 2);
+        this.createObstacle(numObstacles);
+        this.createPowerUp();
+        this.lastSpawnTime = currentTime;
+
+        if (this.spawnInterval > 500) {
+            this.spawnInterval -= 10;
+            console.log("Spawn interval decreased to:", this.spawnInterval);
+        }
+    }
 
         if (this.keys.ArrowUp && this.player.y > 0) {
             this.player.y -= 5;
