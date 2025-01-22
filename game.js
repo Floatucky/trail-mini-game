@@ -85,16 +85,12 @@ class Game {
         console.log("Game initialized.");
         this.startGameLoop();
     }
-
-    // Other methods...
-}
-
     loadImage(src) {
         const img = new Image();
         img.src = src;
         return img;
     }
-
+    }
 resizeCanvas() {
     const maxWidth = 800;
     const maxHeight = 600;
