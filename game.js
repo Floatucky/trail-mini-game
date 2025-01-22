@@ -1,4 +1,3 @@
-// Updated Game Code with Fixes and Additional Features
 class GameObject {
     constructor(x, y, width, height, image, hitbox) {
         this.x = x;
