@@ -55,6 +55,17 @@ function initializeGame() {
     const keys = { ArrowUp: false, ArrowDown: false };
     let touchStartY = null;
 
+    // Resize canvas for mobile
+    function resizeCanvas() {
+        const maxWidth = 800;
+        const maxHeight = 600;
+        canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
+        canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
     function startBackgroundMusic() {
         if (!musicStarted) {
             backgroundMusic.loop = true;
@@ -238,7 +249,7 @@ function initializeGame() {
     }
 
     function draw() {
-        ctx.fillStyle = "#D2B48C";
+        ctx.fillStyle = isFullSendMode ? "#FF4500" : "#D2B48C";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
