@@ -339,7 +339,8 @@ class Game {
 
         this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
         this.ctx.font = "20px Arial";
-        this.ctx.fillText(`Score: ${this.score}`, 10, 30);
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(`Score: ${this.score}`, 10, 30); // Reset alignment after full send mode
 
         if (this.isFullSendMode) {
             this.ctx.fillStyle = "#FFF";
