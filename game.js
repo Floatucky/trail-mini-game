@@ -44,7 +44,7 @@ class Game {
         };
 
 this.player = new GameObject(
-    this.canvas.width - 100, // Dynamic padding from the right
+    this.canvas.width - 125, // Dynamic padding from the right
     this.canvas.height / 2 - 20,
     100,
     40,
@@ -100,7 +100,7 @@ resizeCanvas() {
     this.canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
 
     // Calculate dynamic position based on canvas width
-    this.player.x = this.canvas.width - 100; // Adjust as needed
+    this.player.x = this.canvas.width - 125; // Adjust as needed
     this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
 
     console.log("Canvas resized. Player position:", this.player.x, this.player.y);
