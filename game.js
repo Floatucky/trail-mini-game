@@ -43,14 +43,15 @@ class Game {
             explosion: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Explosion.png"),
         };
 
-        this.player = new GameObject(
-            this.canvas.width - 150, // Adjusted padding to the right edge
-            this.canvas.height / 2 - 20,
-            100,
-            40,
-            this.images.player,
-            { xOffset: 5, yOffset: 10, width: 85, height: 25 }
-        );
+this.player = new GameObject(
+    this.canvas.width - 150, // Dynamic padding from the right
+    this.canvas.height / 2 - 20,
+    100,
+    40,
+    this.images.player,
+    { xOffset: 5, yOffset: 10, width: 85, height: 25 }
+);
+
 
         this.obstacles = [];
         this.powerUps = [];
@@ -92,17 +93,18 @@ class Game {
         return img;
     }
 
-    resizeCanvas() {
-        const maxWidth = 800;
-        const maxHeight = 600;
-        this.canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
-        this.canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
+resizeCanvas() {
+    const maxWidth = 800;
+    const maxHeight = 600;
+    this.canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
+    this.canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
 
-        this.player.x = Math.max(this.canvas.width - 240, this.canvas.width - this.player.width); // Ensure player position with padding
-        this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
+    // Calculate dynamic position based on canvas width
+    this.player.x = this.canvas.width - 150; // Adjust as needed
+    this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
 
-        console.log("Canvas resized. Player position:", this.player.x, this.player.y);
-    }
+    console.log("Canvas resized. Player position:", this.player.x, this.player.y);
+}
 
     handleKeyDown(e) {
         if (e.key in this.keys) {
