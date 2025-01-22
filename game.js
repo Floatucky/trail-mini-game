@@ -1,3 +1,4 @@
+// Updated Game Code with Fixes and Additional Features with Console Logs
 class GameObject {
     constructor(x, y, width, height, image, hitbox) {
         this.x = x;
@@ -248,7 +249,7 @@ class Game {
             if (this.fullSendModeTimer <= 0) {
                 this.isFullSendMode = false;
                 this.canvas.style.backgroundColor = "#D2B48C";
-                console.log("Full send mode ended. Background color reverted to #D2B48C.");
+                console.log("Full send mode ended. Background color reverted.");
             }
         }
 
@@ -316,7 +317,7 @@ class Game {
             console.log("Explosion timer:", explosion.timer);
             if (explosion.timer <= 0) {
                 this.explosions.splice(index, 1);
-                console.log("Explosion removed after timer expired.");
+                console.log("Explosion removed.");
             }
         });
     }
