@@ -347,14 +347,14 @@ class Game {
             );
         }
 
-        if (this.gameOver) {
+           if (this.gameOver) {
             this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             this.ctx.fillStyle = "#FFF";
             this.ctx.font = "40px Arial";
             this.ctx.textAlign = "center";
             this.ctx.fillText("Game Over!", this.canvas.width / 2, this.canvas.height / 2 - 50);
-            this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2
+            this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2);
 
             const popupContent = document.querySelector(".pum-content.popmake-content");
             if (popupContent && !document.getElementById("playAgainButton")) {
