@@ -42,7 +42,7 @@ class Game {
         };
 
         this.player = new GameObject(
-            this.canvas.width - 200, // Adjusted padding to the right edge
+            this.canvas.width - 220, // Adjusted padding to the right edge
             this.canvas.height / 2 - 20,
             100,
             40,
@@ -94,7 +94,7 @@ class Game {
         this.canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
         this.canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
 
-        this.player.x = Math.max(this.canvas.width - 200, this.canvas.width - this.player.width); // Ensure player position with padding
+        this.player.x = Math.max(this.canvas.width - 220, this.canvas.width - this.player.width); // Ensure player position with padding
         this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
     }
 
@@ -246,7 +246,7 @@ class Game {
                 playerHitbox.y + playerHitbox.height > obstacleHitbox.y
             ) {
                 if (this.isFullSendMode) {
-                    this.explosions.push(new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50 }));
+                    this.explosions.push(new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50, timer: 30 }));
                     this.explosionSound.currentTime = 0;
                     this.explosionSound.play().catch((error) => console.error("Explosion sound error:", error));
                     this.obstacles.splice(index, 1);
