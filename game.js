@@ -108,6 +108,7 @@ class Game {
         if (e.key in this.keys) {
             this.keys[e.key] = true;
             this.startBackgroundMusic();
+            this.startSoundPlayback();
             if (!this.audioEnabled) this.enableAudio();
             console.log("Key down:", e.key);
         }
@@ -123,6 +124,7 @@ class Game {
     handleTouchStart(e) {
         this.touchStartY = e.touches[0].clientY;
         this.startBackgroundMusic();
+        this.startSoundPlayback();
         if (!this.audioEnabled) this.enableAudio();
         console.log("Touch start at Y:", this.touchStartY);
     }
@@ -175,13 +177,25 @@ class Game {
         }
     }
 
-    enableAudio() {
-        if (this.audioContext.state === "suspended") {
-            this.audioContext.resume();
-            console.log("Audio context resumed.");
-        }
-        this.audioEnabled = true;
+    startSoundPlayback() {
+    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
+        sound.play().catch((err) => console.error(`Error playing sound: ${err}`));
+        sound.pause();
+    });
+}
+
+enableAudio() {
+    if (this.audioContext.state === "suspended") {
+        this.audioContext.resume();
     }
+    // Ensure sounds are preloaded and ready to play
+    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
+        sound.play().catch(() => {}); // Attempt to pre-play the sounds to unlock them
+        sound.pause();
+    });
+    this.audioEnabled = true;
+    console.log("Audio enabled and preloaded.");
+}
 
     createObstacle() {
         const type = Math.random() < 0.5 ? "tree" : "rock";
