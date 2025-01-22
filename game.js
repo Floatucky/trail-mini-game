@@ -212,7 +212,7 @@ createObstacle(numObstacles = 1) {
     const generatedObstacles = [];
     let attempts = 0;
 
-    while (generatedObstacles.length < numObstacles && attempts < 10) {
+    while (generatedObstacles.length < numObstacles && attempts < 50) { // Increase attempts to reduce overlap failure
         const type = Math.random() < 0.5 ? "tree" : "rock";
         const image = this.images[type];
         const isSmall = Math.random() < 0.5;
@@ -224,16 +224,18 @@ createObstacle(numObstacles = 1) {
             ? { xOffset: width * 0.35, yOffset: height * 0.15, width: width * 0.3, height: height * 0.7 }
             : { xOffset: width * 0.15, yOffset: height * 0.2, width: width * 0.7, height: height * 0.6 };
 
+        const newObstacle = new GameObject(-width, y, width, height, image, hitbox);
+
         // Check for overlap
         const isOverlapping = this.obstacles.concat(generatedObstacles).some(obstacle => {
             return (
-                y < obstacle.y + obstacle.height &&
-                y + height > obstacle.y
+                newObstacle.y < obstacle.y + obstacle.height &&
+                newObstacle.y + newObstacle.height > obstacle.y
             );
         });
 
         if (!isOverlapping) {
-            generatedObstacles.push(new GameObject(-width, y, width, height, image, hitbox));
+            generatedObstacles.push(newObstacle);
         }
 
         attempts++;
@@ -271,13 +273,13 @@ createObstacle(numObstacles = 1) {
         const currentTime = performance.now();
 
 if (currentTime - this.lastSpawnTime > this.spawnInterval) {
-    const numObstacles = this.score > 100 ? 3 : 2; // Spawn 2 or 3 obstacles based on score
-    this.createObstacle(numObstacles);
-    this.createPowerUp();
+    const numObstacles = this.score > 100 ? 3 : 2; // Determine the number of obstacles
+    this.createObstacle(numObstacles); // Create obstacles based on difficulty
+    this.createPowerUp(); // Optionally spawn a power-up
     this.lastSpawnTime = currentTime;
 
     if (this.spawnInterval > 500) {
-        this.spawnInterval -= 10;
+        this.spawnInterval -= 10; // Gradually decrease the spawn interval
         console.log("Spawn interval decreased to:", this.spawnInterval);
     }
 }
