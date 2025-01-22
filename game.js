@@ -358,7 +358,7 @@ update(deltaTime) {
                     this.gameOver = true;
                     console.log("Collision detected. Game over.");
                 }
-        });
+        };
 
         this.powerUps.forEach((powerUp, index) => {
             powerUp.x += this.obstacleSpeed;
