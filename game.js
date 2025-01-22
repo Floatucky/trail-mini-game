@@ -41,14 +41,14 @@ class Game {
             explosion: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Explosion.png"),
         };
 
-this.player = new GameObject(
-    this.canvas.width - 180, // Added padding on the right edge
-    this.canvas.height / 2 - 20,
-    100,
-    40,
-    this.images.player,
-    { xOffset: 5, yOffset: 10, width: 85, height: 25 }
-);
+        this.player = new GameObject(
+            this.canvas.width - 200, // Adjusted padding to the right edge
+            this.canvas.height / 2 - 20,
+            100,
+            40,
+            this.images.player,
+            { xOffset: 5, yOffset: 10, width: 85, height: 25 }
+        );
 
         this.obstacles = [];
         this.powerUps = [];
@@ -94,7 +94,7 @@ this.player = new GameObject(
         this.canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
         this.canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
 
-        this.player.x = Math.max(this.canvas.width - 150, this.canvas.width - this.player.width);
+        this.player.x = Math.max(this.canvas.width - 200, this.canvas.width - this.player.width); // Ensure player position with padding
         this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
     }
 
@@ -174,42 +174,31 @@ this.player = new GameObject(
         this.obstacles.push(
             new GameObject(-width, y, width, height, image, hitbox)
         );
-
-        if (Math.random() < 0.3 || this.score > 100) {
-            // Randomly add another obstacle or spawn three if score > 100
-            const extraObstacles = this.score > 100 ? 2 : 1;
-            for (let i = 0; i < extraObstacles; i++) {
-                const extraType = Math.random() < 0.5 ? "tree" : "rock";
-                const extraImage = this.images[extraType];
-                const extraWidth = isSmall ? (extraType === "tree" ? 50 : 60) : (extraType === "tree" ? 100 : 80);
-                const extraHeight = isSmall ? (extraType === "tree" ? 50 : 40) : (extraType === "tree" ? 100 : 75);
-                const extraY = Math.random() * (this.canvas.height - extraHeight);
-                const extraHitbox = extraType === "tree"
-                    ? { xOffset: extraWidth * 0.35, yOffset: extraHeight * 0.15, width: extraWidth * 0.3, height: extraHeight * 0.7 }
-                    : { xOffset: extraWidth * 0.15, yOffset: extraHeight * 0.2, width: extraWidth * 0.7, height: extraHeight * 0.6 };
-
-                this.obstacles.push(
-                    new GameObject(-extraWidth, extraY, extraWidth, extraHeight, extraImage, extraHitbox)
-                );
-            }
-        }
     }
 
     createPowerUp() {
         if (Math.random() < 0.1) {
             const size = 50;
-            const y = Math.random() * (this.canvas.height - size);
+            let y;
+            let isOverlapping;
+            do {
+                y = Math.random() * (this.canvas.height - size);
+                isOverlapping = this.obstacles.some(obstacle => 
+                    y < obstacle.y + obstacle.height && y + size > obstacle.y
+                );
+            } while (isOverlapping);
+
             this.powerUps.push(new GameObject(-size, y, size, size, this.images.powerUp, { xOffset: 0, yOffset: 0, width: size, height: size }));
         }
     }
 
-activateFullSendMode() {
-    this.isFullSendMode = true;
-    this.fullSendModeTimer = 300;
-    this.canvas.style.transition = "background-color 0.5s";
-    this.canvas.style.backgroundColor = "#FFEA00"; // Changed background color to yellow
-    this.powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
-}
+    activateFullSendMode() {
+        this.isFullSendMode = true;
+        this.fullSendModeTimer = 300;
+        this.canvas.style.transition = "background-color 0.5s";
+        this.canvas.style.backgroundColor = "#FFEA00"; // Yellow for full send mode
+        this.powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
+    }
 
     update(deltaTime) {
         const currentTime = performance.now();
@@ -290,13 +279,12 @@ activateFullSendMode() {
             }
         });
 
-this.explosions.forEach((explosion, index) => {
-    explosion.timer -= deltaTime / 16.67;
-    if (explosion.timer <= 0) {
-        this.explosions.splice(index, 1); // Explosion disappears after timer expires
-    }
-});
-
+        this.explosions.forEach((explosion, index) => {
+            explosion.timer -= deltaTime / 16.67;
+            if (explosion.timer <= 0) {
+                this.explosions.splice(index, 1);
+            }
+        });
     }
 
     draw() {
