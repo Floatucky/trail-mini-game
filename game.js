@@ -44,7 +44,7 @@ class Game {
         };
 
         this.player = new GameObject(
-            this.canvas.width - 240, // Adjusted padding to the right edge
+            this.canvas.width - 150, // Adjusted padding to the right edge
             this.canvas.height / 2 - 20,
             100,
             40,
