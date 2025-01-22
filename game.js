@@ -33,8 +33,6 @@ class Game {
         this.pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
         this.powerUpSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/powerup-recieved.mp3");
         this.explosionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/explosion.mp3");
-        this.stationaryTime = 0; // Time player has stayed in the same position
-        this.lastPlayerY = this.player.y; // Track the player's last position
 
         this.images = {
             player: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Blue-wheel.png"),
@@ -43,16 +41,6 @@ class Game {
             powerUp: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Chicken-Bucket.png"),
             explosion: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Explosion.png"),
         };
-
-this.player = new GameObject(
-    this.canvas.width - 125, // Dynamic padding from the right
-    this.canvas.height / 2 - 20,
-    100,
-    40,
-    this.images.player,
-    { xOffset: 5, yOffset: 10, width: 85, height: 25 }
-);
-
 
         this.obstacles = [];
         this.powerUps = [];
@@ -84,9 +72,22 @@ this.player = new GameObject(
         document.addEventListener("visibilitychange", this.handleVisibilityChange.bind(this));
         document.addEventListener("popupclose", this.handlePopupClose.bind(this));
 
+        // Initialize the player object after canvas dimensions are set
+        this.player = new GameObject(
+            this.canvas.width - 125,
+            this.canvas.height / 2 - 20,
+            100,
+            40,
+            this.images.player,
+            { xOffset: 5, yOffset: 10, width: 85, height: 25 }
+        );
+
         console.log("Game initialized.");
         this.startGameLoop();
     }
+
+    // Other methods...
+}
 
     loadImage(src) {
         const img = new Image();
