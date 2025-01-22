@@ -105,7 +105,7 @@ function initializeGame() {
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
 
-    function createObstacle() {
+       function createObstacle() {
         const type = Math.random() < 0.5 ? "tree" : "rock";
         const image = type === "tree" ? treeImage : rockImage;
 
@@ -196,7 +196,7 @@ function initializeGame() {
         powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
     }
     
-    function update() {
+ function update() {
         if (gameOver) return;
 
         if (keys.ArrowUp && player.y > 0) player.y -= 5;
@@ -207,6 +207,7 @@ function initializeGame() {
             if (fullSendModeTimer <= 0) {
                 isFullSendMode = false;
                 canvas.style.backgroundColor = "#D2B48C";
+                console.log("Background color reverted to #D2B48C.");
             }
         }
 
@@ -215,7 +216,7 @@ function initializeGame() {
 
             if (obstacle.x > canvas.width) {
                 obstacles.splice(index, 1);
-                score++;
+                  score++;
                 if (audioEnabled && !gameOver) {
                     pointSound.currentTime = 0;
                     pointSound.play().catch((error) => console.error("Point sound error:", error));
@@ -358,9 +359,11 @@ function initializeGame() {
         explosions = [];
         obstacleSpeed = 3;
         spawnInterval = 1500;
+
         if (!musicStarted) {
             startBackgroundMusic();
         }
+
         resizeCanvas();
         clearInterval(spawnIntervalId);
         startSpawnLoop();
@@ -408,18 +411,6 @@ function initializeGame() {
 
     canvas.addEventListener("touchend", () => {
         touchStartY = null;
-    });
-
-    window.addEventListener("popmakeClose", () => {
-        console.log("Popup closed.");
-        stopAllSounds();
-    });
-
-    document.addEventListener("click", (e) => {
-        if (e.target.matches(".pum-close, .pum-overlay, .pum-overlay-close")) {
-            console.log("Popup close detected via click.");
-            stopAllSounds();
-        }
     });
 
     startSpawnLoop();
