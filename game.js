@@ -8,7 +8,7 @@ function initializeGame() {
     const collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
     const pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
     const powerUpSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/powerup-recieved.mp3");
-    const explosionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/explosion.mp3");
+    const explosionSoundUrl = "https://floatuckytrailderby.com/wp-content/uploads/2025/01/explosion.mp3";
 
     let musicStarted = false;
     let audioEnabled = false;
@@ -60,10 +60,12 @@ function initializeGame() {
             backgroundMusic.loop = true;
             backgroundMusic.volume = 0.5;
             audioContext.resume().then(() => {
-                backgroundMusic.play().then(() => {
-                    musicStarted = true;
-                    console.log("Background music started");
-                }).catch((error) => console.error("Background music error:", error));
+                backgroundMusic.play()
+                    .then(() => {
+                        musicStarted = true;
+                        console.log("Background music started");
+                    })
+                    .catch((error) => console.error("Background music error:", error));
             });
         }
     }
@@ -77,8 +79,7 @@ function initializeGame() {
         pointSound.currentTime = 0;
         powerUpSound.pause();
         powerUpSound.currentTime = 0;
-        explosionSound.pause();
-        explosionSound.currentTime = 0;
+        explosions = [];
         audioContext.suspend().then(() => console.log("Audio context suspended."));
         musicStarted = false;
         audioEnabled = false;
@@ -196,6 +197,7 @@ function initializeGame() {
             ) {
                 if (isFullSendMode) {
                     explosions.push({ x: obstacle.x, y: obstacle.y, timer: 30 });
+                    const explosionSound = new Audio(explosionSoundUrl);
                     explosionSound.play().catch((error) => console.error("Explosion sound error:", error));
                     obstacles.splice(index, 1);
                     score += 2;
