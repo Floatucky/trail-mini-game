@@ -305,82 +305,82 @@ update(deltaTime) {
         }
     }
 
-        if (this.keys.ArrowUp && this.player.y > 0) {
-            this.player.y -= 5;
-            console.log("Player moved up. New Y:", this.player.y);
-        }
-        if (this.keys.ArrowDown && this.player.y < this.canvas.height - this.player.height) {
-            this.player.y += 5;
-            console.log("Player moved down. New Y:", this.player.y);
-        }
+    if (this.keys.ArrowUp && this.player.y > 0) {
+        this.player.y -= 5;
+        console.log("Player moved up. New Y:", this.player.y);
+    }
+    if (this.keys.ArrowDown && this.player.y < this.canvas.height - this.player.height) {
+        this.player.y += 5;
+        console.log("Player moved down. New Y:", this.player.y);
+    }
 
-        if (this.isFullSendMode) {
-            this.fullSendModeTimer -= deltaTime / 16.67;
-            console.log("Full send mode timer:", this.fullSendModeTimer);
-            if (this.fullSendModeTimer <= 0) {
-                this.isFullSendMode = false;
-                console.log("Full send mode ended.");
-            }
-        }
-
-this.obstacles.forEach((obstacle, index) => {
-    obstacle.x += this.obstacleSpeed;
-    if (obstacle.x > this.canvas.width) {
-        this.obstacles.splice(index, 1);
-        this.score++;
-        if (this.audioEnabled) {
-            this.pointSound.currentTime = 0;
-            this.pointSound.play().catch(() => {});
+    if (this.isFullSendMode) {
+        this.fullSendModeTimer -= deltaTime / 16.67;
+        console.log("Full send mode timer:", this.fullSendModeTimer);
+        if (this.fullSendModeTimer <= 0) {
+            this.isFullSendMode = false;
+            console.log("Full send mode ended.");
         }
     }
 
-    // Move hitbox collision detection inside the loop
-    const playerHitbox = this.player.getHitbox();
-    const obstacleHitbox = obstacle.getHitbox();
-
-    if (
-        playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
-        playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
-        playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
-        playerHitbox.y + playerHitbox.height > obstacleHitbox.y
-    ) {
-        if (this.isFullSendMode) {
-            this.explosions.push(new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50 }));
-            this.explosionSound.currentTime = 0;
-            this.explosionSound.play().catch((error) => console.error("Explosion sound error:", error));
+    this.obstacles.forEach((obstacle, index) => {
+        obstacle.x += this.obstacleSpeed;
+        if (obstacle.x > this.canvas.width) {
             this.obstacles.splice(index, 1);
-            this.score += 2;
-            console.log("Obstacle hit during full send mode. Explosion added. Score updated to:", this.score);
-        } else {
-            this.collisionSound.currentTime = 0;
-            this.collisionSound.play().catch((error) => console.error("Collision sound error:", error));
-            this.gameOver = true;
-            console.log("Collision detected. Game over.");
+            this.score++;
+            if (this.audioEnabled) {
+                this.pointSound.currentTime = 0;
+                this.pointSound.play().catch(() => {});
+            }
         }
-    }
-});
 
-        this.powerUps.forEach((powerUp, index) => {
-            powerUp.x += this.obstacleSpeed;
-            if (powerUp.x > this.canvas.width) {
-                this.powerUps.splice(index, 1);
-                console.log("Power-up removed after crossing screen.");
+        // Move hitbox collision detection inside the loop
+        const playerHitbox = this.player.getHitbox();
+        const obstacleHitbox = obstacle.getHitbox();
+
+        if (
+            playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
+            playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
+            playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
+            playerHitbox.y + playerHitbox.height > obstacleHitbox.y
+        ) {
+            if (this.isFullSendMode) {
+                this.explosions.push(new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50 }));
+                this.explosionSound.currentTime = 0;
+                this.explosionSound.play().catch((error) => console.error("Explosion sound error:", error));
+                this.obstacles.splice(index, 1);
+                this.score += 2;
+                console.log("Obstacle hit during full send mode. Explosion added. Score updated to:", this.score);
+            } else {
+                this.collisionSound.currentTime = 0;
+                this.collisionSound.play().catch((error) => console.error("Collision sound error:", error));
+                this.gameOver = true;
+                console.log("Collision detected. Game over.");
             }
+        }
+    });
 
-            const playerHitbox = this.player.getHitbox();
-            const powerUpHitbox = powerUp.getHitbox();
+    this.powerUps.forEach((powerUp, index) => {
+        powerUp.x += this.obstacleSpeed;
+        if (powerUp.x > this.canvas.width) {
+            this.powerUps.splice(index, 1);
+            console.log("Power-up removed after crossing screen.");
+        }
 
-            if (
-                playerHitbox.x < powerUpHitbox.x + powerUpHitbox.width &&
-                playerHitbox.x + playerHitbox.width > powerUpHitbox.x &&
-                playerHitbox.y < powerUpHitbox.y + powerUpHitbox.height &&
-                playerHitbox.y + playerHitbox.height > powerUpHitbox.y
-            ) {
-                this.powerUps.splice(index, 1);
-                this.activateFullSendMode();
-                console.log("Power-up collected. Full send mode activated.");
-            }
-        });
+        const playerHitbox = this.player.getHitbox();
+        const powerUpHitbox = powerUp.getHitbox();
+
+        if (
+            playerHitbox.x < powerUpHitbox.x + powerUpHitbox.width &&
+            playerHitbox.x + playerHitbox.width > powerUpHitbox.x &&
+            playerHitbox.y < powerUpHitbox.y + powerUpHitbox.height &&
+            playerHitbox.y + playerHitbox.height > powerUpHitbox.y
+        ) {
+            this.powerUps.splice(index, 1);
+            this.activateFullSendMode();
+            console.log("Power-up collected. Full send mode activated.");
+        }
+    });
 
     this.explosions.forEach((explosion, index) => {
         explosion.timer -= deltaTime / 16.67;
@@ -388,7 +388,7 @@ this.obstacles.forEach((obstacle, index) => {
             this.explosions.splice(index, 1);
         }
     });
-    }
+}
 
 draw() {
     this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
