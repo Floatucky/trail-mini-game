@@ -45,7 +45,6 @@ class Game {
         this.obstacles = [];
         this.powerUps = [];
         this.explosions = [];
-
         this.score = 0;
         this.gameOver = false;
         this.isFullSendMode = false;
@@ -57,7 +56,6 @@ class Game {
 
         this.keys = { ArrowUp: false, ArrowDown: false };
         this.touchStartY = null;
-
         this.musicStarted = false;
         this.audioEnabled = false;
 
@@ -78,31 +76,31 @@ class Game {
         this.canvas.addEventListener("touchstart", this.handleTouchStart.bind(this));
         this.canvas.addEventListener("touchmove", this.handleTouchMove.bind(this));
         this.canvas.addEventListener("touchend", this.handleTouchEnd.bind(this));
-
         document.addEventListener("visibilitychange", this.handleVisibilityChange.bind(this));
         document.addEventListener("popupclose", this.handlePopupClose.bind(this));
 
         console.log("Game initialized.");
         this.startGameLoop();
     }
-}
-        loadImage(src) {
+
+    loadImage(src) {
         const img = new Image();
         img.src = src;
         return img;
     }
-        resizeCanvas() {
+
+    resizeCanvas() {
         const maxWidth = 800;
         const maxHeight = 600;
         this.canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
         this.canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
-    
+
         // Adjust player position dynamically
         this.player.x = this.canvas.width - 125; // Keeps the player on the right side
         this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
-    
+
         console.log("Canvas resized. Player position:", this.player.x, this.player.y);
-        }
+    }
 
     handleKeyDown(e) {
         if (e.key in this.keys) {
