@@ -160,12 +160,21 @@ resizeCanvas() {
         }
     }
 
-    handlePopupClose() {
-        if (this.musicStarted) {
-            this.backgroundMusic.pause();
-            console.log("Popup closed. Background music stopped.");
-        }
+handlePopupClose() {
+    if (this.musicStarted) {
+        this.backgroundMusic.pause();
+        this.backgroundMusic.currentTime = 0; // Reset music to the start
+        this.musicStarted = false;
     }
+
+    // Stop all other sounds
+    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
+        sound.pause();
+        sound.currentTime = 0; // Reset sound to the start
+    });
+
+    console.log("Popup closed. All sounds stopped.");
+}
 
     startBackgroundMusic() {
         if (!this.musicStarted) {
