@@ -91,6 +91,16 @@ function initializeGame() {
         audioEnabled = true;
     }
 
+    function resizeCanvas() {
+        const maxWidth = 800;
+        const maxHeight = 600;
+        canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
+        canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
     function createObstacle() {
         const type = Math.random() < 0.5 ? "tree" : "rock";
         const image = type === "tree" ? treeImage : rockImage;
@@ -130,6 +140,39 @@ function initializeGame() {
             hitbox: hitbox,
             speed: obstacleSpeed,
         });
+
+        const additionalObstacles = score > 100 ? 2 : 1;
+        for (let i = 0; i < additionalObstacles; i++) {
+            if (Math.random() < 0.2) {
+                const type2 = Math.random() < 0.5 ? "tree" : "rock";
+                const image2 = type2 === "tree" ? treeImage : rockImage;
+                const width2 = isSmall ? (type2 === "tree" ? 50 : 60) : (type2 === "tree" ? 100 : 80);
+                const height2 = isSmall ? (type2 === "tree" ? 50 : 40) : (type2 === "tree" ? 100 : 75);
+                const y2 = Math.random() * (canvas.height - height2);
+
+                obstacles.push({
+                    x: -width2,
+                    y: y2,
+                    width: width2,
+                    height: height2,
+                    image: image2,
+                    hitbox: type2 === "tree"
+                        ? {
+                            xOffset: width2 * 0.35,
+                            yOffset: height2 * 0.15,
+                            width: width2 * 0.3,
+                            height: height2 * 0.7,
+                        }
+                        : {
+                            xOffset: width2 * 0.15,
+                            yOffset: height2 * 0.2,
+                            width: width2 * 0.7,
+                            height: height2 * 0.6,
+                        },
+                    speed: obstacleSpeed,
+                });
+            }
+        }
     }
 
     function createPowerUp() {
@@ -196,6 +239,7 @@ function initializeGame() {
             ) {
                 if (isFullSendMode) {
                     explosions.push({ x: obstacle.x, y: obstacle.y, timer: 30 });
+                    explosionSound.currentTime = 0;
                     explosionSound.play().catch((error) => console.error("Explosion sound error:", error));
                     obstacles.splice(index, 1);
                     score += 2;
@@ -309,11 +353,9 @@ function initializeGame() {
         explosions = [];
         obstacleSpeed = 3;
         spawnInterval = 1500;
-
         if (!musicStarted) {
             startBackgroundMusic();
         }
-
         resizeCanvas();
         clearInterval(spawnIntervalId);
         startSpawnLoop();
@@ -361,6 +403,18 @@ function initializeGame() {
 
     canvas.addEventListener("touchend", () => {
         touchStartY = null;
+    });
+
+    window.addEventListener("popmakeClose", () => {
+        console.log("Popup closed.");
+        stopAllSounds();
+    });
+
+    document.addEventListener("click", (e) => {
+        if (e.target.matches(".pum-close, .pum-overlay, .pum-overlay-close")) {
+            console.log("Popup close detected via click.");
+            stopAllSounds();
+        }
     });
 
     startSpawnLoop();
