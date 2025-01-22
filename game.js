@@ -1,4 +1,3 @@
-// Updated Game Code with Fixes and Additional Features
 class GameObject {
     constructor(x, y, width, height, image, hitbox) {
         this.x = x;
@@ -43,7 +42,7 @@ class Game {
         };
 
         this.player = new GameObject(
-            this.canvas.width - 150,
+            150,
             this.canvas.height / 2 - 20,
             100,
             40,
@@ -173,7 +172,7 @@ class Game {
             : { xOffset: width * 0.15, yOffset: height * 0.2, width: width * 0.7, height: height * 0.6 };
 
         this.obstacles.push(
-            new GameObject(this.canvas.width, y, width, height, image, hitbox)
+            new GameObject(-width, y, width, height, image, hitbox)
         );
     }
 
@@ -181,7 +180,7 @@ class Game {
         if (Math.random() < 0.1) {
             const size = 50;
             const y = Math.random() * (this.canvas.height - size);
-            this.powerUps.push(new GameObject(this.canvas.width, y, size, size, this.images.powerUp, { xOffset: 0, yOffset: 0, width: size, height: size }));
+            this.powerUps.push(new GameObject(-size, y, size, size, this.images.powerUp, { xOffset: 0, yOffset: 0, width: size, height: size }));
         }
     }
 
@@ -214,8 +213,8 @@ class Game {
         }
 
         this.obstacles.forEach((obstacle, index) => {
-            obstacle.x -= this.obstacleSpeed;
-            if (obstacle.x + obstacle.width < 0) {
+            obstacle.x += this.obstacleSpeed;
+            if (obstacle.x > this.canvas.width) {
                 this.obstacles.splice(index, 1);
                 this.score++;
                 if (this.audioEnabled) {
@@ -248,8 +247,8 @@ class Game {
         });
 
         this.powerUps.forEach((powerUp, index) => {
-            powerUp.x -= this.obstacleSpeed;
-            if (powerUp.x + powerUp.width < 0) {
+            powerUp.x += this.obstacleSpeed;
+            if (powerUp.x > this.canvas.width) {
                 this.powerUps.splice(index, 1);
             }
 
@@ -308,7 +307,37 @@ class Game {
             this.ctx.textAlign = "center";
             this.ctx.fillText("Game Over!", this.canvas.width / 2, this.canvas.height / 2 - 50);
             this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2);
+
+            const popupContent = document.querySelector(".pum-content.popmake-content");
+            if (popupContent && !document.getElementById("playAgainButton")) {
+                const playAgainButton = document.createElement("button");
+                playAgainButton.id = "playAgainButton";
+                playAgainButton.textContent = "Play Again";
+                playAgainButton.style.cssText =
+                    "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
+                popupContent.appendChild(playAgainButton);
+
+                playAgainButton.addEventListener("click", () => {
+                    playAgainButton.remove();
+                    this.resetGame();
+                });
+            }
         }
+    }
+
+    resetGame() {
+        this.gameOver = false;
+        this.score = 0;
+        this.obstacles = [];
+        this.powerUps = [];
+        this.explosions = [];
+        this.obstacleSpeed = 3;
+        this.spawnInterval = 1500;
+
+        this.resizeCanvas();
+        this.lastSpawnTime = performance.now();
+        this.startBackgroundMusic();
+        this.startGameLoop();
     }
 
     startGameLoop() {
@@ -320,6 +349,8 @@ class Game {
                 this.update(deltaTime);
                 this.draw();
                 requestAnimationFrame(gameLoop);
+            } else {
+                this.backgroundMusic.pause();
             }
         };
 
