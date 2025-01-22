@@ -175,47 +175,52 @@ function initializeGame() {
         speed: obstacleSpeed,
     });
 
-    // Random chance to spawn a second obstacle
-    if (Math.random() < 0.5) { // Adjust the probability as needed
-        const type2 = Math.random() < 0.5 ? "tree" : "rock";
-        const image2 = type2 === "tree" ? treeImage : rockImage;
+    // Determine if additional obstacles should spawn
+    const spawnChance = score > 100 ? 0.4 : 0.2; // 40% chance after 100 points, 20% otherwise
+    const additionalObstacles = score > 100 ? 2 : 1; // Spawn up to 3 obstacles after 100 points
 
-        const isSmall2 = Math.random() < 0.5;
-        const width2 = isSmall2 ? (type2 === "tree" ? 50 : 60) : (type2 === "tree" ? 100 : 80);
-        const height2 = isSmall2 ? (type2 === "tree" ? 50 : 40) : (type2 === "tree" ? 100 : 75);
+    for (let i = 0; i < additionalObstacles; i++) {
+        if (Math.random() < spawnChance) {
+            const type2 = Math.random() < 0.5 ? "tree" : "rock";
+            const image2 = type2 === "tree" ? treeImage : rockImage;
 
-        let y2;
-        if (y < canvas.height / 2) {
-            y2 = Math.random() * ((canvas.height - height2) / 2) + canvas.height / 2;
-        } else {
-            y2 = Math.random() * ((canvas.height - height2) / 2);
+            const isSmall2 = Math.random() < 0.5;
+            const width2 = isSmall2 ? (type2 === "tree" ? 50 : 60) : (type2 === "tree" ? 100 : 80);
+            const height2 = isSmall2 ? (type2 === "tree" ? 50 : 40) : (type2 === "tree" ? 100 : 75);
+
+            let y2;
+            if (y < canvas.height / 2) {
+                y2 = Math.random() * ((canvas.height - height2) / 2) + canvas.height / 2;
+            } else {
+                y2 = Math.random() * ((canvas.height - height2) / 2);
+            }
+
+            obstacles.push({
+                x: -width2,
+                y: y2,
+                width: width2,
+                height: height2,
+                image: image2,
+                hitbox: type2 === "tree"
+                    ? {
+                          xOffset: width2 * 0.35,
+                          yOffset: height2 * 0.15,
+                          width: width2 * 0.3,
+                          height: height2 * 0.7,
+                      }
+                    : {
+                          xOffset: width2 * 0.15,
+                          yOffset: height2 * 0.2,
+                          width: width2 * 0.7,
+                          height: height2 * 0.6,
+                      },
+                speed: obstacleSpeed, // Ensure consistent speed
+            });
         }
-
-        obstacles.push({
-            x: -width2,
-            y: y2,
-            width: width2,
-            height: height2,
-            image: image2,
-            hitbox: type2 === "tree"
-                ? {
-                      xOffset: width2 * 0.35,
-                      yOffset: height2 * 0.15,
-                      width: width2 * 0.3,
-                      height: height2 * 0.7,
-                  }
-                : {
-                      xOffset: width2 * 0.15,
-                      yOffset: height2 * 0.2,
-                      width: width2 * 0.7,
-                      height: height2 * 0.6,
-                  },
-            speed: obstacleSpeed,
-        });
     }
 }
 
-  function update() {
+function update() {
     if (gameOver) return;
 
     if (keys.ArrowUp && player.y > 0) player.y -= 5;
@@ -223,8 +228,8 @@ function initializeGame() {
 
     // Increase difficulty over time
     if (score % 10 === 0 && score > 0) { // Adjust difficulty every 10 points
-        obstacleSpeed += 0.1; // Increase obstacle speed slightly
-        spawnInterval = Math.max(500, spawnInterval - 50); // Decrease spawn interval but not below 500ms
+        obstacleSpeed = Math.min(10, obstacleSpeed + 0.1); // Slowly increase speed, cap at 10
+        spawnInterval = Math.max(500, spawnInterval - 20); // Decrease spawn interval but not below 500ms
         clearInterval(spawnIntervalId); // Reset spawn interval
         startSpawnLoop(); // Restart spawning with new interval
     }
@@ -341,11 +346,11 @@ function resetGame() {
 }
 
 
-    function startSpawnLoop() {
-        spawnIntervalId = setInterval(() => {
-            createObstacle();
-        }, spawnInterval);
-    }
+function startSpawnLoop() {
+    spawnIntervalId = setInterval(() => {
+        createObstacle();
+    }, spawnInterval);
+}
 
     // Popup Maker Close Event Handling
     window.addEventListener("popmakeClose", () => {
