@@ -267,14 +267,14 @@ createObstacle(numObstacles = 1, targetY = null) {
 activateFullSendMode() {
     if (!this.isFullSendMode) {
         this.isFullSendMode = true;
-        this.fullSendModeTimer = 300;
+        this.fullSendModeTimer = 300; // Timer for full send mode
         this.powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
         console.log("Full send mode activated.");
     } else {
-        console.log("Full send mode already active. Skipping reactivation.");
+        console.log("Full send mode already active. Power-up ignored.");
     }
 }
-
+    
 update(deltaTime) {
     const currentTime = performance.now();
 
@@ -360,27 +360,32 @@ update(deltaTime) {
         }
     });
 
-    this.powerUps.forEach((powerUp, index) => {
-        powerUp.x += this.obstacleSpeed;
-        if (powerUp.x > this.canvas.width) {
-            this.powerUps.splice(index, 1);
-            console.log("Power-up removed after crossing screen.");
-        }
+this.powerUps.forEach((powerUp, index) => {
+    powerUp.x += this.obstacleSpeed;
+    if (powerUp.x > this.canvas.width) {
+        this.powerUps.splice(index, 1);
+        console.log("Power-up removed after crossing screen.");
+    }
 
-        const playerHitbox = this.player.getHitbox();
-        const powerUpHitbox = powerUp.getHitbox();
+    const playerHitbox = this.player.getHitbox();
+    const powerUpHitbox = powerUp.getHitbox();
 
-        if (
-            playerHitbox.x < powerUpHitbox.x + powerUpHitbox.width &&
-            playerHitbox.x + playerHitbox.width > powerUpHitbox.x &&
-            playerHitbox.y < powerUpHitbox.y + powerUpHitbox.height &&
-            playerHitbox.y + playerHitbox.height > powerUpHitbox.y
-        ) {
-            this.powerUps.splice(index, 1);
+    if (
+        playerHitbox.x < powerUpHitbox.x + powerUpHitbox.width &&
+        playerHitbox.x + playerHitbox.width > powerUpHitbox.x &&
+        playerHitbox.y < powerUpHitbox.y + powerUpHitbox.height &&
+        playerHitbox.y + playerHitbox.height > powerUpHitbox.y
+    ) {
+        this.powerUps.splice(index, 1);
+
+        if (!this.isFullSendMode) {
             this.activateFullSendMode();
             console.log("Power-up collected. Full send mode activated.");
+        } else {
+            console.log("Power-up collected during full send mode. No reactivation.");
         }
-    });
+    }
+});
 
     this.explosions.forEach((explosion, index) => {
         explosion.timer -= deltaTime / 16.67;
