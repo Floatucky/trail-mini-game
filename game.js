@@ -7,7 +7,6 @@ class GameObject {
         this.height = height;
         this.image = image;
         this.hitbox = hitbox;
-        this.timer = 30; // Add timer for explosion lifetime
     }
 
     draw(ctx) {
@@ -44,7 +43,7 @@ class Game {
         };
 
         this.player = new GameObject(
-            this.canvas.width - 240, // Adjusted padding to the right edge
+            this.canvas.width - 220, // Adjusted padding to the right edge
             this.canvas.height / 2 - 20,
             100,
             40,
@@ -97,7 +96,7 @@ class Game {
         this.canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
         this.canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
 
-        this.player.x = Math.max(this.canvas.width - 240, this.canvas.width - this.player.width); // Ensure player position with padding
+        this.player.x = Math.max(this.canvas.width - 220, this.canvas.width - this.player.width); // Ensure player position with padding
         this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
 
         console.log("Canvas resized. Player position:", this.player.x, this.player.y);
@@ -276,7 +275,7 @@ class Game {
                 playerHitbox.y + playerHitbox.height > obstacleHitbox.y
             ) {
                 if (this.isFullSendMode) {
-                    this.explosions.push(new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50 }));
+                    this.explosions.push(new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50, timer: 30 }));
                     this.explosionSound.currentTime = 0;
                     this.explosionSound.play().catch((error) => console.error("Explosion sound error:", error));
                     this.obstacles.splice(index, 1);
@@ -333,7 +332,7 @@ class Game {
         this.powerUps.forEach((powerUp) => powerUp.draw(this.ctx));
         this.explosions.forEach((explosion) => explosion.draw(this.ctx));
 
-        this.ctx.fillStyle = this.isFullSendMode ? "#FF0000" : "#000"; // Highlight score in full send mode
+        this.ctx.fillStyle = "#000";
         this.ctx.font = "20px Arial";
         this.ctx.fillText(`Score: ${this.score}`, 10, 30);
 
@@ -347,6 +346,7 @@ class Game {
                 this.canvas.height / 2
             );
         }
+
                if (this.gameOver) {
             this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
