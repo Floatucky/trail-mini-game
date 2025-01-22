@@ -90,7 +90,6 @@ class Game {
         img.src = src;
         return img;
     }
-    }
 resizeCanvas() {
     const maxWidth = 800;
     const maxHeight = 600;
@@ -103,7 +102,7 @@ resizeCanvas() {
 
     console.log("Canvas resized. Player position:", this.player.x, this.player.y);
 }
-
+}
     handleKeyDown(e) {
         if (e.key in this.keys) {
             this.keys[e.key] = true;
