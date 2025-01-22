@@ -103,7 +103,6 @@ class Game {
         console.log("Canvas resized. Player position:", this.player.x, this.player.y);
         }
 
-    }
     handleKeyDown(e) {
         if (e.key in this.keys) {
             this.keys[e.key] = true;
