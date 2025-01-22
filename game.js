@@ -188,6 +188,7 @@ function initializeGame() {
         isFullSendMode = true;
         fullSendModeTimer = 300;
         canvas.style.backgroundColor = "#FF4500";
+        console.log("Background color changed to #FF4500 for Full Send Mode.");
         powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
     }
 
