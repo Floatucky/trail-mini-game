@@ -172,15 +172,34 @@ class Game {
             : { xOffset: width * 0.15, yOffset: height * 0.2, width: width * 0.7, height: height * 0.6 };
 
         this.obstacles.push(
-            new GameObject(this.canvas.width, y, width, height, image, hitbox)
+            new GameObject(-width, y, width, height, image, hitbox)
         );
+
+        if (Math.random() < 0.3 || this.score > 100) {
+            // Randomly add another obstacle or spawn three if score > 100
+            const extraObstacles = this.score > 100 ? 2 : 1;
+            for (let i = 0; i < extraObstacles; i++) {
+                const extraType = Math.random() < 0.5 ? "tree" : "rock";
+                const extraImage = this.images[extraType];
+                const extraWidth = isSmall ? (extraType === "tree" ? 50 : 60) : (extraType === "tree" ? 100 : 80);
+                const extraHeight = isSmall ? (extraType === "tree" ? 50 : 40) : (extraType === "tree" ? 100 : 75);
+                const extraY = Math.random() * (this.canvas.height - extraHeight);
+                const extraHitbox = extraType === "tree"
+                    ? { xOffset: extraWidth * 0.35, yOffset: extraHeight * 0.15, width: extraWidth * 0.3, height: extraHeight * 0.7 }
+                    : { xOffset: extraWidth * 0.15, yOffset: extraHeight * 0.2, width: extraWidth * 0.7, height: extraHeight * 0.6 };
+
+                this.obstacles.push(
+                    new GameObject(-extraWidth, extraY, extraWidth, extraHeight, extraImage, extraHitbox)
+                );
+            }
+        }
     }
 
     createPowerUp() {
         if (Math.random() < 0.1) {
             const size = 50;
             const y = Math.random() * (this.canvas.height - size);
-            this.powerUps.push(new GameObject(this.canvas.width, y, size, size, this.images.powerUp, { xOffset: 0, yOffset: 0, width: size, height: size }));
+            this.powerUps.push(new GameObject(-size, y, size, size, this.images.powerUp, { xOffset: 0, yOffset: 0, width: size, height: size }));
         }
     }
 
@@ -199,6 +218,11 @@ class Game {
             this.createObstacle();
             this.createPowerUp();
             this.lastSpawnTime = currentTime;
+
+            // Gradually decrease spawn interval over time
+            if (this.spawnInterval > 500) {
+                this.spawnInterval -= 10;
+            }
         }
 
         if (this.keys.ArrowUp && this.player.y > 0) this.player.y -= 5;
@@ -213,8 +237,8 @@ class Game {
         }
 
         this.obstacles.forEach((obstacle, index) => {
-            obstacle.x -= this.obstacleSpeed;
-            if (obstacle.x + obstacle.width < 0) {
+            obstacle.x += this.obstacleSpeed;
+            if (obstacle.x > this.canvas.width) {
                 this.obstacles.splice(index, 1);
                 this.score++;
                 if (this.audioEnabled) {
@@ -247,8 +271,8 @@ class Game {
         });
 
         this.powerUps.forEach((powerUp, index) => {
-            powerUp.x -= this.obstacleSpeed;
-            if (powerUp.x + powerUp.width < 0) {
+            powerUp.x += this.obstacleSpeed;
+            if (powerUp.x > this.canvas.width) {
                 this.powerUps.splice(index, 1);
             }
 
@@ -336,6 +360,7 @@ class Game {
 
         this.resizeCanvas();
         this.lastSpawnTime = performance.now();
+        this.musicStarted = false; // Ensure music restarts
         this.startBackgroundMusic();
         this.startGameLoop();
     }
