@@ -7,6 +7,7 @@ class GameObject {
         this.height = height;
         this.image = image;
         this.hitbox = hitbox;
+        this.timer = 30; // Default timer for explosions
     }
 
     draw(ctx) {
@@ -79,6 +80,7 @@ class Game {
         this.canvas.addEventListener("touchend", this.handleTouchEnd.bind(this));
 
         document.addEventListener("visibilitychange", this.handleVisibilityChange.bind(this));
+        document.addEventListener("popupclose", this.handlePopupClose.bind(this));
 
         console.log("Game initialized.");
         this.startGameLoop();
@@ -151,6 +153,13 @@ class Game {
         } else if (!document.hidden && this.musicStarted) {
             this.backgroundMusic.play();
             console.log("Game visible. Background music resumed.");
+        }
+    }
+
+    handlePopupClose() {
+        if (this.musicStarted) {
+            this.backgroundMusic.pause();
+            console.log("Popup closed. Background music stopped.");
         }
     }
 
@@ -271,7 +280,7 @@ class Game {
                 playerHitbox.y + playerHitbox.height > obstacleHitbox.y
             ) {
                 if (this.isFullSendMode) {
-                    this.explosions.push(new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50, timer: 30 }));
+                    this.explosions.push(new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50 }));
                     this.explosionSound.currentTime = 0;
                     this.explosionSound.play().catch((error) => console.error("Explosion sound error:", error));
                     this.obstacles.splice(index, 1);
@@ -328,7 +337,7 @@ class Game {
         this.powerUps.forEach((powerUp) => powerUp.draw(this.ctx));
         this.explosions.forEach((explosion) => explosion.draw(this.ctx));
 
-        this.ctx.fillStyle = "#000";
+        this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
         this.ctx.font = "20px Arial";
         this.ctx.fillText(`Score: ${this.score}`, 10, 30);
 
@@ -351,6 +360,21 @@ class Game {
             this.ctx.textAlign = "center";
             this.ctx.fillText("Game Over!", this.canvas.width / 2, this.canvas.height / 2 - 50);
             this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2);
+
+            const popupContent = document.querySelector(".pum-content.popmake-content");
+            if (popupContent && !document.getElementById("playAgainButton")) {
+                const playAgainButton = document.createElement("button");
+                playAgainButton.id = "playAgainButton";
+                playAgainButton.textContent = "Play Again";
+                playAgainButton.style.cssText =
+                    "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
+                popupContent.appendChild(playAgainButton);
+
+                playAgainButton.addEventListener("click", () => {
+                    playAgainButton.remove();
+                    this.resetGame();
+                });
+            }
         }
     }
 
