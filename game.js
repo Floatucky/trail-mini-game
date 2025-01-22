@@ -347,7 +347,7 @@ class Game {
             );
         }
 
-           if (this.gameOver) {
+               if (this.gameOver) {
             this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             this.ctx.fillStyle = "#FFF";
