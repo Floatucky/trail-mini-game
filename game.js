@@ -319,77 +319,34 @@ activateFullSendMode() {
 update(deltaTime) {
     const currentTime = performance.now();
 
-    // Object culling: Remove off-screen obstacles, power-ups, and explosions
-    this.obstacles = this.obstacles.filter(obstacle => obstacle.x + obstacle.width > 0);
-    this.powerUps = this.powerUps.filter(powerUp => powerUp.x + powerUp.width > 0);
-    this.explosions = this.explosions.filter(explosion => explosion.timer > 0);
-
-    // Limit object counts to avoid excessive buildup
-    if (this.powerUps.length > 20) this.powerUps.shift();
-    if (this.explosions.length > 10) this.explosions.shift();
-
-    // Check if the player is stationary
-    if (this.player.y === this.lastPlayerY) {
-        this.stationaryTime += deltaTime / 16.67; // Increment time if stationary
-    } else {
-        this.stationaryTime = 0; // Reset timer if player moves
-        this.lastPlayerY = this.player.y; // Update last position
-    }
-
-    // Spawn targeted obstacles if stationary too long
-    if (this.stationaryTime > 120) { // 2 seconds of stationary time
-        this.createObstacle(1, this.player.y); // Spawn obstacle near player
-        this.stationaryTime = 0; // Reset timer
-    }
-
-    // Adjust for regular spawning
+    // Spawn obstacles and power-ups at regular intervals
     if (currentTime - this.lastSpawnTime > this.spawnInterval) {
-        const numObstacles = Math.random() < 0.5 ? 1 : (this.score > 100 ? 3 : 2);
+        const numObstacles = Math.random() < 0.5 ? 1 : 2;
         this.createObstacle(numObstacles);
         this.createPowerUp();
         this.lastSpawnTime = currentTime;
 
-        // Dynamic difficulty scaling
-        this.spawnInterval = Math.max(750, 1500 - (this.score * 10));
-    }
-
-    // Player movement
-    if (this.keys.ArrowUp && this.player.y > 0) {
-        this.player.y -= 5;
-    }
-    if (this.keys.ArrowDown && this.player.y < this.canvas.height - this.player.height) {
-        this.player.y += 5;
-    }
-    if (this.keys.ArrowLeft && this.player.x > 0) {
-        this.player.x -= 5;
-    }
-    if (this.keys.ArrowRight && this.player.x < this.canvas.width - this.player.width) {
-        this.player.x += 5;
-    }
-
-    // Full send mode timer
-    if (this.isFullSendMode) {
-        this.fullSendModeTimer -= deltaTime / 16.67;
-        if (this.fullSendModeTimer <= 0) {
-            this.isFullSendMode = false;
+        // Gradually decrease spawn interval for increased difficulty
+        if (this.spawnInterval > 500) {
+            this.spawnInterval -= 10;
         }
     }
 
-    // Update obstacles and detect collisions
+    // Move obstacles
     this.obstacles.forEach((obstacle, index) => {
         obstacle.x += this.obstacleSpeed;
         if (obstacle.x > this.canvas.width) {
-            this.obstacles.splice(index, 1);
-            this.score++;
+            this.obstacles.splice(index, 1); // Remove obstacle if it leaves the screen
+            this.score++; // Increment score
             if (this.audioEnabled) {
                 this.pointSound.currentTime = 0;
                 this.pointSound.play().catch(() => {});
             }
         }
 
+        // Collision detection with player
         const playerHitbox = this.player.getHitbox();
         const obstacleHitbox = obstacle.getHitbox();
-
         if (
             playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
             playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
@@ -397,56 +354,65 @@ update(deltaTime) {
             playerHitbox.y + playerHitbox.height > obstacleHitbox.y
         ) {
             if (this.isFullSendMode) {
-                const explosionWidth = obstacle.width * 0.5;
-                const explosionHeight = obstacle.height * 0.5;
-                this.explosions.push(
-                    new GameObject(obstacle.x, obstacle.y, explosionWidth, explosionHeight, this.images.explosion, {
-                        xOffset: 0,
-                        yOffset: 0,
-                        width: explosionWidth,
-                        height: explosionHeight,
-                    })
-                );
+                this.explosions.push(new GameObject(
+                    obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50 }
+                ));
                 this.explosionSound.currentTime = 0;
-                this.explosionSound.play().catch((error) => console.error("Explosion sound error:", error));
-                this.obstacles.splice(index, 1);
-                this.score += 2;
+                this.explosionSound.play().catch(() => {});
+                this.obstacles.splice(index, 1); // Remove obstacle
+                this.score += 2; // Bonus score in full-send mode
             } else {
                 this.collisionSound.currentTime = 0;
-                this.collisionSound.play().catch((error) => console.error("Collision sound error:", error));
-                this.gameOver = true;
+                this.collisionSound.play().catch(() => {});
+                this.gameOver = true; // End the game
             }
         }
     });
 
-    // Update power-ups and detect collisions
+    // Move power-ups
     this.powerUps.forEach((powerUp, index) => {
         powerUp.x += this.obstacleSpeed;
         if (powerUp.x > this.canvas.width) {
-            this.powerUps.splice(index, 1);
+            this.powerUps.splice(index, 1); // Remove power-up if it leaves the screen
         }
 
+        // Collision detection with player
         const playerHitbox = this.player.getHitbox();
         const powerUpHitbox = powerUp.getHitbox();
-
         if (
             playerHitbox.x < powerUpHitbox.x + powerUpHitbox.width &&
             playerHitbox.x + playerHitbox.width > powerUpHitbox.x &&
             playerHitbox.y < powerUpHitbox.y + powerUpHitbox.height &&
             playerHitbox.y + playerHitbox.height > powerUpHitbox.y
         ) {
-            this.powerUps.splice(index, 1);
-            this.activateFullSendMode();
+            this.powerUps.splice(index, 1); // Remove collected power-up
+            this.activateFullSendMode(); // Activate full-send mode
         }
     });
 
-    // Update explosions
+    // Update explosions (timed removal)
     this.explosions.forEach((explosion, index) => {
-        explosion.timer -= deltaTime / 16.67;
+        explosion.timer -= deltaTime / 16.67; // Update timer
         if (explosion.timer <= 0) {
-            this.explosions.splice(index, 1);
+            this.explosions.splice(index, 1); // Remove explosion
         }
     });
+
+    // Handle player movement
+    if ((this.keys.ArrowUp || this.keys.KeyW) && this.player.y > 0) {
+        this.player.y -= 5;
+    }
+    if ((this.keys.ArrowDown || this.keys.KeyS) && this.player.y < this.canvas.height - this.player.height) {
+        this.player.y += 5;
+    }
+
+    // Handle full-send mode timer
+    if (this.isFullSendMode) {
+        this.fullSendModeTimer -= deltaTime / 16.67;
+        if (this.fullSendModeTimer <= 0) {
+            this.isFullSendMode = false;
+        }
+    }
 }
 
 draw() {
