@@ -89,19 +89,18 @@ class Game {
         return img;
     }
 
-    resizeCanvas() {
+   resizeCanvas() {
         const maxWidth = 800;
         const maxHeight = 600;
         const aspectRatio = maxWidth / maxHeight;
-        const availableWidth = window.innerWidth * 0.9;
-        const availableHeight = window.innerHeight * 0.7;
+        const isPortrait = window.innerHeight > window.innerWidth;
 
-        if (availableWidth / availableHeight > aspectRatio) {
-            this.canvas.height = availableHeight;
-            this.canvas.width = availableHeight * aspectRatio;
+        if (isPortrait) {
+            this.canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
+            this.canvas.height = Math.min(window.innerHeight * 0.8, maxHeight);
         } else {
-            this.canvas.width = availableWidth;
-            this.canvas.height = availableWidth / aspectRatio;
+            this.canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
+            this.canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
         }
 
         // Adjust player position dynamically
