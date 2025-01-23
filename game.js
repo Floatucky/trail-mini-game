@@ -110,22 +110,24 @@ class Game {
         console.log("Canvas resized. Player position:", this.player.x, this.player.y);
     }
 
-    handleKeyDown(e) {
-        if (e.key in this.keys) {
-            this.keys[e.key] = true;
-            this.startBackgroundMusic();
-            this.startSoundPlayback();
-            if (!this.audioEnabled) this.enableAudio();
-            console.log("Key down:", e.key);
-        }
+handleKeyDown(e) {
+    // Check if the pressed key is in the keys object
+    if (e.key in this.keys) {
+        this.keys[e.key] = true; // Mark the key as pressed
+        this.startBackgroundMusic(); // Start background music if not already playing
+        this.startSoundPlayback(); // Preload and start sound playback
+        if (!this.audioEnabled) this.enableAudio(); // Enable audio if not already enabled
+        console.log("Key down:", e.key);
     }
+}
 
-    handleKeyUp(e) {
-        if (e.key in this.keys) {
-            this.keys[e.key] = false;
-            console.log("Key up:", e.key);
-        }
+handleKeyUp(e) {
+    // Check if the released key is in the keys object
+    if (e.key in this.keys) {
+        this.keys[e.key] = false; // Mark the key as released
+        console.log("Key up:", e.key);
     }
+}
 
     handleTouchStart(e) {
         this.touchStartY = e.touches[0].clientY;
