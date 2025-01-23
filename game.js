@@ -92,8 +92,17 @@ class Game {
     resizeCanvas() {
         const maxWidth = 800;
         const maxHeight = 600;
-        this.canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
-        this.canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
+        const aspectRatio = maxWidth / maxHeight;
+        const availableWidth = window.innerWidth * 0.9;
+        const availableHeight = window.innerHeight * 0.7;
+
+        if (availableWidth / availableHeight > aspectRatio) {
+            this.canvas.height = availableHeight;
+            this.canvas.width = availableHeight * aspectRatio;
+        } else {
+            this.canvas.width = availableWidth;
+            this.canvas.height = availableWidth / aspectRatio;
+        }
 
         // Adjust player position dynamically
         this.player.x = this.canvas.width - 125; // Keeps the player on the right side
