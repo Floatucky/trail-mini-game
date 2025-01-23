@@ -287,6 +287,15 @@ activateFullSendMode() {
 update(deltaTime) {
     const currentTime = performance.now();
 
+    // Object culling: Remove off-screen obstacles, power-ups, and explosions
+    this.obstacles = this.obstacles.filter(obstacle => obstacle.x + obstacle.width > 0);
+    this.powerUps = this.powerUps.filter(powerUp => powerUp.x + powerUp.width > 0);
+    this.explosions = this.explosions.filter(explosion => explosion.timer > 0);
+
+    // Limit object counts to avoid excessive buildup
+    if (this.powerUps.length > 20) this.powerUps.shift();
+    if (this.explosions.length > 10) this.explosions.shift();
+
     // Check if the player is stationary
     if (this.player.y === this.lastPlayerY) {
         this.stationaryTime += deltaTime / 16.67; // Increment time if stationary
@@ -308,106 +317,105 @@ update(deltaTime) {
         this.createPowerUp();
         this.lastSpawnTime = currentTime;
 
-        if (this.spawnInterval > 500) {
-            this.spawnInterval -= 10;
-            console.log("Spawn interval decreased to:", this.spawnInterval);
+        // Dynamic difficulty scaling
+        this.spawnInterval = Math.max(750, 1500 - (this.score * 10));
+    }
+
+    // Player movement
+    if (this.keys.ArrowUp && this.player.y > 0) {
+        this.player.y -= 5;
+    }
+    if (this.keys.ArrowDown && this.player.y < this.canvas.height - this.player.height) {
+        this.player.y += 5;
+    }
+    if (this.keys.ArrowLeft && this.player.x > 0) {
+        this.player.x -= 5;
+    }
+    if (this.keys.ArrowRight && this.player.x < this.canvas.width - this.player.width) {
+        this.player.x += 5;
+    }
+
+    // Full send mode timer
+    if (this.isFullSendMode) {
+        this.fullSendModeTimer -= deltaTime / 16.67;
+        if (this.fullSendModeTimer <= 0) {
+            this.isFullSendMode = false;
         }
     }
 
-        if (this.keys.ArrowUp && this.player.y > 0) {
-            this.player.y -= 5;
-            console.log("Player moved up. New Y:", this.player.y);
-        }
-        if (this.keys.ArrowDown && this.player.y < this.canvas.height - this.player.height) {
-            this.player.y += 5;
-            console.log("Player moved down. New Y:", this.player.y);
-        }
-
-        if (this.isFullSendMode) {
-            this.fullSendModeTimer -= deltaTime / 16.67;
-            console.log("Full send mode timer:", this.fullSendModeTimer);
-            if (this.fullSendModeTimer <= 0) {
-                this.isFullSendMode = false;
-                console.log("Full send mode ended.");
+    // Update obstacles and detect collisions
+    this.obstacles.forEach((obstacle, index) => {
+        obstacle.x += this.obstacleSpeed;
+        if (obstacle.x > this.canvas.width) {
+            this.obstacles.splice(index, 1);
+            this.score++;
+            if (this.audioEnabled) {
+                this.pointSound.currentTime = 0;
+                this.pointSound.play().catch(() => {});
             }
         }
 
-this.obstacles.forEach((obstacle, index) => {
-    obstacle.x += this.obstacleSpeed;
-    if (obstacle.x > this.canvas.width) {
-        this.obstacles.splice(index, 1);
-        this.score++;
-        if (this.audioEnabled) {
-            this.pointSound.currentTime = 0;
-            this.pointSound.play().catch(() => {});
-        }
-    }
+        const playerHitbox = this.player.getHitbox();
+        const obstacleHitbox = obstacle.getHitbox();
 
-    // Move hitbox collision detection inside the loop
-    const playerHitbox = this.player.getHitbox();
-    const obstacleHitbox = obstacle.getHitbox();
-
-    if (
-        playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
-        playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
-        playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
-        playerHitbox.y + playerHitbox.height > obstacleHitbox.y
-    ) {
-if (this.isFullSendMode) {
-    const explosionWidth = obstacle.width * 0.5; // Dynamically scale width
-    const explosionHeight = obstacle.height * 0.5; // Dynamically scale height
-    this.explosions.push(
-        new GameObject(obstacle.x, obstacle.y, explosionWidth, explosionHeight, this.images.explosion, {
-            xOffset: 0,
-            yOffset: 0,
-            width: explosionWidth,
-            height: explosionHeight,
-        })
-    );
-    this.explosionSound.currentTime = 0;
-    this.explosionSound.play().catch((error) => console.error("Explosion sound error:", error));
-    this.obstacles.splice(index, 1);
-    this.score += 2;
-    console.log("Obstacle hit during full send mode. Explosion added. Score updated to:", this.score);
-}
-        } else {
-            this.collisionSound.currentTime = 0;
-            this.collisionSound.play().catch((error) => console.error("Collision sound error:", error));
-            this.gameOver = true;
-            console.log("Collision detected. Game over.");
-        }
-    }
-});
-
-        this.powerUps.forEach((powerUp, index) => {
-            powerUp.x += this.obstacleSpeed;
-            if (powerUp.x > this.canvas.width) {
-                this.powerUps.splice(index, 1);
-                console.log("Power-up removed after crossing screen.");
+        if (
+            playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
+            playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
+            playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
+            playerHitbox.y + playerHitbox.height > obstacleHitbox.y
+        ) {
+            if (this.isFullSendMode) {
+                const explosionWidth = obstacle.width * 0.5;
+                const explosionHeight = obstacle.height * 0.5;
+                this.explosions.push(
+                    new GameObject(obstacle.x, obstacle.y, explosionWidth, explosionHeight, this.images.explosion, {
+                        xOffset: 0,
+                        yOffset: 0,
+                        width: explosionWidth,
+                        height: explosionHeight,
+                    })
+                );
+                this.explosionSound.currentTime = 0;
+                this.explosionSound.play().catch((error) => console.error("Explosion sound error:", error));
+                this.obstacles.splice(index, 1);
+                this.score += 2;
+            } else {
+                this.collisionSound.currentTime = 0;
+                this.collisionSound.play().catch((error) => console.error("Collision sound error:", error));
+                this.gameOver = true;
             }
+        }
+    });
 
-            const playerHitbox = this.player.getHitbox();
-            const powerUpHitbox = powerUp.getHitbox();
+    // Update power-ups and detect collisions
+    this.powerUps.forEach((powerUp, index) => {
+        powerUp.x += this.obstacleSpeed;
+        if (powerUp.x > this.canvas.width) {
+            this.powerUps.splice(index, 1);
+        }
 
-            if (
-                playerHitbox.x < powerUpHitbox.x + powerUpHitbox.width &&
-                playerHitbox.x + playerHitbox.width > powerUpHitbox.x &&
-                playerHitbox.y < powerUpHitbox.y + powerUpHitbox.height &&
-                playerHitbox.y + playerHitbox.height > powerUpHitbox.y
-            ) {
-                this.powerUps.splice(index, 1);
-                this.activateFullSendMode();
-                console.log("Power-up collected. Full send mode activated.");
-            }
-        });
+        const playerHitbox = this.player.getHitbox();
+        const powerUpHitbox = powerUp.getHitbox();
 
+        if (
+            playerHitbox.x < powerUpHitbox.x + powerUpHitbox.width &&
+            playerHitbox.x + playerHitbox.width > powerUpHitbox.x &&
+            playerHitbox.y < powerUpHitbox.y + powerUpHitbox.height &&
+            playerHitbox.y + playerHitbox.height > powerUpHitbox.y
+        ) {
+            this.powerUps.splice(index, 1);
+            this.activateFullSendMode();
+        }
+    });
+
+    // Update explosions
     this.explosions.forEach((explosion, index) => {
         explosion.timer -= deltaTime / 16.67;
         if (explosion.timer <= 0) {
             this.explosions.splice(index, 1);
         }
     });
-    }
+}
 
 draw() {
     this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
@@ -490,20 +498,20 @@ if (this.isFullSendMode) {
     }
 
     startGameLoop() {
-        const gameLoop = (timestamp) => {
-            const deltaTime = timestamp - this.lastUpdateTime;
-            this.lastUpdateTime = timestamp;
-
-            if (!this.gameOver) {
-                this.update(deltaTime);
-                this.draw();
-                requestAnimationFrame(gameLoop);
-            } else {
-                this.backgroundMusic.pause();
-            }
-        };
-
-        requestAnimationFrame(gameLoop);
+const gameLoop = (timestamp) => {
+    const deltaTime = timestamp - this.lastUpdateTime;
+    if (deltaTime >= (1000 / 60)) { // 60 FPS cap
+        this.lastUpdateTime = timestamp;
+        if (!this.gameOver) {
+            this.update(deltaTime);
+            this.draw();
+        } else {
+            this.backgroundMusic.pause();
+        }
+    }
+    requestAnimationFrame(gameLoop);
+};
+requestAnimationFrame(gameLoop);
     }
 }
 
