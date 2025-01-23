@@ -227,6 +227,18 @@ createObstacle(numObstacles = 1, targetY = null) {
     const generatedObstacles = [];
     let attempts = 0;
 
+    // Create a spatial partition grid
+    const gridSize = 100;
+    const grid = {};
+
+    this.obstacles.forEach(obstacle => {
+        const gridX = Math.floor(obstacle.x / gridSize);
+        const gridY = Math.floor(obstacle.y / gridSize);
+        const key = `${gridX},${gridY}`;
+        if (!grid[key]) grid[key] = [];
+        grid[key].push(obstacle);
+    });
+
     while (generatedObstacles.length < numObstacles && attempts < 50) {
         const type = Math.random() < 0.5 ? "tree" : "rock";
         const image = this.images[type];
@@ -243,9 +255,20 @@ createObstacle(numObstacles = 1, targetY = null) {
 
         const newObstacle = new GameObject(-width, y, width, height, image, hitbox);
 
-        // Check for overlap
-        const isOverlapping = this.obstacles.concat(generatedObstacles).some(obstacle => {
-            return (
+        // Get grid cells to check
+        const gridX = Math.floor(newObstacle.x / gridSize);
+        const gridY = Math.floor(newObstacle.y / gridSize);
+        const keysToCheck = [
+            `${gridX},${gridY}`,
+            `${gridX - 1},${gridY}`,
+            `${gridX + 1},${gridY}`,
+            `${gridX},${gridY - 1}`,
+            `${gridX},${gridY + 1}`,
+        ];
+
+        // Check overlap within relevant grid cells
+        const isOverlapping = keysToCheck.some(key => {
+            return grid[key]?.some(obstacle =>
                 newObstacle.y < obstacle.y + obstacle.height &&
                 newObstacle.y + newObstacle.height > obstacle.y
             );
@@ -253,6 +276,9 @@ createObstacle(numObstacles = 1, targetY = null) {
 
         if (!isOverlapping) {
             generatedObstacles.push(newObstacle);
+            const newKey = `${gridX},${gridY}`;
+            if (!grid[newKey]) grid[newKey] = [];
+            grid[newKey].push(newObstacle);
         }
 
         attempts++;
