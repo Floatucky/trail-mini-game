@@ -129,27 +129,29 @@ handleKeyUp(e) {
     }
 }
 
-    handleTouchStart(e) {
-        this.touchStartY = e.touches[0].clientY;
-        this.startBackgroundMusic();
-        this.startSoundPlayback();
-        if (!this.audioEnabled) this.enableAudio();
-        console.log("Touch start at Y:", this.touchStartY);
-    }
+handleTouchStart(e) {
+    e.preventDefault(); // Prevent scrolling
+    this.touchStartY = e.touches[0].clientY;
+    this.startBackgroundMusic();
+    this.startSoundPlayback();
+    if (!this.audioEnabled) this.enableAudio();
+    console.log("Touch start at Y:", this.touchStartY);
+}
 
-    handleTouchMove(e) {
-        const currentTouchY = e.touches[0].clientY;
-        if (this.touchStartY !== null) {
-            const swipeDistance = currentTouchY - this.touchStartY;
-            const moveDistance = swipeDistance * 0.6;
-            this.player.y = Math.max(
-                0,
-                Math.min(this.canvas.height - this.player.height, this.player.y + moveDistance)
-            );
-            this.touchStartY = currentTouchY;
-            console.log("Touch move. New player Y:", this.player.y);
-        }
+handleTouchMove(e) {
+    e.preventDefault(); // Prevent scrolling
+    const currentTouchY = e.touches[0].clientY;
+    if (this.touchStartY !== null) {
+        const swipeDistance = currentTouchY - this.touchStartY;
+        const moveDistance = swipeDistance * 0.6;
+        this.player.y = Math.max(
+            0,
+            Math.min(this.canvas.height - this.player.height, this.player.y + moveDistance)
+        );
+        this.touchStartY = currentTouchY;
+        console.log("Touch move. New player Y:", this.player.y);
     }
+}
 
     handleTouchEnd() {
         console.log("Touch end.");
