@@ -54,7 +54,7 @@ class Game {
         this.lastSpawnTime = 0;
         this.lastUpdateTime = 0;
 
-        this.keys = { ArrowUp: false, ArrowDown: false };
+        this.keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, Space: false };
         this.touchStartY = null;
         this.musicStarted = false;
         this.audioEnabled = false;
