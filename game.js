@@ -194,12 +194,17 @@ handlePopupClose() {
     }
 
     startSoundPlayback() {
-    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
-        sound.play().catch((err) => console.error(`Error playing sound: ${err}`));
-        sound.pause();
-    });
-}
-
+        // Preload sounds once during initialization
+        if (!this.soundsPreloaded) {
+            [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
+                sound.play().catch(() => {});
+                sound.pause();
+            });
+            this.soundsPreloaded = true;
+            console.log("Sounds preloaded.");
+        }
+    }
+    
 enableAudio() {
     if (this.audioContext.state === "suspended") {
         this.audioContext.resume();
