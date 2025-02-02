@@ -59,6 +59,10 @@ class Game {
         this.musicStarted = false;
         this.audioEnabled = false;
 
+        // Added property to control the game loop
+        this.running = true;
+        this.gameLoopRequestId = null;
+
         // Initialize the player object BEFORE resizing the canvas
         this.player = new GameObject(
             0, // Temporary X position; will be adjusted in `resizeCanvas`
@@ -174,19 +178,23 @@ class Game {
     }
 
     handlePopupClose() {
+        // Stop all audio playback
         if (this.musicStarted) {
             this.backgroundMusic.pause();
             this.backgroundMusic.currentTime = 0; // Reset music to the start
             this.musicStarted = false;
         }
-
-        // Stop all other sounds
         [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
             sound.pause();
             sound.currentTime = 0; // Reset sound to the start
         });
-
         console.log("Popup closed. All sounds stopped.");
+
+        // Stop the game loop by setting running to false and canceling the next frame.
+        this.running = false;
+        if (this.gameLoopRequestId) {
+            cancelAnimationFrame(this.gameLoopRequestId);
+        }
     }
 
     startBackgroundMusic() {
@@ -527,12 +535,15 @@ class Game {
         this.resizeCanvas();
         this.lastSpawnTime = performance.now();
         this.musicStarted = false;
+        // Optionally, you could restart the game loop here if needed.
+        this.running = true;
         this.startBackgroundMusic();
         this.startGameLoop();
     }
 
     startGameLoop() {
         const gameLoop = (timestamp) => {
+            if (!this.running) return; // Stop scheduling frames if not running
             const deltaTime = timestamp - this.lastUpdateTime;
 
             if (deltaTime >= (1000 / 60)) { // 60 FPS cap
@@ -546,10 +557,10 @@ class Game {
                 }
             }
 
-            requestAnimationFrame(gameLoop);
+            this.gameLoopRequestId = requestAnimationFrame(gameLoop);
         };
 
-        requestAnimationFrame(gameLoop);
+        this.gameLoopRequestId = requestAnimationFrame(gameLoop);
     }
 }
 
