@@ -26,6 +26,10 @@ class GameObject {
 class Game {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
+        if (!this.canvas) {
+            console.error("Canvas not found:", canvasId);
+            return;
+        }
         this.ctx = this.canvas.getContext("2d");
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
         this.backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
@@ -73,7 +77,7 @@ class Game {
             { xOffset: 5, yOffset: 10, width: 85, height: 25 }
         );
 
-        this.resizeCanvas(); // Now safe to call after player initialization
+        this.resizeCanvas();
         window.addEventListener("resize", this.resizeCanvas.bind(this));
         document.addEventListener("keydown", this.handleKeyDown.bind(this));
         document.addEventListener("keyup", this.handleKeyUp.bind(this));
@@ -176,7 +180,7 @@ class Game {
     }
 
     handlePopupClose() {
-        // Stop audio playback
+        // Stop all audio playback
         if (this.musicStarted) {
             this.backgroundMusic.pause();
             this.backgroundMusic.currentTime = 0;
@@ -542,17 +546,10 @@ class Game {
     }
 }
 
-document.addEventListener("pumAfterOpen", () => {
-    setTimeout(() => {
-        if (document.getElementById("gameCanvas")) {
-            new Game("gameCanvas");
-        } else {
-            console.error("Canvas not found inside popup!");
-        }
-    }, 500);
-});
+// Remove any automatic initialization (such as listening for "pumAfterOpen")
+// and rely solely on the global function below.
 
-// Define a global initializeGame function for external code
+// Define a global initializeGame function for external code (e.g., button click)
 window.initializeGame = function() {
     new Game("gameCanvas");
 };
