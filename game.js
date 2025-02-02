@@ -1,6 +1,6 @@
 class GameObject {
   constructor(x, y, width, height, image, hitbox) {
-    // Coordinates and sizes are in the game’s base coordinate system.
+    // All coordinates and sizes are defined in the base coordinate system.
     this.x = x;
     this.y = y;
     this.width = width;
@@ -26,7 +26,7 @@ class GameObject {
 
 class Game {
   constructor(canvasId) {
-    // Define a base resolution for the game world.
+    // Define your game’s base (logical) resolution.
     this.baseWidth = 1200;
     this.baseHeight = 900;
 
@@ -36,11 +36,9 @@ class Game {
       return;
     }
     this.ctx = this.canvas.getContext("2d");
-
-    // For high-DPI displays.
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-    // Load sounds.
+    // Load audio files.
     this.backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
     this.collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
     this.pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
@@ -56,7 +54,7 @@ class Game {
       explosion: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Explosion.png"),
     };
 
-    // Game state (all coordinates and sizes are in base coordinates).
+    // Game state variables (all coordinates are in the base system).
     this.obstacles = [];
     this.powerUps = [];
     this.explosions = [];
@@ -69,6 +67,7 @@ class Game {
     this.lastSpawnTime = 0;
     this.lastUpdateTime = 0;
 
+    // Input state.
     this.keys = {
       ArrowUp: false, ArrowDown: false,
       ArrowLeft: false, ArrowRight: false,
@@ -82,18 +81,16 @@ class Game {
     this.running = true;
     this.gameLoopRequestId = null;
 
-    // Initialize the player in the base coordinate system.
-    // (The numbers below assume the base resolution; they will later be scaled.)
+    // Initialize the player object in base coordinates.
     this.player = new GameObject(
-      0, // Temporary X; will be adjusted in resizeCanvas.
-      0, // Temporary Y; will be adjusted in resizeCanvas.
+      0, // Temporary; will be repositioned in resizeCanvas.
+      0,
       100,
       40,
       this.images.player,
       { xOffset: 5, yOffset: 10, width: 85, height: 25 }
     );
 
-    // Set up the canvas to fill the viewport and compute our scale/offset.
     this.resizeCanvas();
     window.addEventListener("resize", this.resizeCanvas.bind(this));
     document.addEventListener("keydown", this.handleKeyDown.bind(this));
@@ -114,31 +111,40 @@ class Game {
     return img;
   }
 
-  // --- RESIZING & SCALING ---
+  // --- RESIZING ---
   resizeCanvas() {
+    // Compute the ideal canvas size so that its aspect ratio matches the base game.
     const dpr = window.devicePixelRatio || 1;
-    const cw = window.innerWidth;
-    const ch = window.innerHeight;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const baseAspect = this.baseWidth / this.baseHeight;
 
-    // Set the canvas to fill the entire viewport.
+    let cw, ch;
+    if (vw / vh < baseAspect) {
+      // Viewport is relatively narrower: use full width.
+      cw = vw;
+      ch = cw / baseAspect;
+    } else {
+      // Use full height.
+      ch = vh;
+      cw = ch * baseAspect;
+    }
+    // Set the canvas’s internal pixel dimensions (scaled for DPR).
     this.canvas.width = cw * dpr;
     this.canvas.height = ch * dpr;
+    // Set the CSS dimensions.
     this.canvas.style.width = cw + "px";
     this.canvas.style.height = ch + "px";
 
-    // Compute a uniform scale so that the entire game (base resolution) fits inside the viewport.
-    // Using Math.min prevents any scrolling.
-    this.scale = Math.min(cw / this.baseWidth, ch / this.baseHeight);
-    // Compute offsets to center the game within the viewport.
-    this.xOffset = (cw - this.baseWidth * this.scale) / 2;
-    this.yOffset = (ch - this.baseHeight * this.scale) / 2;
-
-    // Reposition the player in base coordinates.
+    // Compute a uniform scale factor to map base coordinates to canvas coordinates.
+    this.scale = cw / this.baseWidth; // (which should equal ch/this.baseHeight)
+    // We will draw from (0,0) so no additional offsets are needed.
+    // (Since the canvas is centered via CSS, any extra space will be outside the canvas.)
+    // Reposition the player in base coordinates (for example, near the right edge).
     this.player.x = this.baseWidth - this.player.width - Math.max(20, this.baseWidth * 0.02);
     this.player.y = Math.min(this.player.y, this.baseHeight - this.player.height);
 
-    console.log("Canvas resized. Base resolution:", this.baseWidth, this.baseHeight,
-      "Scale:", this.scale, "Offsets:", this.xOffset, this.yOffset);
+    console.log("Canvas resized. Canvas size:", cw, "x", ch, "Scale:", this.scale);
   }
 
   // --- INPUT HANDLERS ---
@@ -172,10 +178,9 @@ class Game {
     e.preventDefault();
     const currentTouchY = e.touches[0].clientY;
     if (this.touchStartY !== null) {
-      // Convert swipe distance from CSS pixels into base coordinate units.
+      // Convert swipe distance (CSS pixels) into base coordinates.
       const swipeDistance = currentTouchY - this.touchStartY;
-      const moveDistance = (swipeDistance * 0.6) / this.scale;
-      // Clamp the new player.y between 0 and the base height.
+      const moveDistance = swipeDistance * 0.6 / this.scale;
       this.player.y = Math.max(0, Math.min(this.baseHeight - this.player.height, this.player.y + moveDistance));
       this.touchStartY = currentTouchY;
       console.log("Touch move. New player Y:", this.player.y);
@@ -198,7 +203,7 @@ class Game {
   }
 
   handlePopupClose() {
-    // Stop all audio playback.
+    // Stop all sounds.
     if (this.musicStarted) {
       this.backgroundMusic.pause();
       this.backgroundMusic.currentTime = 0;
@@ -264,8 +269,6 @@ class Game {
     let attempts = 0;
     const gridSize = 100;
     const grid = {};
-
-    // Build a spatial grid from existing obstacles.
     this.obstacles.forEach(obstacle => {
       const gridX = Math.floor(obstacle.x / gridSize);
       const gridY = Math.floor(obstacle.y / gridSize);
@@ -278,7 +281,6 @@ class Game {
       const type = Math.random() < 0.5 ? "tree" : "rock";
       const image = this.images[type];
       const isSmall = Math.random() < 0.5;
-      // Define sizes in base coordinates.
       const width = isSmall ? (type === "tree" ? 50 : 60) : (type === "tree" ? 100 : 80);
       const height = isSmall ? (type === "tree" ? 50 : 40) : (type === "tree" ? 100 : 75);
       const y = targetY !== null
@@ -290,7 +292,6 @@ class Game {
         : { xOffset: width * 0.15, yOffset: height * 0.2, width: width * 0.7, height: height * 0.6 };
 
       const newObstacle = new GameObject(-width, y, width, height, image, hitbox);
-
       const gridX = Math.floor(newObstacle.x / gridSize);
       const gridY = Math.floor(newObstacle.y / gridSize);
       const keysToCheck = [
@@ -300,7 +301,6 @@ class Game {
         `${gridX},${gridY - 1}`,
         `${gridX},${gridY + 1}`,
       ];
-
       const isOverlapping = keysToCheck.some(key => {
         return grid[key] && grid[key].some(obstacle =>
           newObstacle.y < obstacle.y + obstacle.height &&
@@ -331,7 +331,8 @@ class Game {
         );
       } while (isOverlapping);
 
-      this.powerUps.push(new GameObject(-size, y, size, size, this.images.powerUp, { xOffset: 0, yOffset: 0, width: size, height: size }));
+      this.powerUps.push(new GameObject(-size, y, size, size, this.images.powerUp,
+        { xOffset: 0, yOffset: 0, width: size, height: size }));
       console.log("Power-up created at Y:", y);
     }
   }
@@ -360,7 +361,7 @@ class Game {
       }
     }
 
-    // Build a spatial grid for collision detection.
+    // Build a simple spatial grid for collision detection.
     const gridSize = 100;
     const grid = {};
     this.obstacles.forEach(obstacle => {
@@ -371,7 +372,7 @@ class Game {
       grid[key].push(obstacle);
     });
 
-    // Move obstacles and handle collisions.
+    // Move obstacles and check collisions.
     this.obstacles.forEach((obstacle, index) => {
       obstacle.x += this.obstacleSpeed;
       if (obstacle.x > this.baseWidth) {
@@ -393,7 +394,6 @@ class Game {
         `${gridX},${gridY - 1}`,
         `${gridX},${gridY + 1}`,
       ];
-
       const collisionDetected = keysToCheck.some(key =>
         grid[key] && grid[key].some(otherObstacle => {
           const obstacleHitbox = otherObstacle.getHitbox();
@@ -409,12 +409,13 @@ class Game {
       if (collisionDetected) {
         if (this.isFullSendMode) {
           this.explosions.push(
-            new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50 })
+            new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion,
+              { xOffset: 0, yOffset: 0, width: 50, height: 50 })
           );
           this.explosionSound.currentTime = 0;
           this.explosionSound.play().catch(() => {});
           this.obstacles.splice(index, 1);
-          this.score += 2; // Double points in full-send mode.
+          this.score += 2;
         } else {
           this.collisionSound.currentTime = 0;
           this.collisionSound.play().catch(() => {});
@@ -429,7 +430,6 @@ class Game {
       if (powerUp.x > this.baseWidth) {
         this.powerUps.splice(index, 1);
       }
-
       const playerHitbox = this.player.getHitbox();
       const powerUpHitbox = powerUp.getHitbox();
       if (
@@ -443,7 +443,7 @@ class Game {
       }
     });
 
-    // Update explosions (remove when their timer expires).
+    // Update explosions (timed removal).
     this.explosions.forEach((explosion, index) => {
       explosion.timer -= deltaTime / 16.67;
       if (explosion.timer <= 0) {
@@ -472,23 +472,23 @@ class Game {
   draw() {
     const dpr = window.devicePixelRatio || 1;
     this.ctx.save();
-    // First, scale the drawing to account for high-DPI.
+    // First, scale for the device pixel ratio.
     this.ctx.scale(dpr, dpr);
-    // Translate and scale to transform the base game coordinates to fit inside the canvas.
-    this.ctx.translate(this.xOffset, this.yOffset);
+    // Then, scale the base coordinate system to the canvas size.
     this.ctx.scale(this.scale, this.scale);
+    // (No translation is needed since we are making the canvas exactly the same aspect ratio as the game.)
 
-    // Draw the background over the entire base coordinate area.
+    // Draw background covering the entire base game area.
     this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
     this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
 
-    // Draw the game objects.
+    // Draw game objects.
     this.player.draw(this.ctx);
     this.obstacles.forEach(obstacle => obstacle.draw(this.ctx));
     this.powerUps.forEach(powerUp => powerUp.draw(this.ctx));
     this.explosions.forEach(explosion => explosion.draw(this.ctx));
 
-    // Draw the score.
+    // Draw score.
     const fontSizeScore = Math.min(this.baseWidth / 20, this.baseHeight / 20);
     this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
     this.ctx.font = `${fontSizeScore}px Arial`;
@@ -507,7 +507,7 @@ class Game {
       this.ctx.fillText(indicatorText, this.baseWidth / 2, this.baseHeight / 2 + fontSize / 2);
     }
 
-    // Draw game over overlay, if needed.
+    // If game over, overlay the game-over screen.
     if (this.gameOver) {
       this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
       this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
@@ -516,7 +516,7 @@ class Game {
       this.ctx.textAlign = "center";
       this.ctx.fillText("Game Over!", this.baseWidth / 2, this.baseHeight / 2 - 50);
       this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2);
-      // (Your play-again button code remains as before.)
+      // (Your play-again button code can be added here as needed.)
     }
 
     this.ctx.restore();
@@ -559,8 +559,8 @@ class Game {
   }
 }
 
-// Do not auto–initialize the game.
-// Instead, expose a global function (for example, triggered by a button click) to start the game.
+// Do not auto-initialize the game on every page.
+// Instead, expose a global function (e.g., called by a button click) to start the game.
 window.initializeGame = function () {
   new Game("gameCanvas");
 };
