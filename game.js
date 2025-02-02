@@ -54,7 +54,7 @@ class Game {
       explosion: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Explosion.png"),
     };
 
-    // Game state variables (all coordinates are in the base system).
+    // Game state variables (all in the base coordinate system).
     this.obstacles = [];
     this.powerUps = [];
     this.explosions = [];
@@ -76,6 +76,9 @@ class Game {
     this.touchStartY = null;
     this.musicStarted = false;
     this.audioEnabled = false;
+
+    // Increase the player movement speed (base units per update).
+    this.playerSpeed = 10;
 
     // For controlling the game loop.
     this.running = true;
@@ -113,34 +116,30 @@ class Game {
 
   // --- RESIZING ---
   resizeCanvas() {
-    // Compute the ideal canvas size so that its aspect ratio matches the base game.
     const dpr = window.devicePixelRatio || 1;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const baseAspect = this.baseWidth / this.baseHeight;
-
-    let cw, ch;
-    if (vw / vh < baseAspect) {
-      // Viewport is relatively narrower: use full width.
-      cw = vw;
-      ch = cw / baseAspect;
-    } else {
-      // Use full height.
-      ch = vh;
-      cw = ch * baseAspect;
-    }
-    // Set the canvas’s internal pixel dimensions (scaled for DPR).
+    // Use 95% of the viewport dimensions.
+    const availableWidth = window.innerWidth * 0.95;
+    const availableHeight = window.innerHeight * 0.95;
+    // Compute scale factors for base dimensions.
+    const scaleX = availableWidth / this.baseWidth;
+    const scaleY = availableHeight / this.baseHeight;
+    // Use the larger scale factor so that the canvas covers at least one dimension fully.
+    this.scale = Math.max(scaleX, scaleY);
+    const cw = this.baseWidth * this.scale;
+    const ch = this.baseHeight * this.scale;
+    // Set the canvas’s internal pixel dimensions.
     this.canvas.width = cw * dpr;
     this.canvas.height = ch * dpr;
     // Set the CSS dimensions.
     this.canvas.style.width = cw + "px";
     this.canvas.style.height = ch + "px";
+    // Center the canvas.
+    this.canvas.style.position = "absolute";
+    this.canvas.style.left = "50%";
+    this.canvas.style.top = "50%";
+    this.canvas.style.transform = "translate(-50%, -50%)";
 
-    // Compute a uniform scale factor to map base coordinates to canvas coordinates.
-    this.scale = cw / this.baseWidth; // (which should equal ch/this.baseHeight)
-    // We will draw from (0,0) so no additional offsets are needed.
-    // (Since the canvas is centered via CSS, any extra space will be outside the canvas.)
-    // Reposition the player in base coordinates (for example, near the right edge).
+    // Reposition the player in base coordinates.
     this.player.x = this.baseWidth - this.player.width - Math.max(20, this.baseWidth * 0.02);
     this.player.y = Math.min(this.player.y, this.baseHeight - this.player.height);
 
@@ -178,9 +177,9 @@ class Game {
     e.preventDefault();
     const currentTouchY = e.touches[0].clientY;
     if (this.touchStartY !== null) {
-      // Convert swipe distance (CSS pixels) into base coordinates.
+      // Convert swipe distance (in CSS pixels) into base coordinate units.
       const swipeDistance = currentTouchY - this.touchStartY;
-      const moveDistance = swipeDistance * 0.6 / this.scale;
+      const moveDistance = (swipeDistance * 0.6) / this.scale;
       this.player.y = Math.max(0, Math.min(this.baseHeight - this.player.height, this.player.y + moveDistance));
       this.touchStartY = currentTouchY;
       console.log("Touch move. New player Y:", this.player.y);
@@ -453,10 +452,10 @@ class Game {
 
     // Handle player movement via keyboard.
     if ((this.keys.ArrowUp || this.keys.KeyW) && this.player.y > 0) {
-      this.player.y -= 5;
+      this.player.y -= this.playerSpeed;
     }
     if ((this.keys.ArrowDown || this.keys.KeyS) && this.player.y < this.baseHeight - this.player.height) {
-      this.player.y += 5;
+      this.player.y += this.playerSpeed;
     }
 
     // Update full-send mode timer.
@@ -472,12 +471,10 @@ class Game {
   draw() {
     const dpr = window.devicePixelRatio || 1;
     this.ctx.save();
-    // First, scale for the device pixel ratio.
+    // Scale for device pixel ratio.
     this.ctx.scale(dpr, dpr);
-    // Then, scale the base coordinate system to the canvas size.
+    // Scale the base coordinate system.
     this.ctx.scale(this.scale, this.scale);
-    // (No translation is needed since we are making the canvas exactly the same aspect ratio as the game.)
-
     // Draw background covering the entire base game area.
     this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
     this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
@@ -516,7 +513,7 @@ class Game {
       this.ctx.textAlign = "center";
       this.ctx.fillText("Game Over!", this.baseWidth / 2, this.baseHeight / 2 - 50);
       this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2);
-      // (Your play-again button code can be added here as needed.)
+      // (You can add play-again button code here if desired.)
     }
 
     this.ctx.restore();
@@ -560,7 +557,7 @@ class Game {
 }
 
 // Do not auto-initialize the game on every page.
-// Instead, expose a global function (e.g., called by a button click) to start the game.
+// Instead, expose a global function (for example, called by a button click) to start the game.
 window.initializeGame = function () {
   new Game("gameCanvas");
 };
