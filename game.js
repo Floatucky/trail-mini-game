@@ -89,40 +89,45 @@ class Game {
         return img;
     }
 
-   resizeCanvas() {
-        const maxWidth = 800;
-        const maxHeight = 600;
-        const aspectRatio = maxWidth / maxHeight;
-        const isPortrait = window.innerHeight > window.innerWidth;
+resizeCanvas() {
+    const devicePixelRatio = window.devicePixelRatio || 1;
 
-        if (isPortrait) {
-            this.canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
-            this.canvas.height = Math.min(window.innerHeight * 0.8, maxHeight);
-        } else {
-            this.canvas.width = Math.min(window.innerWidth * 0.9, maxWidth);
-            this.canvas.height = Math.min(window.innerHeight * 0.7, maxHeight);
-        }
+    // Dynamically calculate maxWidth and maxHeight for improved scaling
+    const maxWidth = Math.min(
+        Math.max(800, window.innerWidth * 0.85), // Minimum width of 800px and 85% of window width
+        1200 * devicePixelRatio // Maximum width scaled with device pixel ratio
+    );
+    const maxHeight = Math.min(
+        Math.max(600, window.innerHeight * 0.8), // Minimum height of 600px and 80% of window height
+        900 * devicePixelRatio // Maximum height scaled with device pixel ratio
+    );
 
-        // Adjust player position dynamically
-        this.player.x = this.canvas.width - 125; // Keeps the player on the right side
-        this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
+    // Set canvas dimensions
+    this.canvas.width = maxWidth;
+    this.canvas.height = maxHeight;
 
-        console.log("Canvas resized. Player position:", this.player.x, this.player.y);
-    }
+    // Apply CSS scaling for clarity
+    this.canvas.style.width = `${this.canvas.width / devicePixelRatio}px`;
+    this.canvas.style.height = `${this.canvas.height / devicePixelRatio}px`;
+
+    // Dynamically adjust the player position
+    this.player.x = this.canvas.width - this.player.width - Math.max(20, this.canvas.width * 0.02);
+    this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
+
+    console.log("Canvas resized. Dimensions:", this.canvas.width, this.canvas.height, "Player position:", this.player.x, this.player.y);
+}
 
 handleKeyDown(e) {
-    // Check if the pressed key is in the keys object
     if (e.key in this.keys) {
         this.keys[e.key] = true; // Mark the key as pressed
-        this.startBackgroundMusic(); // Start background music if not already playing
-        this.startSoundPlayback(); // Preload and start sound playback
-        if (!this.audioEnabled) this.enableAudio(); // Enable audio if not already enabled
+        this.startBackgroundMusic(); // Start music if not already playing
+        this.startSoundPlayback(); // Preload and start sounds
+        if (!this.audioEnabled) this.enableAudio(); // Enable audio
         console.log("Key down:", e.key);
     }
 }
 
 handleKeyUp(e) {
-    // Check if the released key is in the keys object
     if (e.key in this.keys) {
         this.keys[e.key] = false; // Mark the key as released
         console.log("Key up:", e.key);
@@ -334,7 +339,19 @@ update(deltaTime) {
         }
     }
 
-    // Move obstacles
+    // Create a spatial partition grid for collision optimization
+    const gridSize = 100;
+    const grid = {};
+
+    this.obstacles.forEach((obstacle) => {
+        const gridX = Math.floor(obstacle.x / gridSize);
+        const gridY = Math.floor(obstacle.y / gridSize);
+        const key = `${gridX},${gridY}`;
+        if (!grid[key]) grid[key] = [];
+        grid[key].push(obstacle);
+    });
+
+    // Move obstacles and check collisions
     this.obstacles.forEach((obstacle, index) => {
         obstacle.x += this.obstacleSpeed;
         if (obstacle.x > this.canvas.width) {
@@ -348,17 +365,33 @@ update(deltaTime) {
 
         // Collision detection with player
         const playerHitbox = this.player.getHitbox();
-        const obstacleHitbox = obstacle.getHitbox();
-        if (
-            playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
-            playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
-            playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
-            playerHitbox.y + playerHitbox.height > obstacleHitbox.y
-        ) {
+        const gridX = Math.floor(obstacle.x / gridSize);
+        const gridY = Math.floor(obstacle.y / gridSize);
+        const keysToCheck = [
+            `${gridX},${gridY}`,
+            `${gridX - 1},${gridY}`,
+            `${gridX + 1},${gridY}`,
+            `${gridX},${gridY - 1}`,
+            `${gridX},${gridY + 1}`,
+        ];
+
+        const collisionDetected = keysToCheck.some((key) =>
+            grid[key]?.some((otherObstacle) => {
+                const obstacleHitbox = otherObstacle.getHitbox();
+                return (
+                    playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
+                    playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
+                    playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
+                    playerHitbox.y + playerHitbox.height > obstacleHitbox.y
+                );
+            })
+        );
+
+        if (collisionDetected) {
             if (this.isFullSendMode) {
-                this.explosions.push(new GameObject(
-                    obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50 }
-                ));
+                this.explosions.push(
+                    new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50 })
+                );
                 this.explosionSound.currentTime = 0;
                 this.explosionSound.play().catch(() => {});
                 this.obstacles.splice(index, 1); // Remove obstacle
@@ -435,24 +468,25 @@ draw() {
 
     // Draw score
     this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
-    this.ctx.font = "20px Arial";
+    const fontSize = Math.min(this.canvas.width / 20, this.canvas.height / 20); // Dynamic font size
+    this.ctx.font = `${fontSize}px Arial`;
     this.ctx.textAlign = "left";
-    this.ctx.fillText(`Score: ${this.score}`, 10, 30);
+    this.ctx.fillText(`Score: ${this.score}`, 10, fontSize);
 
     // Display full send mode timer if active
-if (this.isFullSendMode) {
-    this.ctx.fillStyle = "#FFF";
-    const fontSize = Math.min(20, this.canvas.width / 20); // Resize font dynamically for mobile
-    this.ctx.font = `${fontSize}px Arial`;
-    this.ctx.textAlign = "center";
+    if (this.isFullSendMode) {
+        this.ctx.fillStyle = "#FFF";
+        const fontSize = Math.min(this.canvas.width / 15, this.canvas.height / 15); // Resize font dynamically
+        this.ctx.font = `${fontSize}px Arial`;
+        this.ctx.textAlign = "center";
 
-    const text = `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`;
-    const lines = text.split("! ");
+        const text = `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`;
+        const lines = text.split("! ");
 
-    lines.forEach((line, index) => {
-        this.ctx.fillText(line, this.canvas.width / 2, this.canvas.height / 2 + fontSize * index - fontSize);
-    });
-}
+        lines.forEach((line, index) => {
+            this.ctx.fillText(line, this.canvas.width / 2, this.canvas.height / 2 + fontSize * index - fontSize);
+        });
+    }
 
     // Display game over screen if applicable
     if (this.gameOver) {
@@ -497,22 +531,26 @@ if (this.isFullSendMode) {
         this.startGameLoop();
     }
 
-    startGameLoop() {
-const gameLoop = (timestamp) => {
-    const deltaTime = timestamp - this.lastUpdateTime;
-    if (deltaTime >= (1000 / 60)) { // 60 FPS cap
-        this.lastUpdateTime = timestamp;
-        if (!this.gameOver) {
-            this.update(deltaTime);
-            this.draw();
-        } else {
-            this.backgroundMusic.pause();
+startGameLoop() {
+    const gameLoop = (timestamp) => {
+        const deltaTime = timestamp - this.lastUpdateTime;
+
+        if (deltaTime >= (1000 / 60)) { // 60 FPS cap
+            this.lastUpdateTime = timestamp;
+
+            if (!this.gameOver) {
+                this.update(deltaTime);
+                this.draw();
+            } else {
+                this.backgroundMusic.pause();
+            }
         }
-    }
+
+        requestAnimationFrame(gameLoop);
+    };
+
     requestAnimationFrame(gameLoop);
-};
-requestAnimationFrame(gameLoop);
-    }
 }
 
 window.onload = () => new Game("gameCanvas");
+
