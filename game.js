@@ -1,555 +1,539 @@
 class GameObject {
-    constructor(x, y, width, height, image, hitbox) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-        this.image = image;
-        this.hitbox = hitbox;
-        this.timer = 30; // Default timer for explosions
-    }
+  constructor(x, y, width, height, image, hitbox) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.image = image;
+    this.hitbox = hitbox;
+    this.timer = 30; // Default timer for explosions
+  }
 
-    draw(ctx) {
-        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
-    }
+  draw(ctx) {
+    ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+  }
 
-    getHitbox() {
-        return {
-            x: this.x + this.hitbox.xOffset,
-            y: this.y + this.hitbox.yOffset,
-            width: this.hitbox.width,
-            height: this.hitbox.height,
-        };
-    }
+  getHitbox() {
+    return {
+      x: this.x + this.hitbox.xOffset,
+      y: this.y + this.hitbox.yOffset,
+      width: this.hitbox.width,
+      height: this.hitbox.height,
+    };
+  }
 }
 
 class Game {
-    constructor(canvasId) {
-        this.canvas = document.getElementById(canvasId);
-        if (!this.canvas) {
-            console.error("Canvas not found:", canvasId);
-            return;
-        }
-        this.ctx = this.canvas.getContext("2d");
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        this.backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
-        this.collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
-        this.pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
-        this.powerUpSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/powerup-recieved.mp3");
-        this.explosionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/explosion.mp3");
-
-        this.images = {
-            player: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Blue-wheel.png"),
-            tree: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/tree.png"),
-            rock: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/rock.png"),
-            powerUp: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Chicken-Bucket.png"),
-            explosion: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Explosion.png"),
-        };
-
-        this.obstacles = [];
-        this.powerUps = [];
-        this.explosions = [];
-        this.score = 0;
-        this.gameOver = false;
-        this.isFullSendMode = false;
-        this.fullSendModeTimer = 0;
-        this.spawnInterval = 1500;
-        this.obstacleSpeed = 3;
-        this.lastSpawnTime = 0;
-        this.lastUpdateTime = 0;
-
-        this.keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, Space: false, KeyW: false, KeyA: false, KeyS: false, KeyD: false };
-        this.touchStartY = null;
-        this.musicStarted = false;
-        this.audioEnabled = false;
-
-        // Control the game loop
-        this.running = true;
-        this.gameLoopRequestId = null;
-
-        // Initialize the player object BEFORE resizing the canvas
-        this.player = new GameObject(
-            0, // Temporary X position; will be adjusted in `resizeCanvas`
-            0, // Temporary Y position; will be adjusted in `resizeCanvas`
-            100,
-            40,
-            this.images.player,
-            { xOffset: 5, yOffset: 10, width: 85, height: 25 }
-        );
-
-        this.resizeCanvas();
-        window.addEventListener("resize", this.resizeCanvas.bind(this));
-        document.addEventListener("keydown", this.handleKeyDown.bind(this));
-        document.addEventListener("keyup", this.handleKeyUp.bind(this));
-        this.canvas.addEventListener("touchstart", this.handleTouchStart.bind(this));
-        this.canvas.addEventListener("touchmove", this.handleTouchMove.bind(this));
-        this.canvas.addEventListener("touchend", this.handleTouchEnd.bind(this));
-        document.addEventListener("visibilitychange", this.handleVisibilityChange.bind(this));
-        document.addEventListener("popupclose", this.handlePopupClose.bind(this));
-
-        console.log("Game initialized.");
-        this.startGameLoop();
+  constructor(canvasId) {
+    this.canvas = document.getElementById(canvasId);
+    if (!this.canvas) {
+      console.error("Canvas not found:", canvasId);
+      return;
     }
+    this.ctx = this.canvas.getContext("2d");
+    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    this.backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
+    this.collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
+    this.pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
+    this.powerUpSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/powerup-recieved.mp3");
+    this.explosionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/explosion.mp3");
 
-    loadImage(src) {
-        const img = new Image();
-        img.src = src;
-        return img;
-    }
+    this.images = {
+      player: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Blue-wheel.png"),
+      tree: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/tree.png"),
+      rock: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/rock.png"),
+      powerUp: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Chicken-Bucket.png"),
+      explosion: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Explosion.png"),
+    };
 
-    resizeCanvas() {
-        const devicePixelRatio = window.devicePixelRatio || 1;
+    this.obstacles = [];
+    this.powerUps = [];
+    this.explosions = [];
+    this.score = 0;
+    this.gameOver = false;
+    this.isFullSendMode = false;
+    this.fullSendModeTimer = 0;
+    this.spawnInterval = 1500;
+    this.obstacleSpeed = 3;
+    this.lastSpawnTime = 0;
+    this.lastUpdateTime = 0;
 
-        // Dynamically calculate maxWidth and maxHeight for improved scaling
-        const maxWidth = Math.min(
-            Math.max(800, window.innerWidth * 0.85),
-            1200 * devicePixelRatio
-        );
-        const maxHeight = Math.min(
-            Math.max(600, window.innerHeight * 0.8),
-            900 * devicePixelRatio
-        );
+    this.keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, Space: false, KeyW: false, KeyA: false, KeyS: false, KeyD: false };
+    this.touchStartY = null;
+    this.musicStarted = false;
+    this.audioEnabled = false;
 
-        this.canvas.width = maxWidth;
-        this.canvas.height = maxHeight;
+    // Control the game loop
+    this.running = true;
+    this.gameLoopRequestId = null;
 
-        this.canvas.style.width = `${this.canvas.width / devicePixelRatio}px`;
-        this.canvas.style.height = `${this.canvas.height / devicePixelRatio}px`;
+    // Initialize the player object BEFORE resizing the canvas
+    this.player = new GameObject(
+      0, // Temporary X position; will be adjusted in `resizeCanvas`
+      0, // Temporary Y position; will be adjusted in `resizeCanvas`
+      100,
+      40,
+      this.images.player,
+      { xOffset: 5, yOffset: 10, width: 85, height: 25 }
+    );
 
-        // Dynamically adjust the player position
-        this.player.x = this.canvas.width - this.player.width - Math.max(20, this.canvas.width * 0.02);
-        this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
+    // Use the full viewport dimensions
+    this.resizeCanvas();
+    window.addEventListener("resize", this.resizeCanvas.bind(this));
+    document.addEventListener("keydown", this.handleKeyDown.bind(this));
+    document.addEventListener("keyup", this.handleKeyUp.bind(this));
+    this.canvas.addEventListener("touchstart", this.handleTouchStart.bind(this));
+    this.canvas.addEventListener("touchmove", this.handleTouchMove.bind(this));
+    this.canvas.addEventListener("touchend", this.handleTouchEnd.bind(this));
+    document.addEventListener("visibilitychange", this.handleVisibilityChange.bind(this));
+    document.addEventListener("popupclose", this.handlePopupClose.bind(this));
 
-        console.log("Canvas resized. Dimensions:", this.canvas.width, this.canvas.height, "Player position:", this.player.x, this.player.y);
-    }
+    console.log("Game initialized.");
+    this.startGameLoop();
+  }
 
-    handleKeyDown(e) {
-        if (e.key in this.keys) {
-            this.keys[e.key] = true;
-            this.startBackgroundMusic();
-            this.startSoundPlayback();
-            if (!this.audioEnabled) this.enableAudio();
-            console.log("Key down:", e.key);
-        }
-    }
+  loadImage(src) {
+    const img = new Image();
+    img.src = src;
+    return img;
+  }
 
-    handleKeyUp(e) {
-        if (e.key in this.keys) {
-            this.keys[e.key] = false;
-            console.log("Key up:", e.key);
-        }
-    }
-
-    handleTouchStart(e) {
-        e.preventDefault();
-        this.touchStartY = e.touches[0].clientY;
-        this.startBackgroundMusic();
-        this.startSoundPlayback();
-        if (!this.audioEnabled) this.enableAudio();
-        console.log("Touch start at Y:", this.touchStartY);
-    }
-
-    handleTouchMove(e) {
-        e.preventDefault();
-        const currentTouchY = e.touches[0].clientY;
-        if (this.touchStartY !== null) {
-            const swipeDistance = currentTouchY - this.touchStartY;
-            const moveDistance = swipeDistance * 0.6;
-            this.player.y = Math.max(
-                0,
-                Math.min(this.canvas.height - this.player.height, this.player.y + moveDistance)
-            );
-            this.touchStartY = currentTouchY;
-            console.log("Touch move. New player Y:", this.player.y);
-        }
-    }
-
-    handleTouchEnd() {
-        console.log("Touch end.");
-        this.touchStartY = null;
-    }
-
-    handleVisibilityChange() {
-        if (document.hidden && this.musicStarted) {
-            this.backgroundMusic.pause();
-            console.log("Game hidden. Background music paused.");
-        } else if (!document.hidden && this.musicStarted) {
-            this.backgroundMusic.play();
-            console.log("Game visible. Background music resumed.");
-        }
-    }
-
-    handlePopupClose() {
-        // Stop all audio playback
-        if (this.musicStarted) {
-            this.backgroundMusic.pause();
-            this.backgroundMusic.currentTime = 0;
-            this.musicStarted = false;
-        }
-        [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
-            sound.pause();
-            sound.currentTime = 0;
-        });
-        console.log("Popup closed. All sounds stopped.");
-
-        // Stop the game loop
-        this.running = false;
-        if (this.gameLoopRequestId) {
-            cancelAnimationFrame(this.gameLoopRequestId);
-        }
-    }
-
-    startBackgroundMusic() {
-        if (!this.musicStarted) {
-            this.backgroundMusic.loop = true;
-            this.backgroundMusic.volume = 0.5;
-            this.audioContext.resume().then(() => {
-                this.backgroundMusic.play().catch((error) => console.error("Background music error:", error));
-                this.musicStarted = true;
-                console.log("Background music started.");
-            });
-        }
-    }
-
-    startSoundPlayback() {
-        if (!this.soundsPreloaded) {
-            [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
-                sound.play().catch(() => {});
-                sound.pause();
-            });
-            this.soundsPreloaded = true;
-            console.log("Sounds preloaded.");
-        }
-    }
+  // Adjust canvas size to fill the viewport
+  resizeCanvas() {
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    // Use full viewport dimensions so that the game fills the screen.
+    // (If desired, you can add conditions here to differentiate mobile and PC.)
+    const canvasWidth = window.innerWidth;
+    const canvasHeight = window.innerHeight;
     
-    enableAudio() {
-        if (this.audioContext.state === "suspended") {
-            this.audioContext.resume();
-        }
-        [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
-            sound.play().catch(() => {});
-            sound.pause();
-        });
-        this.audioEnabled = true;
-        console.log("Audio enabled and preloaded.");
+    this.canvas.width = canvasWidth * devicePixelRatio;
+    this.canvas.height = canvasHeight * devicePixelRatio;
+
+    // Set the CSS size of the canvas
+    this.canvas.style.width = `${canvasWidth}px`;
+    this.canvas.style.height = `${canvasHeight}px`;
+
+    // Reposition the player (for example, to keep it near the right edge)
+    this.player.x = this.canvas.width - this.player.width - Math.max(20, canvasWidth * 0.02);
+    this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
+
+    console.log("Canvas resized. Dimensions:", this.canvas.width, this.canvas.height, "Player position:", this.player.x, this.player.y);
+  }
+
+  handleKeyDown(e) {
+    if (e.key in this.keys) {
+      this.keys[e.key] = true;
+      this.startBackgroundMusic();
+      this.startSoundPlayback();
+      if (!this.audioEnabled) this.enableAudio();
+      console.log("Key down:", e.key);
+    }
+  }
+
+  handleKeyUp(e) {
+    if (e.key in this.keys) {
+      this.keys[e.key] = false;
+      console.log("Key up:", e.key);
+    }
+  }
+
+  handleTouchStart(e) {
+    e.preventDefault();
+    this.touchStartY = e.touches[0].clientY;
+    this.startBackgroundMusic();
+    this.startSoundPlayback();
+    if (!this.audioEnabled) this.enableAudio();
+    console.log("Touch start at Y:", this.touchStartY);
+  }
+
+  handleTouchMove(e) {
+    e.preventDefault();
+    const currentTouchY = e.touches[0].clientY;
+    if (this.touchStartY !== null) {
+      const swipeDistance = currentTouchY - this.touchStartY;
+      const moveDistance = swipeDistance * 0.6;
+      this.player.y = Math.max(
+        0,
+        Math.min(this.canvas.height - this.player.height, this.player.y + moveDistance)
+      );
+      this.touchStartY = currentTouchY;
+      console.log("Touch move. New player Y:", this.player.y);
+    }
+  }
+
+  handleTouchEnd() {
+    console.log("Touch end.");
+    this.touchStartY = null;
+  }
+
+  handleVisibilityChange() {
+    if (document.hidden && this.musicStarted) {
+      this.backgroundMusic.pause();
+      console.log("Game hidden. Background music paused.");
+    } else if (!document.hidden && this.musicStarted) {
+      this.backgroundMusic.play();
+      console.log("Game visible. Background music resumed.");
+    }
+  }
+
+  handlePopupClose() {
+    // Stop all audio playback
+    if (this.musicStarted) {
+      this.backgroundMusic.pause();
+      this.backgroundMusic.currentTime = 0;
+      this.musicStarted = false;
+    }
+    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
+      sound.pause();
+      sound.currentTime = 0;
+    });
+    console.log("Popup closed. All sounds stopped.");
+
+    // Stop the game loop
+    this.running = false;
+    if (this.gameLoopRequestId) {
+      cancelAnimationFrame(this.gameLoopRequestId);
+    }
+  }
+
+  startBackgroundMusic() {
+    if (!this.musicStarted) {
+      this.backgroundMusic.loop = true;
+      this.backgroundMusic.volume = 0.5;
+      this.audioContext.resume().then(() => {
+        this.backgroundMusic.play().catch((error) => console.error("Background music error:", error));
+        this.musicStarted = true;
+        console.log("Background music started.");
+      });
+    }
+  }
+
+  startSoundPlayback() {
+    if (!this.soundsPreloaded) {
+      [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
+        sound.play().catch(() => {});
+        sound.pause();
+      });
+      this.soundsPreloaded = true;
+      console.log("Sounds preloaded.");
+    }
+  }
+
+  enableAudio() {
+    if (this.audioContext.state === "suspended") {
+      this.audioContext.resume();
+    }
+    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
+      sound.play().catch(() => {});
+      sound.pause();
+    });
+    this.audioEnabled = true;
+    console.log("Audio enabled and preloaded.");
+  }
+
+  createObstacle(numObstacles = 1, targetY = null) {
+    if (this.obstacles.length >= 50) {
+      console.warn("Maximum obstacle count reached. Skipping generation.");
+      return;
     }
 
-    createObstacle(numObstacles = 1, targetY = null) {
-        if (this.obstacles.length >= 50) {
-            console.warn("Maximum obstacle count reached. Skipping generation.");
-            return;
-        }
+    const generatedObstacles = [];
+    let attempts = 0;
+    const gridSize = 100;
+    const grid = {};
 
-        const generatedObstacles = [];
-        let attempts = 0;
+    this.obstacles.forEach(obstacle => {
+      const gridX = Math.floor(obstacle.x / gridSize);
+      const gridY = Math.floor(obstacle.y / gridSize);
+      const key = `${gridX},${gridY}`;
+      if (!grid[key]) grid[key] = [];
+      grid[key].push(obstacle);
+    });
 
-        const gridSize = 100;
-        const grid = {};
+    while (generatedObstacles.length < numObstacles && attempts < 50) {
+      const type = Math.random() < 0.5 ? "tree" : "rock";
+      const image = this.images[type];
+      const isSmall = Math.random() < 0.5;
+      const width = isSmall ? (type === "tree" ? 50 : 60) : (type === "tree" ? 100 : 80);
+      const height = isSmall ? (type === "tree" ? 50 : 40) : (type === "tree" ? 100 : 75);
+      const y = targetY !== null
+        ? Math.min(Math.max(targetY - height / 2, 0), this.canvas.height - height)
+        : Math.random() * (this.canvas.height - height);
 
-        this.obstacles.forEach(obstacle => {
-            const gridX = Math.floor(obstacle.x / gridSize);
-            const gridY = Math.floor(obstacle.y / gridSize);
-            const key = `${gridX},${gridY}`;
-            if (!grid[key]) grid[key] = [];
-            grid[key].push(obstacle);
-        });
+      const hitbox = type === "tree"
+        ? { xOffset: width * 0.35, yOffset: height * 0.15, width: width * 0.3, height: height * 0.7 }
+        : { xOffset: width * 0.15, yOffset: height * 0.2, width: width * 0.7, height: height * 0.6 };
 
-        while (generatedObstacles.length < numObstacles && attempts < 50) {
-            const type = Math.random() < 0.5 ? "tree" : "rock";
-            const image = this.images[type];
-            const isSmall = Math.random() < 0.5;
-            const width = isSmall ? (type === "tree" ? 50 : 60) : (type === "tree" ? 100 : 80);
-            const height = isSmall ? (type === "tree" ? 50 : 40) : (type === "tree" ? 100 : 75);
-            const y = targetY !== null
-                ? Math.min(Math.max(targetY - height / 2, 0), this.canvas.height - height)
-                : Math.random() * (this.canvas.height - height);
+      const newObstacle = new GameObject(-width, y, width, height, image, hitbox);
 
-            const hitbox = type === "tree"
-                ? { xOffset: width * 0.35, yOffset: height * 0.15, width: width * 0.3, height: height * 0.7 }
-                : { xOffset: width * 0.15, yOffset: height * 0.2, width: width * 0.7, height: height * 0.6 };
+      const gridX = Math.floor(newObstacle.x / gridSize);
+      const gridY = Math.floor(newObstacle.y / gridSize);
+      const keysToCheck = [
+        `${gridX},${gridY}`,
+        `${gridX - 1},${gridY}`,
+        `${gridX + 1},${gridY}`,
+        `${gridX},${gridY - 1}`,
+        `${gridX},${gridY + 1}`,
+      ];
 
-            const newObstacle = new GameObject(-width, y, width, height, image, hitbox);
+      const isOverlapping = keysToCheck.some(key => {
+        return grid[key] && grid[key].some(obstacle =>
+          newObstacle.y < obstacle.y + obstacle.height &&
+          newObstacle.y + newObstacle.height > obstacle.y
+        );
+      });
 
-            const gridX = Math.floor(newObstacle.x / gridSize);
-            const gridY = Math.floor(newObstacle.y / gridSize);
-            const keysToCheck = [
-                `${gridX},${gridY}`,
-                `${gridX - 1},${gridY}`,
-                `${gridX + 1},${gridY}`,
-                `${gridX},${gridY - 1}`,
-                `${gridX},${gridY + 1}`,
-            ];
+      if (!isOverlapping) {
+        generatedObstacles.push(newObstacle);
+        const newKey = `${gridX},${gridY}`;
+        if (!grid[newKey]) grid[newKey] = [];
+        grid[newKey].push(newObstacle);
+      }
+      attempts++;
+    }
+    this.obstacles.push(...generatedObstacles);
+  }
 
-            const isOverlapping = keysToCheck.some(key => {
-                return grid[key] && grid[key].some(obstacle =>
-                    newObstacle.y < obstacle.y + obstacle.height &&
-                    newObstacle.y + newObstacle.height > obstacle.y
-                );
-            });
+  createPowerUp() {
+    if (Math.random() < 0.1) {
+      const size = 50;
+      let y;
+      let isOverlapping;
+      do {
+        y = Math.random() * (this.canvas.height - size);
+        isOverlapping = this.obstacles.some(obstacle =>
+          y < obstacle.y + obstacle.height && y + size > obstacle.y
+        );
+      } while (isOverlapping);
 
-            if (!isOverlapping) {
-                generatedObstacles.push(newObstacle);
-                const newKey = `${gridX},${gridY}`;
-                if (!grid[newKey]) grid[newKey] = [];
-                grid[newKey].push(newObstacle);
-            }
+      this.powerUps.push(new GameObject(-size, y, size, size, this.images.powerUp, { xOffset: 0, yOffset: 0, width: size, height: size }));
+      console.log("Power-up created at Y:", y);
+    }
+  }
 
-            attempts++;
-        }
+  activateFullSendMode() {
+    if (!this.isFullSendMode) {
+      this.isFullSendMode = true;
+      this.fullSendModeTimer = 300;
+      this.powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
+      console.log("Full send mode activated.");
+    } else {
+      console.log("Full send mode already active. Skipping reactivation.");
+    }
+  }
 
-        this.obstacles.push(...generatedObstacles);
+  update(deltaTime) {
+    const currentTime = performance.now();
+    if (currentTime - this.lastSpawnTime > this.spawnInterval) {
+      const numObstacles = Math.random() < 0.5 ? 1 : 2;
+      this.createObstacle(numObstacles);
+      this.createPowerUp();
+      this.lastSpawnTime = currentTime;
+      if (this.spawnInterval > 500) {
+        this.spawnInterval -= 10;
+      }
     }
 
-    createPowerUp() {
-        if (Math.random() < 0.1) {
-            const size = 50;
-            let y;
-            let isOverlapping;
-            do {
-                y = Math.random() * (this.canvas.height - size);
-                isOverlapping = this.obstacles.some(obstacle => 
-                    y < obstacle.y + obstacle.height && y + size > obstacle.y
-                );
-            } while (isOverlapping);
+    const gridSize = 100;
+    const grid = {};
+    this.obstacles.forEach((obstacle) => {
+      const gridX = Math.floor(obstacle.x / gridSize);
+      const gridY = Math.floor(obstacle.y / gridSize);
+      const key = `${gridX},${gridY}`;
+      if (!grid[key]) grid[key] = [];
+      grid[key].push(obstacle);
+    });
 
-            this.powerUps.push(new GameObject(-size, y, size, size, this.images.powerUp, { xOffset: 0, yOffset: 0, width: size, height: size }));
-            console.log("Power-up created at Y:", y);
+    this.obstacles.forEach((obstacle, index) => {
+      obstacle.x += this.obstacleSpeed;
+      if (obstacle.x > this.canvas.width) {
+        this.obstacles.splice(index, 1);
+        this.score++;
+        if (this.audioEnabled) {
+          this.pointSound.currentTime = 0;
+          this.pointSound.play().catch(() => {});
         }
-    }
+      }
 
-    activateFullSendMode() {
-        if (!this.isFullSendMode) {
-            this.isFullSendMode = true;
-            this.fullSendModeTimer = 300;
-            this.powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
-            console.log("Full send mode activated.");
+      const playerHitbox = this.player.getHitbox();
+      const gridX = Math.floor(obstacle.x / gridSize);
+      const gridY = Math.floor(obstacle.y / gridSize);
+      const keysToCheck = [
+        `${gridX},${gridY}`,
+        `${gridX - 1},${gridY}`,
+        `${gridX + 1},${gridY}`,
+        `${gridX},${gridY - 1}`,
+        `${gridX},${gridY + 1}`,
+      ];
+
+      const collisionDetected = keysToCheck.some((key) =>
+        grid[key] && grid[key].some((otherObstacle) => {
+          const obstacleHitbox = otherObstacle.getHitbox();
+          return (
+            playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
+            playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
+            playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
+            playerHitbox.y + playerHitbox.height > obstacleHitbox.y
+          );
+        })
+      );
+
+      if (collisionDetected) {
+        if (this.isFullSendMode) {
+          this.explosions.push(
+            new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50 })
+          );
+          this.explosionSound.currentTime = 0;
+          this.explosionSound.play().catch(() => {});
+          this.obstacles.splice(index, 1);
+          this.score += 2;
         } else {
-            console.log("Full send mode already active. Skipping reactivation.");
+          this.collisionSound.currentTime = 0;
+          this.collisionSound.play().catch(() => {});
+          this.gameOver = true;
         }
+      }
+    });
+
+    this.powerUps.forEach((powerUp, index) => {
+      powerUp.x += this.obstacleSpeed;
+      if (powerUp.x > this.canvas.width) {
+        this.powerUps.splice(index, 1);
+      }
+      const playerHitbox = this.player.getHitbox();
+      const powerUpHitbox = powerUp.getHitbox();
+      if (
+        playerHitbox.x < powerUpHitbox.x + powerUpHitbox.width &&
+        playerHitbox.x + playerHitbox.width > powerUpHitbox.x &&
+        playerHitbox.y < powerUpHitbox.y + powerUpHitbox.height &&
+        playerHitbox.y + playerHitbox.height > powerUpHitbox.y
+      ) {
+        this.powerUps.splice(index, 1);
+        this.activateFullSendMode();
+      }
+    });
+
+    this.explosions.forEach((explosion, index) => {
+      explosion.timer -= deltaTime / 16.67;
+      if (explosion.timer <= 0) {
+        this.explosions.splice(index, 1);
+      }
+    });
+
+    if ((this.keys.ArrowUp || this.keys.KeyW) && this.player.y > 0) {
+      this.player.y -= 5;
+    }
+    if ((this.keys.ArrowDown || this.keys.KeyS) && this.player.y < this.canvas.height - this.player.height) {
+      this.player.y += 5;
     }
 
-    update(deltaTime) {
-        const currentTime = performance.now();
+    if (this.isFullSendMode) {
+      this.fullSendModeTimer -= deltaTime / 16.67;
+      if (this.fullSendModeTimer <= 0) {
+        this.isFullSendMode = false;
+      }
+    }
+  }
 
-        if (currentTime - this.lastSpawnTime > this.spawnInterval) {
-            const numObstacles = Math.random() < 0.5 ? 1 : 2;
-            this.createObstacle(numObstacles);
-            this.createPowerUp();
-            this.lastSpawnTime = currentTime;
+  draw() {
+    // Draw background
+    this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-            if (this.spawnInterval > 500) {
-                this.spawnInterval -= 10;
-            }
-        }
+    // Draw game objects
+    this.player.draw(this.ctx);
+    this.obstacles.forEach((obstacle) => obstacle.draw(this.ctx));
+    this.powerUps.forEach((powerUp) => powerUp.draw(this.ctx));
+    this.explosions.forEach((explosion) => explosion.draw(this.ctx));
 
-        const gridSize = 100;
-        const grid = {};
+    // Draw score
+    this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
+    const fontSizeScore = Math.min(this.canvas.width / 20, this.canvas.height / 20);
+    this.ctx.font = `${fontSizeScore}px Arial`;
+    this.ctx.textAlign = "left";
+    this.ctx.fillText(`Score: ${this.score}`, 10, fontSizeScore);
 
-        this.obstacles.forEach((obstacle) => {
-            const gridX = Math.floor(obstacle.x / gridSize);
-            const gridY = Math.floor(obstacle.y / gridSize);
-            const key = `${gridX},${gridY}`;
-            if (!grid[key]) grid[key] = [];
-            grid[key].push(obstacle);
+    // Display full send mode indicator (only when active)
+    if (this.isFullSendMode) {
+      this.ctx.fillStyle = "#FFF";
+      const fontSize = Math.min(this.canvas.width / 15, this.canvas.height / 15);
+      this.ctx.font = `${fontSize}px Arial`;
+      this.ctx.textAlign = "center";
+
+      // First line: Timer information
+      const timerText = `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`;
+      this.ctx.fillText(timerText, this.canvas.width / 2, this.canvas.height / 2 - fontSize / 2);
+
+      // Second line: Visual indicator for double points
+      const indicatorText = "Double points awarded for hits!";
+      this.ctx.fillText(indicatorText, this.canvas.width / 2, this.canvas.height / 2 + fontSize / 2);
+    }
+
+    // Display game over screen if needed
+    if (this.gameOver) {
+      this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.fillStyle = "#FFF";
+      this.ctx.font = "40px Arial";
+      this.ctx.textAlign = "center";
+      this.ctx.fillText("Game Over!", this.canvas.width / 2, this.canvas.height / 2 - 50);
+      this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2);
+
+      const popupContent = document.querySelector(".pum-content.popmake-content");
+      if (popupContent && !document.getElementById("playAgainButton")) {
+        const playAgainButton = document.createElement("button");
+        playAgainButton.id = "playAgainButton";
+        playAgainButton.textContent = "Play Again";
+        playAgainButton.style.cssText =
+          "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
+        popupContent.appendChild(playAgainButton);
+
+        playAgainButton.addEventListener("click", () => {
+          playAgainButton.remove();
+          this.resetGame();
         });
-
-        this.obstacles.forEach((obstacle, index) => {
-            obstacle.x += this.obstacleSpeed;
-            if (obstacle.x > this.canvas.width) {
-                this.obstacles.splice(index, 1);
-                this.score++;
-                if (this.audioEnabled) {
-                    this.pointSound.currentTime = 0;
-                    this.pointSound.play().catch(() => {});
-                }
-            }
-
-            const playerHitbox = this.player.getHitbox();
-            const gridX = Math.floor(obstacle.x / gridSize);
-            const gridY = Math.floor(obstacle.y / gridSize);
-            const keysToCheck = [
-                `${gridX},${gridY}`,
-                `${gridX - 1},${gridY}`,
-                `${gridX + 1},${gridY}`,
-                `${gridX},${gridY - 1}`,
-                `${gridX},${gridY + 1}`,
-            ];
-
-            const collisionDetected = keysToCheck.some((key) =>
-                grid[key] && grid[key].some((otherObstacle) => {
-                    const obstacleHitbox = otherObstacle.getHitbox();
-                    return (
-                        playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
-                        playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
-                        playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
-                        playerHitbox.y + playerHitbox.height > obstacleHitbox.y
-                    );
-                })
-            );
-
-            if (collisionDetected) {
-                if (this.isFullSendMode) {
-                    this.explosions.push(
-                        new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50 })
-                    );
-                    this.explosionSound.currentTime = 0;
-                    this.explosionSound.play().catch(() => {});
-                    this.obstacles.splice(index, 1);
-                    this.score += 2;
-                } else {
-                    this.collisionSound.currentTime = 0;
-                    this.collisionSound.play().catch(() => {});
-                    this.gameOver = true;
-                }
-            }
-        });
-
-        this.powerUps.forEach((powerUp, index) => {
-            powerUp.x += this.obstacleSpeed;
-            if (powerUp.x > this.canvas.width) {
-                this.powerUps.splice(index, 1);
-            }
-
-            const playerHitbox = this.player.getHitbox();
-            const powerUpHitbox = powerUp.getHitbox();
-            if (
-                playerHitbox.x < powerUpHitbox.x + powerUpHitbox.width &&
-                playerHitbox.x + playerHitbox.width > powerUpHitbox.x &&
-                playerHitbox.y < powerUpHitbox.y + powerUpHitbox.height &&
-                playerHitbox.y + playerHitbox.height > powerUpHitbox.y
-            ) {
-                this.powerUps.splice(index, 1);
-                this.activateFullSendMode();
-            }
-        });
-
-        this.explosions.forEach((explosion, index) => {
-            explosion.timer -= deltaTime / 16.67;
-            if (explosion.timer <= 0) {
-                this.explosions.splice(index, 1);
-            }
-        });
-
-        if ((this.keys.ArrowUp || this.keys.KeyW) && this.player.y > 0) {
-            this.player.y -= 5;
-        }
-        if ((this.keys.ArrowDown || this.keys.KeyS) && this.player.y < this.canvas.height - this.player.height) {
-            this.player.y += 5;
-        }
-
-        if (this.isFullSendMode) {
-            this.fullSendModeTimer -= deltaTime / 16.67;
-            if (this.fullSendModeTimer <= 0) {
-                this.isFullSendMode = false;
-            }
-        }
+      }
     }
+  }
 
-    draw() {
-        // Draw background
-        this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  resetGame() {
+    this.gameOver = false;
+    this.score = 0;
+    this.obstacles = [];
+    this.powerUps = [];
+    this.explosions = [];
+    this.obstacleSpeed = 3;
+    this.spawnInterval = 1500;
 
-        // Draw game objects
-        this.player.draw(this.ctx);
-        this.obstacles.forEach((obstacle) => obstacle.draw(this.ctx));
-        this.powerUps.forEach((powerUp) => powerUp.draw(this.ctx));
-        this.explosions.forEach((explosion) => explosion.draw(this.ctx));
+    this.resizeCanvas();
+    this.lastSpawnTime = performance.now();
+    this.musicStarted = false;
+    this.running = true;
+    this.startBackgroundMusic();
+    this.startGameLoop();
+  }
 
-        // Draw score
-        this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
-        const fontSizeScore = Math.min(this.canvas.width / 20, this.canvas.height / 20);
-        this.ctx.font = `${fontSizeScore}px Arial`;
-        this.ctx.textAlign = "left";
-        this.ctx.fillText(`Score: ${this.score}`, 10, fontSizeScore);
-
-        // Display full send mode text (only when active)
-        if (this.isFullSendMode) {
-            this.ctx.fillStyle = "#FFF";
-            const fontSize = Math.min(this.canvas.width / 15, this.canvas.height / 15);
-            this.ctx.font = `${fontSize}px Arial`;
-            this.ctx.textAlign = "center";
-
-            // First line: Timer information
-            const timerText = `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`;
-            this.ctx.fillText(timerText, this.canvas.width / 2, this.canvas.height / 2 - fontSize / 2);
-
-            // Second line: Visual indicator for double points
-            const indicatorText = "Double points awarded for hits!";
-            this.ctx.fillText(indicatorText, this.canvas.width / 2, this.canvas.height / 2 + fontSize / 2);
+  startGameLoop() {
+    const gameLoop = (timestamp) => {
+      if (!this.running) return;
+      const deltaTime = timestamp - this.lastUpdateTime;
+      if (deltaTime >= (1000 / 60)) {
+        this.lastUpdateTime = timestamp;
+        if (!this.gameOver) {
+          this.update(deltaTime);
+          this.draw();
+        } else {
+          this.backgroundMusic.pause();
         }
-
-        // Display game over screen if needed
-        if (this.gameOver) {
-            this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            this.ctx.fillStyle = "#FFF";
-            this.ctx.font = "40px Arial";
-            this.ctx.textAlign = "center";
-            this.ctx.fillText("Game Over!", this.canvas.width / 2, this.canvas.height / 2 - 50);
-            this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2);
-
-            const popupContent = document.querySelector(".pum-content.popmake-content");
-            if (popupContent && !document.getElementById("playAgainButton")) {
-                const playAgainButton = document.createElement("button");
-                playAgainButton.id = "playAgainButton";
-                playAgainButton.textContent = "Play Again";
-                playAgainButton.style.cssText =
-                    "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
-                popupContent.appendChild(playAgainButton);
-
-                playAgainButton.addEventListener("click", () => {
-                    playAgainButton.remove();
-                    this.resetGame();
-                });
-            }
-        }
-    }
-
-    resetGame() {
-        this.gameOver = false;
-        this.score = 0;
-        this.obstacles = [];
-        this.powerUps = [];
-        this.explosions = [];
-        this.obstacleSpeed = 3;
-        this.spawnInterval = 1500;
-
-        this.resizeCanvas();
-        this.lastSpawnTime = performance.now();
-        this.musicStarted = false;
-        this.running = true;
-        this.startBackgroundMusic();
-        this.startGameLoop();
-    }
-
-    startGameLoop() {
-        const gameLoop = (timestamp) => {
-            if (!this.running) return;
-            const deltaTime = timestamp - this.lastUpdateTime;
-
-            if (deltaTime >= (1000 / 60)) {
-                this.lastUpdateTime = timestamp;
-
-                if (!this.gameOver) {
-                    this.update(deltaTime);
-                    this.draw();
-                } else {
-                    this.backgroundMusic.pause();
-                }
-            }
-
-            this.gameLoopRequestId = requestAnimationFrame(gameLoop);
-        };
-
-        this.gameLoopRequestId = requestAnimationFrame(gameLoop);
-    }
+      }
+      this.gameLoopRequestId = requestAnimationFrame(gameLoop);
+    };
+    this.gameLoopRequestId = requestAnimationFrame(gameLoop);
+  }
 }
 
-// Remove any automatic initialization (such as listening for "pumAfterOpen")
-// and rely solely on the global function below.
-
-// Define a global initializeGame function for external code (e.g., button click)
-window.initializeGame = function() {
-    new Game("gameCanvas");
+// Do not auto-initialize the game.
+// Instead, expose a global function to start the game (for example, from a button click).
+window.initializeGame = function () {
+  new Game("gameCanvas");
 };
