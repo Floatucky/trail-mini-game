@@ -552,10 +552,12 @@ startGameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    if (document.getElementById("gameCanvas")) {
-        new Game("gameCanvas");
-    } else {
-        console.error("Canvas not found!");
-    }
+document.addEventListener("pumAfterOpen", () => {
+    setTimeout(() => {
+        if (document.getElementById("gameCanvas")) {
+            new Game("gameCanvas");
+        } else {
+            console.error("Canvas not found inside popup!");
+        }
+    }, 500); // Adds a small delay to ensure the popup fully loads
 });
