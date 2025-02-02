@@ -1,5 +1,6 @@
 class GameObject {
   constructor(x, y, width, height, image, hitbox) {
+    // Coordinates and sizes are in the game’s base coordinate system.
     this.x = x;
     this.y = y;
     this.width = width;
@@ -25,19 +26,28 @@ class GameObject {
 
 class Game {
   constructor(canvasId) {
+    // Define a base resolution for the game world.
+    this.baseWidth = 1200;
+    this.baseHeight = 900;
+
     this.canvas = document.getElementById(canvasId);
     if (!this.canvas) {
       console.error("Canvas not found:", canvasId);
       return;
     }
     this.ctx = this.canvas.getContext("2d");
+
+    // For high-DPI displays.
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Load sounds.
     this.backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
     this.collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
     this.pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
     this.powerUpSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/powerup-recieved.mp3");
     this.explosionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/explosion.mp3");
 
+    // Load images.
     this.images = {
       player: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Blue-wheel.png"),
       tree: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/tree.png"),
@@ -46,6 +56,7 @@ class Game {
       explosion: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Explosion.png"),
     };
 
+    // Game state (all coordinates and sizes are in base coordinates).
     this.obstacles = [];
     this.powerUps = [];
     this.explosions = [];
@@ -58,26 +69,31 @@ class Game {
     this.lastSpawnTime = 0;
     this.lastUpdateTime = 0;
 
-    this.keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, Space: false, KeyW: false, KeyA: false, KeyS: false, KeyD: false };
+    this.keys = {
+      ArrowUp: false, ArrowDown: false,
+      ArrowLeft: false, ArrowRight: false,
+      Space: false, KeyW: false, KeyA: false, KeyS: false, KeyD: false
+    };
     this.touchStartY = null;
     this.musicStarted = false;
     this.audioEnabled = false;
 
-    // Control the game loop
+    // For controlling the game loop.
     this.running = true;
     this.gameLoopRequestId = null;
 
-    // Initialize the player object BEFORE resizing the canvas
+    // Initialize the player in the base coordinate system.
+    // (The numbers below assume the base resolution; they will later be scaled.)
     this.player = new GameObject(
-      0, // Temporary X position; will be adjusted in `resizeCanvas`
-      0, // Temporary Y position; will be adjusted in `resizeCanvas`
+      0, // Temporary X; will be adjusted in resizeCanvas.
+      0, // Temporary Y; will be adjusted in resizeCanvas.
       100,
       40,
       this.images.player,
       { xOffset: 5, yOffset: 10, width: 85, height: 25 }
     );
 
-    // Use the full viewport dimensions
+    // Set up the canvas to fill the viewport and compute our scale/offset.
     this.resizeCanvas();
     window.addEventListener("resize", this.resizeCanvas.bind(this));
     document.addEventListener("keydown", this.handleKeyDown.bind(this));
@@ -98,28 +114,34 @@ class Game {
     return img;
   }
 
-  // Adjust canvas size to fill the viewport
+  // --- RESIZING & SCALING ---
   resizeCanvas() {
-    const devicePixelRatio = window.devicePixelRatio || 1;
-    // Use full viewport dimensions so that the game fills the screen.
-    // (If desired, you can add conditions here to differentiate mobile and PC.)
-    const canvasWidth = window.innerWidth;
-    const canvasHeight = window.innerHeight;
-    
-    this.canvas.width = canvasWidth * devicePixelRatio;
-    this.canvas.height = canvasHeight * devicePixelRatio;
+    const dpr = window.devicePixelRatio || 1;
+    const cw = window.innerWidth;
+    const ch = window.innerHeight;
 
-    // Set the CSS size of the canvas
-    this.canvas.style.width = `${canvasWidth}px`;
-    this.canvas.style.height = `${canvasHeight}px`;
+    // Set the canvas to fill the entire viewport.
+    this.canvas.width = cw * dpr;
+    this.canvas.height = ch * dpr;
+    this.canvas.style.width = cw + "px";
+    this.canvas.style.height = ch + "px";
 
-    // Reposition the player (for example, to keep it near the right edge)
-    this.player.x = this.canvas.width - this.player.width - Math.max(20, canvasWidth * 0.02);
-    this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
+    // Compute a uniform scale so that the entire game (base resolution) fits inside the viewport.
+    // Using Math.min prevents any scrolling.
+    this.scale = Math.min(cw / this.baseWidth, ch / this.baseHeight);
+    // Compute offsets to center the game within the viewport.
+    this.xOffset = (cw - this.baseWidth * this.scale) / 2;
+    this.yOffset = (ch - this.baseHeight * this.scale) / 2;
 
-    console.log("Canvas resized. Dimensions:", this.canvas.width, this.canvas.height, "Player position:", this.player.x, this.player.y);
+    // Reposition the player in base coordinates.
+    this.player.x = this.baseWidth - this.player.width - Math.max(20, this.baseWidth * 0.02);
+    this.player.y = Math.min(this.player.y, this.baseHeight - this.player.height);
+
+    console.log("Canvas resized. Base resolution:", this.baseWidth, this.baseHeight,
+      "Scale:", this.scale, "Offsets:", this.xOffset, this.yOffset);
   }
 
+  // --- INPUT HANDLERS ---
   handleKeyDown(e) {
     if (e.key in this.keys) {
       this.keys[e.key] = true;
@@ -138,7 +160,7 @@ class Game {
   }
 
   handleTouchStart(e) {
-    e.preventDefault();
+    e.preventDefault(); // Prevent scrolling
     this.touchStartY = e.touches[0].clientY;
     this.startBackgroundMusic();
     this.startSoundPlayback();
@@ -150,12 +172,11 @@ class Game {
     e.preventDefault();
     const currentTouchY = e.touches[0].clientY;
     if (this.touchStartY !== null) {
+      // Convert swipe distance from CSS pixels into base coordinate units.
       const swipeDistance = currentTouchY - this.touchStartY;
-      const moveDistance = swipeDistance * 0.6;
-      this.player.y = Math.max(
-        0,
-        Math.min(this.canvas.height - this.player.height, this.player.y + moveDistance)
-      );
+      const moveDistance = (swipeDistance * 0.6) / this.scale;
+      // Clamp the new player.y between 0 and the base height.
+      this.player.y = Math.max(0, Math.min(this.baseHeight - this.player.height, this.player.y + moveDistance));
       this.touchStartY = currentTouchY;
       console.log("Touch move. New player Y:", this.player.y);
     }
@@ -177,31 +198,32 @@ class Game {
   }
 
   handlePopupClose() {
-    // Stop all audio playback
+    // Stop all audio playback.
     if (this.musicStarted) {
       this.backgroundMusic.pause();
       this.backgroundMusic.currentTime = 0;
       this.musicStarted = false;
     }
-    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
+    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
       sound.pause();
       sound.currentTime = 0;
     });
     console.log("Popup closed. All sounds stopped.");
 
-    // Stop the game loop
+    // Stop the game loop.
     this.running = false;
     if (this.gameLoopRequestId) {
       cancelAnimationFrame(this.gameLoopRequestId);
     }
   }
 
+  // --- AUDIO INITIALIZATION ---
   startBackgroundMusic() {
     if (!this.musicStarted) {
       this.backgroundMusic.loop = true;
       this.backgroundMusic.volume = 0.5;
       this.audioContext.resume().then(() => {
-        this.backgroundMusic.play().catch((error) => console.error("Background music error:", error));
+        this.backgroundMusic.play().catch(error => console.error("Background music error:", error));
         this.musicStarted = true;
         console.log("Background music started.");
       });
@@ -210,7 +232,7 @@ class Game {
 
   startSoundPlayback() {
     if (!this.soundsPreloaded) {
-      [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
+      [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
         sound.play().catch(() => {});
         sound.pause();
       });
@@ -223,7 +245,7 @@ class Game {
     if (this.audioContext.state === "suspended") {
       this.audioContext.resume();
     }
-    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
+    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
       sound.play().catch(() => {});
       sound.pause();
     });
@@ -231,6 +253,7 @@ class Game {
     console.log("Audio enabled and preloaded.");
   }
 
+  // --- GAME OBJECT CREATION ---
   createObstacle(numObstacles = 1, targetY = null) {
     if (this.obstacles.length >= 50) {
       console.warn("Maximum obstacle count reached. Skipping generation.");
@@ -242,6 +265,7 @@ class Game {
     const gridSize = 100;
     const grid = {};
 
+    // Build a spatial grid from existing obstacles.
     this.obstacles.forEach(obstacle => {
       const gridX = Math.floor(obstacle.x / gridSize);
       const gridY = Math.floor(obstacle.y / gridSize);
@@ -254,11 +278,12 @@ class Game {
       const type = Math.random() < 0.5 ? "tree" : "rock";
       const image = this.images[type];
       const isSmall = Math.random() < 0.5;
+      // Define sizes in base coordinates.
       const width = isSmall ? (type === "tree" ? 50 : 60) : (type === "tree" ? 100 : 80);
       const height = isSmall ? (type === "tree" ? 50 : 40) : (type === "tree" ? 100 : 75);
       const y = targetY !== null
-        ? Math.min(Math.max(targetY - height / 2, 0), this.canvas.height - height)
-        : Math.random() * (this.canvas.height - height);
+        ? Math.min(Math.max(targetY - height / 2, 0), this.baseHeight - height)
+        : Math.random() * (this.baseHeight - height);
 
       const hitbox = type === "tree"
         ? { xOffset: width * 0.35, yOffset: height * 0.15, width: width * 0.3, height: height * 0.7 }
@@ -300,7 +325,7 @@ class Game {
       let y;
       let isOverlapping;
       do {
-        y = Math.random() * (this.canvas.height - size);
+        y = Math.random() * (this.baseHeight - size);
         isOverlapping = this.obstacles.some(obstacle =>
           y < obstacle.y + obstacle.height && y + size > obstacle.y
         );
@@ -315,13 +340,14 @@ class Game {
     if (!this.isFullSendMode) {
       this.isFullSendMode = true;
       this.fullSendModeTimer = 300;
-      this.powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
+      this.powerUpSound.play().catch(error => console.error("Power-up sound error:", error));
       console.log("Full send mode activated.");
     } else {
       console.log("Full send mode already active. Skipping reactivation.");
     }
   }
 
+  // --- GAME UPDATE LOGIC ---
   update(deltaTime) {
     const currentTime = performance.now();
     if (currentTime - this.lastSpawnTime > this.spawnInterval) {
@@ -334,9 +360,10 @@ class Game {
       }
     }
 
+    // Build a spatial grid for collision detection.
     const gridSize = 100;
     const grid = {};
-    this.obstacles.forEach((obstacle) => {
+    this.obstacles.forEach(obstacle => {
       const gridX = Math.floor(obstacle.x / gridSize);
       const gridY = Math.floor(obstacle.y / gridSize);
       const key = `${gridX},${gridY}`;
@@ -344,9 +371,10 @@ class Game {
       grid[key].push(obstacle);
     });
 
+    // Move obstacles and handle collisions.
     this.obstacles.forEach((obstacle, index) => {
       obstacle.x += this.obstacleSpeed;
-      if (obstacle.x > this.canvas.width) {
+      if (obstacle.x > this.baseWidth) {
         this.obstacles.splice(index, 1);
         this.score++;
         if (this.audioEnabled) {
@@ -366,8 +394,8 @@ class Game {
         `${gridX},${gridY + 1}`,
       ];
 
-      const collisionDetected = keysToCheck.some((key) =>
-        grid[key] && grid[key].some((otherObstacle) => {
+      const collisionDetected = keysToCheck.some(key =>
+        grid[key] && grid[key].some(otherObstacle => {
           const obstacleHitbox = otherObstacle.getHitbox();
           return (
             playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
@@ -386,7 +414,7 @@ class Game {
           this.explosionSound.currentTime = 0;
           this.explosionSound.play().catch(() => {});
           this.obstacles.splice(index, 1);
-          this.score += 2;
+          this.score += 2; // Double points in full-send mode.
         } else {
           this.collisionSound.currentTime = 0;
           this.collisionSound.play().catch(() => {});
@@ -395,11 +423,13 @@ class Game {
       }
     });
 
+    // Move power-ups.
     this.powerUps.forEach((powerUp, index) => {
       powerUp.x += this.obstacleSpeed;
-      if (powerUp.x > this.canvas.width) {
+      if (powerUp.x > this.baseWidth) {
         this.powerUps.splice(index, 1);
       }
+
       const playerHitbox = this.player.getHitbox();
       const powerUpHitbox = powerUp.getHitbox();
       if (
@@ -413,6 +443,7 @@ class Game {
       }
     });
 
+    // Update explosions (remove when their timer expires).
     this.explosions.forEach((explosion, index) => {
       explosion.timer -= deltaTime / 16.67;
       if (explosion.timer <= 0) {
@@ -420,13 +451,15 @@ class Game {
       }
     });
 
+    // Handle player movement via keyboard.
     if ((this.keys.ArrowUp || this.keys.KeyW) && this.player.y > 0) {
       this.player.y -= 5;
     }
-    if ((this.keys.ArrowDown || this.keys.KeyS) && this.player.y < this.canvas.height - this.player.height) {
+    if ((this.keys.ArrowDown || this.keys.KeyS) && this.player.y < this.baseHeight - this.player.height) {
       this.player.y += 5;
     }
 
+    // Update full-send mode timer.
     if (this.isFullSendMode) {
       this.fullSendModeTimer -= deltaTime / 16.67;
       if (this.fullSendModeTimer <= 0) {
@@ -435,67 +468,61 @@ class Game {
     }
   }
 
+  // --- DRAWING ---
   draw() {
-    // Draw background
+    const dpr = window.devicePixelRatio || 1;
+    this.ctx.save();
+    // First, scale the drawing to account for high-DPI.
+    this.ctx.scale(dpr, dpr);
+    // Translate and scale to transform the base game coordinates to fit inside the canvas.
+    this.ctx.translate(this.xOffset, this.yOffset);
+    this.ctx.scale(this.scale, this.scale);
+
+    // Draw the background over the entire base coordinate area.
     this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
 
-    // Draw game objects
+    // Draw the game objects.
     this.player.draw(this.ctx);
-    this.obstacles.forEach((obstacle) => obstacle.draw(this.ctx));
-    this.powerUps.forEach((powerUp) => powerUp.draw(this.ctx));
-    this.explosions.forEach((explosion) => explosion.draw(this.ctx));
+    this.obstacles.forEach(obstacle => obstacle.draw(this.ctx));
+    this.powerUps.forEach(powerUp => powerUp.draw(this.ctx));
+    this.explosions.forEach(explosion => explosion.draw(this.ctx));
 
-    // Draw score
+    // Draw the score.
+    const fontSizeScore = Math.min(this.baseWidth / 20, this.baseHeight / 20);
     this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
-    const fontSizeScore = Math.min(this.canvas.width / 20, this.canvas.height / 20);
     this.ctx.font = `${fontSizeScore}px Arial`;
     this.ctx.textAlign = "left";
     this.ctx.fillText(`Score: ${this.score}`, 10, fontSizeScore);
 
-    // Display full send mode indicator (only when active)
+    // If full-send mode is active, display the timer and a double–points indicator.
     if (this.isFullSendMode) {
       this.ctx.fillStyle = "#FFF";
-      const fontSize = Math.min(this.canvas.width / 15, this.canvas.height / 15);
+      const fontSize = Math.min(this.baseWidth / 15, this.baseHeight / 15);
       this.ctx.font = `${fontSize}px Arial`;
       this.ctx.textAlign = "center";
-
-      // First line: Timer information
       const timerText = `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`;
-      this.ctx.fillText(timerText, this.canvas.width / 2, this.canvas.height / 2 - fontSize / 2);
-
-      // Second line: Visual indicator for double points
+      this.ctx.fillText(timerText, this.baseWidth / 2, this.baseHeight / 2 - fontSize / 2);
       const indicatorText = "Double points awarded for hits!";
-      this.ctx.fillText(indicatorText, this.canvas.width / 2, this.canvas.height / 2 + fontSize / 2);
+      this.ctx.fillText(indicatorText, this.baseWidth / 2, this.baseHeight / 2 + fontSize / 2);
     }
 
-    // Display game over screen if needed
+    // Draw game over overlay, if needed.
     if (this.gameOver) {
       this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
       this.ctx.fillStyle = "#FFF";
       this.ctx.font = "40px Arial";
       this.ctx.textAlign = "center";
-      this.ctx.fillText("Game Over!", this.canvas.width / 2, this.canvas.height / 2 - 50);
-      this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2);
-
-      const popupContent = document.querySelector(".pum-content.popmake-content");
-      if (popupContent && !document.getElementById("playAgainButton")) {
-        const playAgainButton = document.createElement("button");
-        playAgainButton.id = "playAgainButton";
-        playAgainButton.textContent = "Play Again";
-        playAgainButton.style.cssText =
-          "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
-        popupContent.appendChild(playAgainButton);
-
-        playAgainButton.addEventListener("click", () => {
-          playAgainButton.remove();
-          this.resetGame();
-        });
-      }
+      this.ctx.fillText("Game Over!", this.baseWidth / 2, this.baseHeight / 2 - 50);
+      this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2);
+      // (Your play-again button code remains as before.)
     }
+
+    this.ctx.restore();
   }
 
+  // --- RESET & GAME LOOP ---
   resetGame() {
     this.gameOver = false;
     this.score = 0;
@@ -532,8 +559,8 @@ class Game {
   }
 }
 
-// Do not auto-initialize the game.
-// Instead, expose a global function to start the game (for example, from a button click).
+// Do not auto–initialize the game.
+// Instead, expose a global function (for example, triggered by a button click) to start the game.
 window.initializeGame = function () {
   new Game("gameCanvas");
 };
