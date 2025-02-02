@@ -89,74 +89,74 @@ class Game {
         return img;
     }
 
-resizeCanvas() {
-    const devicePixelRatio = window.devicePixelRatio || 1;
+    resizeCanvas() {
+        const devicePixelRatio = window.devicePixelRatio || 1;
 
-    // Dynamically calculate maxWidth and maxHeight for improved scaling
-    const maxWidth = Math.min(
-        Math.max(800, window.innerWidth * 0.85), // Minimum width of 800px and 85% of window width
-        1200 * devicePixelRatio // Maximum width scaled with device pixel ratio
-    );
-    const maxHeight = Math.min(
-        Math.max(600, window.innerHeight * 0.8), // Minimum height of 600px and 80% of window height
-        900 * devicePixelRatio // Maximum height scaled with device pixel ratio
-    );
-
-    // Set canvas dimensions
-    this.canvas.width = maxWidth;
-    this.canvas.height = maxHeight;
-
-    // Apply CSS scaling for clarity
-    this.canvas.style.width = `${this.canvas.width / devicePixelRatio}px`;
-    this.canvas.style.height = `${this.canvas.height / devicePixelRatio}px`;
-
-    // Dynamically adjust the player position
-    this.player.x = this.canvas.width - this.player.width - Math.max(20, this.canvas.width * 0.02);
-    this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
-
-    console.log("Canvas resized. Dimensions:", this.canvas.width, this.canvas.height, "Player position:", this.player.x, this.player.y);
-}
-
-handleKeyDown(e) {
-    if (e.key in this.keys) {
-        this.keys[e.key] = true; // Mark the key as pressed
-        this.startBackgroundMusic(); // Start music if not already playing
-        this.startSoundPlayback(); // Preload and start sounds
-        if (!this.audioEnabled) this.enableAudio(); // Enable audio
-        console.log("Key down:", e.key);
-    }
-}
-
-handleKeyUp(e) {
-    if (e.key in this.keys) {
-        this.keys[e.key] = false; // Mark the key as released
-        console.log("Key up:", e.key);
-    }
-}
-
-handleTouchStart(e) {
-    e.preventDefault(); // Prevent scrolling
-    this.touchStartY = e.touches[0].clientY;
-    this.startBackgroundMusic();
-    this.startSoundPlayback();
-    if (!this.audioEnabled) this.enableAudio();
-    console.log("Touch start at Y:", this.touchStartY);
-}
-
-handleTouchMove(e) {
-    e.preventDefault(); // Prevent scrolling
-    const currentTouchY = e.touches[0].clientY;
-    if (this.touchStartY !== null) {
-        const swipeDistance = currentTouchY - this.touchStartY;
-        const moveDistance = swipeDistance * 0.6;
-        this.player.y = Math.max(
-            0,
-            Math.min(this.canvas.height - this.player.height, this.player.y + moveDistance)
+        // Dynamically calculate maxWidth and maxHeight for improved scaling
+        const maxWidth = Math.min(
+            Math.max(800, window.innerWidth * 0.85), // Minimum width of 800px and 85% of window width
+            1200 * devicePixelRatio // Maximum width scaled with device pixel ratio
         );
-        this.touchStartY = currentTouchY;
-        console.log("Touch move. New player Y:", this.player.y);
+        const maxHeight = Math.min(
+            Math.max(600, window.innerHeight * 0.8), // Minimum height of 600px and 80% of window height
+            900 * devicePixelRatio // Maximum height scaled with device pixel ratio
+        );
+
+        // Set canvas dimensions
+        this.canvas.width = maxWidth;
+        this.canvas.height = maxHeight;
+
+        // Apply CSS scaling for clarity
+        this.canvas.style.width = `${this.canvas.width / devicePixelRatio}px`;
+        this.canvas.style.height = `${this.canvas.height / devicePixelRatio}px`;
+
+        // Dynamically adjust the player position
+        this.player.x = this.canvas.width - this.player.width - Math.max(20, this.canvas.width * 0.02);
+        this.player.y = Math.min(this.player.y, this.canvas.height - this.player.height);
+
+        console.log("Canvas resized. Dimensions:", this.canvas.width, this.canvas.height, "Player position:", this.player.x, this.player.y);
     }
-}
+
+    handleKeyDown(e) {
+        if (e.key in this.keys) {
+            this.keys[e.key] = true; // Mark the key as pressed
+            this.startBackgroundMusic(); // Start music if not already playing
+            this.startSoundPlayback(); // Preload and start sounds
+            if (!this.audioEnabled) this.enableAudio(); // Enable audio
+            console.log("Key down:", e.key);
+        }
+    }
+
+    handleKeyUp(e) {
+        if (e.key in this.keys) {
+            this.keys[e.key] = false; // Mark the key as released
+            console.log("Key up:", e.key);
+        }
+    }
+
+    handleTouchStart(e) {
+        e.preventDefault(); // Prevent scrolling
+        this.touchStartY = e.touches[0].clientY;
+        this.startBackgroundMusic();
+        this.startSoundPlayback();
+        if (!this.audioEnabled) this.enableAudio();
+        console.log("Touch start at Y:", this.touchStartY);
+    }
+
+    handleTouchMove(e) {
+        e.preventDefault(); // Prevent scrolling
+        const currentTouchY = e.touches[0].clientY;
+        if (this.touchStartY !== null) {
+            const swipeDistance = currentTouchY - this.touchStartY;
+            const moveDistance = swipeDistance * 0.6;
+            this.player.y = Math.max(
+                0,
+                Math.min(this.canvas.height - this.player.height, this.player.y + moveDistance)
+            );
+            this.touchStartY = currentTouchY;
+            console.log("Touch move. New player Y:", this.player.y);
+        }
+    }
 
     handleTouchEnd() {
         console.log("Touch end.");
@@ -173,21 +173,21 @@ handleTouchMove(e) {
         }
     }
 
-handlePopupClose() {
-    if (this.musicStarted) {
-        this.backgroundMusic.pause();
-        this.backgroundMusic.currentTime = 0; // Reset music to the start
-        this.musicStarted = false;
+    handlePopupClose() {
+        if (this.musicStarted) {
+            this.backgroundMusic.pause();
+            this.backgroundMusic.currentTime = 0; // Reset music to the start
+            this.musicStarted = false;
+        }
+
+        // Stop all other sounds
+        [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
+            sound.pause();
+            sound.currentTime = 0; // Reset sound to the start
+        });
+
+        console.log("Popup closed. All sounds stopped.");
     }
-
-    // Stop all other sounds
-    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
-        sound.pause();
-        sound.currentTime = 0; // Reset sound to the start
-    });
-
-    console.log("Popup closed. All sounds stopped.");
-}
 
     startBackgroundMusic() {
         if (!this.musicStarted) {
@@ -213,87 +213,87 @@ handlePopupClose() {
         }
     }
     
-enableAudio() {
-    if (this.audioContext.state === "suspended") {
-        this.audioContext.resume();
-    }
-    // Ensure sounds are preloaded and ready to play
-    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
-        sound.play().catch(() => {}); // Attempt to pre-play the sounds to unlock them
-        sound.pause();
-    });
-    this.audioEnabled = true;
-    console.log("Audio enabled and preloaded.");
-}
-
-createObstacle(numObstacles = 1, targetY = null) {
-    if (this.obstacles.length >= 50) { // Limit to 50 obstacles
-        console.warn("Maximum obstacle count reached. Skipping generation.");
-        return;
-    }
-
-    const generatedObstacles = [];
-    let attempts = 0;
-
-    // Create a spatial partition grid
-    const gridSize = 100;
-    const grid = {};
-
-    this.obstacles.forEach(obstacle => {
-        const gridX = Math.floor(obstacle.x / gridSize);
-        const gridY = Math.floor(obstacle.y / gridSize);
-        const key = `${gridX},${gridY}`;
-        if (!grid[key]) grid[key] = [];
-        grid[key].push(obstacle);
-    });
-
-    while (generatedObstacles.length < numObstacles && attempts < 50) {
-        const type = Math.random() < 0.5 ? "tree" : "rock";
-        const image = this.images[type];
-        const isSmall = Math.random() < 0.5;
-        const width = isSmall ? (type === "tree" ? 50 : 60) : (type === "tree" ? 100 : 80);
-        const height = isSmall ? (type === "tree" ? 50 : 40) : (type === "tree" ? 100 : 75);
-        const y = targetY !== null
-            ? Math.min(Math.max(targetY - height / 2, 0), this.canvas.height - height)
-            : Math.random() * (this.canvas.height - height);
-
-        const hitbox = type === "tree"
-            ? { xOffset: width * 0.35, yOffset: height * 0.15, width: width * 0.3, height: height * 0.7 }
-            : { xOffset: width * 0.15, yOffset: height * 0.2, width: width * 0.7, height: height * 0.6 };
-
-        const newObstacle = new GameObject(-width, y, width, height, image, hitbox);
-
-        // Get grid cells to check
-        const gridX = Math.floor(newObstacle.x / gridSize);
-        const gridY = Math.floor(newObstacle.y / gridSize);
-        const keysToCheck = [
-            `${gridX},${gridY}`,
-            `${gridX - 1},${gridY}`,
-            `${gridX + 1},${gridY}`,
-            `${gridX},${gridY - 1}`,
-            `${gridX},${gridY + 1}`,
-        ];
-
-        // Check overlap within relevant grid cells
-        const isOverlapping = keysToCheck.some(key => {
-            return grid[key]?.some(obstacle =>
-                newObstacle.y < obstacle.y + obstacle.height &&
-                newObstacle.y + newObstacle.height > obstacle.y
-            );
+    enableAudio() {
+        if (this.audioContext.state === "suspended") {
+            this.audioContext.resume();
+        }
+        // Ensure sounds are preloaded and ready to play
+        [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
+            sound.play().catch(() => {}); // Attempt to pre-play the sounds to unlock them
+            sound.pause();
         });
+        this.audioEnabled = true;
+        console.log("Audio enabled and preloaded.");
+    }
 
-        if (!isOverlapping) {
-            generatedObstacles.push(newObstacle);
-            const newKey = `${gridX},${gridY}`;
-            if (!grid[newKey]) grid[newKey] = [];
-            grid[newKey].push(newObstacle);
+    createObstacle(numObstacles = 1, targetY = null) {
+        if (this.obstacles.length >= 50) { // Limit to 50 obstacles
+            console.warn("Maximum obstacle count reached. Skipping generation.");
+            return;
         }
 
-        attempts++;
-    }
+        const generatedObstacles = [];
+        let attempts = 0;
 
-    this.obstacles.push(...generatedObstacles);
-}
+        // Create a spatial partition grid
+        const gridSize = 100;
+        const grid = {};
+
+        this.obstacles.forEach(obstacle => {
+            const gridX = Math.floor(obstacle.x / gridSize);
+            const gridY = Math.floor(obstacle.y / gridSize);
+            const key = `${gridX},${gridY}`;
+            if (!grid[key]) grid[key] = [];
+            grid[key].push(obstacle);
+        });
+
+        while (generatedObstacles.length < numObstacles && attempts < 50) {
+            const type = Math.random() < 0.5 ? "tree" : "rock";
+            const image = this.images[type];
+            const isSmall = Math.random() < 0.5;
+            const width = isSmall ? (type === "tree" ? 50 : 60) : (type === "tree" ? 100 : 80);
+            const height = isSmall ? (type === "tree" ? 50 : 40) : (type === "tree" ? 100 : 75);
+            const y = targetY !== null
+                ? Math.min(Math.max(targetY - height / 2, 0), this.canvas.height - height)
+                : Math.random() * (this.canvas.height - height);
+
+            const hitbox = type === "tree"
+                ? { xOffset: width * 0.35, yOffset: height * 0.15, width: width * 0.3, height: height * 0.7 }
+                : { xOffset: width * 0.15, yOffset: height * 0.2, width: width * 0.7, height: height * 0.6 };
+
+            const newObstacle = new GameObject(-width, y, width, height, image, hitbox);
+
+            // Get grid cells to check
+            const gridX = Math.floor(newObstacle.x / gridSize);
+            const gridY = Math.floor(newObstacle.y / gridSize);
+            const keysToCheck = [
+                `${gridX},${gridY}`,
+                `${gridX - 1},${gridY}`,
+                `${gridX + 1},${gridY}`,
+                `${gridX},${gridY - 1}`,
+                `${gridX},${gridY + 1}`,
+            ];
+
+            // Check overlap within relevant grid cells using standard checks
+            const isOverlapping = keysToCheck.some(key => {
+                return grid[key] && grid[key].some(obstacle =>
+                    newObstacle.y < obstacle.y + obstacle.height &&
+                    newObstacle.y + newObstacle.height > obstacle.y
+                );
+            });
+
+            if (!isOverlapping) {
+                generatedObstacles.push(newObstacle);
+                const newKey = `${gridX},${gridY}`;
+                if (!grid[newKey]) grid[newKey] = [];
+                grid[newKey].push(newObstacle);
+            }
+
+            attempts++;
+        }
+
+        this.obstacles.push(...generatedObstacles);
+    }
 
     createPowerUp() {
         if (Math.random() < 0.1) {
@@ -312,208 +312,208 @@ createObstacle(numObstacles = 1, targetY = null) {
         }
     }
 
-activateFullSendMode() {
-    if (!this.isFullSendMode) {
-        this.isFullSendMode = true;
-        this.fullSendModeTimer = 300;
-        this.powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
-        console.log("Full send mode activated.");
-    } else {
-        console.log("Full send mode already active. Skipping reactivation.");
-    }
-}
-
-update(deltaTime) {
-    const currentTime = performance.now();
-
-    // Spawn obstacles and power-ups at regular intervals
-    if (currentTime - this.lastSpawnTime > this.spawnInterval) {
-        const numObstacles = Math.random() < 0.5 ? 1 : 2;
-        this.createObstacle(numObstacles);
-        this.createPowerUp();
-        this.lastSpawnTime = currentTime;
-
-        // Gradually decrease spawn interval for increased difficulty
-        if (this.spawnInterval > 500) {
-            this.spawnInterval -= 10;
+    activateFullSendMode() {
+        if (!this.isFullSendMode) {
+            this.isFullSendMode = true;
+            this.fullSendModeTimer = 300;
+            this.powerUpSound.play().catch((error) => console.error("Power-up sound error:", error));
+            console.log("Full send mode activated.");
+        } else {
+            console.log("Full send mode already active. Skipping reactivation.");
         }
     }
 
-    // Create a spatial partition grid for collision optimization
-    const gridSize = 100;
-    const grid = {};
+    update(deltaTime) {
+        const currentTime = performance.now();
 
-    this.obstacles.forEach((obstacle) => {
-        const gridX = Math.floor(obstacle.x / gridSize);
-        const gridY = Math.floor(obstacle.y / gridSize);
-        const key = `${gridX},${gridY}`;
-        if (!grid[key]) grid[key] = [];
-        grid[key].push(obstacle);
-    });
+        // Spawn obstacles and power-ups at regular intervals
+        if (currentTime - this.lastSpawnTime > this.spawnInterval) {
+            const numObstacles = Math.random() < 0.5 ? 1 : 2;
+            this.createObstacle(numObstacles);
+            this.createPowerUp();
+            this.lastSpawnTime = currentTime;
 
-    // Move obstacles and check collisions
-    this.obstacles.forEach((obstacle, index) => {
-        obstacle.x += this.obstacleSpeed;
-        if (obstacle.x > this.canvas.width) {
-            this.obstacles.splice(index, 1); // Remove obstacle if it leaves the screen
-            this.score++; // Increment score
-            if (this.audioEnabled) {
-                this.pointSound.currentTime = 0;
-                this.pointSound.play().catch(() => {});
+            // Gradually decrease spawn interval for increased difficulty
+            if (this.spawnInterval > 500) {
+                this.spawnInterval -= 10;
             }
         }
 
-        // Collision detection with player
-        const playerHitbox = this.player.getHitbox();
-        const gridX = Math.floor(obstacle.x / gridSize);
-        const gridY = Math.floor(obstacle.y / gridSize);
-        const keysToCheck = [
-            `${gridX},${gridY}`,
-            `${gridX - 1},${gridY}`,
-            `${gridX + 1},${gridY}`,
-            `${gridX},${gridY - 1}`,
-            `${gridX},${gridY + 1}`,
-        ];
+        // Create a spatial partition grid for collision optimization
+        const gridSize = 100;
+        const grid = {};
 
-        const collisionDetected = keysToCheck.some((key) =>
-            grid[key]?.some((otherObstacle) => {
-                const obstacleHitbox = otherObstacle.getHitbox();
-                return (
-                    playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
-                    playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
-                    playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
-                    playerHitbox.y + playerHitbox.height > obstacleHitbox.y
-                );
-            })
-        );
-
-        if (collisionDetected) {
-            if (this.isFullSendMode) {
-                this.explosions.push(
-                    new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50 })
-                );
-                this.explosionSound.currentTime = 0;
-                this.explosionSound.play().catch(() => {});
-                this.obstacles.splice(index, 1); // Remove obstacle
-                this.score += 2; // Bonus score in full-send mode
-            } else {
-                this.collisionSound.currentTime = 0;
-                this.collisionSound.play().catch(() => {});
-                this.gameOver = true; // End the game
-            }
-        }
-    });
-
-    // Move power-ups
-    this.powerUps.forEach((powerUp, index) => {
-        powerUp.x += this.obstacleSpeed;
-        if (powerUp.x > this.canvas.width) {
-            this.powerUps.splice(index, 1); // Remove power-up if it leaves the screen
-        }
-
-        // Collision detection with player
-        const playerHitbox = this.player.getHitbox();
-        const powerUpHitbox = powerUp.getHitbox();
-        if (
-            playerHitbox.x < powerUpHitbox.x + powerUpHitbox.width &&
-            playerHitbox.x + playerHitbox.width > powerUpHitbox.x &&
-            playerHitbox.y < powerUpHitbox.y + powerUpHitbox.height &&
-            playerHitbox.y + playerHitbox.height > powerUpHitbox.y
-        ) {
-            this.powerUps.splice(index, 1); // Remove collected power-up
-            this.activateFullSendMode(); // Activate full-send mode
-        }
-    });
-
-    // Update explosions (timed removal)
-    this.explosions.forEach((explosion, index) => {
-        explosion.timer -= deltaTime / 16.67; // Update timer
-        if (explosion.timer <= 0) {
-            this.explosions.splice(index, 1); // Remove explosion
-        }
-    });
-
-    // Handle player movement
-    if ((this.keys.ArrowUp || this.keys.KeyW) && this.player.y > 0) {
-        this.player.y -= 5;
-    }
-    if ((this.keys.ArrowDown || this.keys.KeyS) && this.player.y < this.canvas.height - this.player.height) {
-        this.player.y += 5;
-    }
-
-    // Handle full-send mode timer
-    if (this.isFullSendMode) {
-        this.fullSendModeTimer -= deltaTime / 16.67;
-        if (this.fullSendModeTimer <= 0) {
-            this.isFullSendMode = false;
-        }
-    }
-}
-
-draw() {
-    this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-    // Draw player
-    this.player.draw(this.ctx);
-
-    // Draw obstacles
-    this.obstacles.forEach((obstacle) => obstacle.draw(this.ctx));
-
-    // Draw power-ups
-    this.powerUps.forEach((powerUp) => powerUp.draw(this.ctx));
-
-    // Draw explosions
-    this.explosions.forEach((explosion) => explosion.draw(this.ctx));
-
-    // Draw score
-    this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
-    const fontSize = Math.min(this.canvas.width / 20, this.canvas.height / 20); // Dynamic font size
-    this.ctx.font = `${fontSize}px Arial`;
-    this.ctx.textAlign = "left";
-    this.ctx.fillText(`Score: ${this.score}`, 10, fontSize);
-
-    // Display full send mode timer if active
-    if (this.isFullSendMode) {
-        this.ctx.fillStyle = "#FFF";
-        const fontSize = Math.min(this.canvas.width / 15, this.canvas.height / 15); // Resize font dynamically
-        this.ctx.font = `${fontSize}px Arial`;
-        this.ctx.textAlign = "center";
-
-        const text = `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`;
-        const lines = text.split("! ");
-
-        lines.forEach((line, index) => {
-            this.ctx.fillText(line, this.canvas.width / 2, this.canvas.height / 2 + fontSize * index - fontSize);
+        this.obstacles.forEach((obstacle) => {
+            const gridX = Math.floor(obstacle.x / gridSize);
+            const gridY = Math.floor(obstacle.y / gridSize);
+            const key = `${gridX},${gridY}`;
+            if (!grid[key]) grid[key] = [];
+            grid[key].push(obstacle);
         });
+
+        // Move obstacles and check collisions
+        this.obstacles.forEach((obstacle, index) => {
+            obstacle.x += this.obstacleSpeed;
+            if (obstacle.x > this.canvas.width) {
+                this.obstacles.splice(index, 1); // Remove obstacle if it leaves the screen
+                this.score++; // Increment score
+                if (this.audioEnabled) {
+                    this.pointSound.currentTime = 0;
+                    this.pointSound.play().catch(() => {});
+                }
+            }
+
+            // Collision detection with player
+            const playerHitbox = this.player.getHitbox();
+            const gridX = Math.floor(obstacle.x / gridSize);
+            const gridY = Math.floor(obstacle.y / gridSize);
+            const keysToCheck = [
+                `${gridX},${gridY}`,
+                `${gridX - 1},${gridY}`,
+                `${gridX + 1},${gridY}`,
+                `${gridX},${gridY - 1}`,
+                `${gridX},${gridY + 1}`,
+            ];
+
+            const collisionDetected = keysToCheck.some((key) =>
+                grid[key] && grid[key].some((otherObstacle) => {
+                    const obstacleHitbox = otherObstacle.getHitbox();
+                    return (
+                        playerHitbox.x < obstacleHitbox.x + obstacleHitbox.width &&
+                        playerHitbox.x + playerHitbox.width > obstacleHitbox.x &&
+                        playerHitbox.y < obstacleHitbox.y + obstacleHitbox.height &&
+                        playerHitbox.y + playerHitbox.height > obstacleHitbox.y
+                    );
+                })
+            );
+
+            if (collisionDetected) {
+                if (this.isFullSendMode) {
+                    this.explosions.push(
+                        new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, { xOffset: 0, yOffset: 0, width: 50, height: 50 })
+                    );
+                    this.explosionSound.currentTime = 0;
+                    this.explosionSound.play().catch(() => {});
+                    this.obstacles.splice(index, 1); // Remove obstacle
+                    this.score += 2; // Bonus score in full-send mode
+                } else {
+                    this.collisionSound.currentTime = 0;
+                    this.collisionSound.play().catch(() => {});
+                    this.gameOver = true; // End the game
+                }
+            }
+        });
+
+        // Move power-ups
+        this.powerUps.forEach((powerUp, index) => {
+            powerUp.x += this.obstacleSpeed;
+            if (powerUp.x > this.canvas.width) {
+                this.powerUps.splice(index, 1); // Remove power-up if it leaves the screen
+            }
+
+            // Collision detection with player
+            const playerHitbox = this.player.getHitbox();
+            const powerUpHitbox = powerUp.getHitbox();
+            if (
+                playerHitbox.x < powerUpHitbox.x + powerUpHitbox.width &&
+                playerHitbox.x + playerHitbox.width > powerUpHitbox.x &&
+                playerHitbox.y < powerUpHitbox.y + powerUpHitbox.height &&
+                playerHitbox.y + playerHitbox.height > powerUpHitbox.y
+            ) {
+                this.powerUps.splice(index, 1); // Remove collected power-up
+                this.activateFullSendMode(); // Activate full-send mode
+            }
+        });
+
+        // Update explosions (timed removal)
+        this.explosions.forEach((explosion, index) => {
+            explosion.timer -= deltaTime / 16.67; // Update timer
+            if (explosion.timer <= 0) {
+                this.explosions.splice(index, 1); // Remove explosion
+            }
+        });
+
+        // Handle player movement
+        if ((this.keys.ArrowUp || this.keys.KeyW) && this.player.y > 0) {
+            this.player.y -= 5;
+        }
+        if ((this.keys.ArrowDown || this.keys.KeyS) && this.player.y < this.canvas.height - this.player.height) {
+            this.player.y += 5;
+        }
+
+        // Handle full-send mode timer
+        if (this.isFullSendMode) {
+            this.fullSendModeTimer -= deltaTime / 16.67;
+            if (this.fullSendModeTimer <= 0) {
+                this.isFullSendMode = false;
+            }
+        }
     }
 
-    // Display game over screen if applicable
-    if (this.gameOver) {
-        this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    draw() {
+        this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.fillStyle = "#FFF";
-        this.ctx.font = "40px Arial";
-        this.ctx.textAlign = "center";
-        this.ctx.fillText("Game Over!", this.canvas.width / 2, this.canvas.height / 2 - 50);
-        this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2);
 
-        const popupContent = document.querySelector(".pum-content.popmake-content");
-        if (popupContent && !document.getElementById("playAgainButton")) {
-            const playAgainButton = document.createElement("button");
-            playAgainButton.id = "playAgainButton";
-            playAgainButton.textContent = "Play Again";
-            playAgainButton.style.cssText =
-                "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
-            popupContent.appendChild(playAgainButton);
+        // Draw player
+        this.player.draw(this.ctx);
 
-            playAgainButton.addEventListener("click", () => {
-                playAgainButton.remove();
-                this.resetGame();
+        // Draw obstacles
+        this.obstacles.forEach((obstacle) => obstacle.draw(this.ctx));
+
+        // Draw power-ups
+        this.powerUps.forEach((powerUp) => powerUp.draw(this.ctx));
+
+        // Draw explosions
+        this.explosions.forEach((explosion) => explosion.draw(this.ctx));
+
+        // Draw score
+        this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
+        const fontSize = Math.min(this.canvas.width / 20, this.canvas.height / 20); // Dynamic font size
+        this.ctx.font = `${fontSize}px Arial`;
+        this.ctx.textAlign = "left";
+        this.ctx.fillText(`Score: ${this.score}`, 10, fontSize);
+
+        // Display full send mode timer if active
+        if (this.isFullSendMode) {
+            this.ctx.fillStyle = "#FFF";
+            const fontSize = Math.min(this.canvas.width / 15, this.canvas.height / 15); // Resize font dynamically
+            this.ctx.font = `${fontSize}px Arial`;
+            this.ctx.textAlign = "center";
+
+            const text = `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`;
+            const lines = text.split("! ");
+
+            lines.forEach((line, index) => {
+                this.ctx.fillText(line, this.canvas.width / 2, this.canvas.height / 2 + fontSize * index - fontSize);
             });
         }
+
+        // Display game over screen if applicable
+        if (this.gameOver) {
+            this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.fillStyle = "#FFF";
+            this.ctx.font = "40px Arial";
+            this.ctx.textAlign = "center";
+            this.ctx.fillText("Game Over!", this.canvas.width / 2, this.canvas.height / 2 - 50);
+            this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2);
+
+            const popupContent = document.querySelector(".pum-content.popmake-content");
+            if (popupContent && !document.getElementById("playAgainButton")) {
+                const playAgainButton = document.createElement("button");
+                playAgainButton.id = "playAgainButton";
+                playAgainButton.textContent = "Play Again";
+                playAgainButton.style.cssText =
+                    "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
+                popupContent.appendChild(playAgainButton);
+
+                playAgainButton.addEventListener("click", () => {
+                    playAgainButton.remove();
+                    this.resetGame();
+                });
+            }
+        }
     }
-}
 
     resetGame() {
         this.gameOver = false;
@@ -531,25 +531,26 @@ draw() {
         this.startGameLoop();
     }
 
-startGameLoop() {
-    const gameLoop = (timestamp) => {
-        const deltaTime = timestamp - this.lastUpdateTime;
+    startGameLoop() {
+        const gameLoop = (timestamp) => {
+            const deltaTime = timestamp - this.lastUpdateTime;
 
-        if (deltaTime >= (1000 / 60)) { // 60 FPS cap
-            this.lastUpdateTime = timestamp;
+            if (deltaTime >= (1000 / 60)) { // 60 FPS cap
+                this.lastUpdateTime = timestamp;
 
-            if (!this.gameOver) {
-                this.update(deltaTime);
-                this.draw();
-            } else {
-                this.backgroundMusic.pause();
+                if (!this.gameOver) {
+                    this.update(deltaTime);
+                    this.draw();
+                } else {
+                    this.backgroundMusic.pause();
+                }
             }
-        }
+
+            requestAnimationFrame(gameLoop);
+        };
 
         requestAnimationFrame(gameLoop);
-    };
-
-    requestAnimationFrame(gameLoop);
+    }
 }
 
 document.addEventListener("pumAfterOpen", () => {
@@ -561,3 +562,8 @@ document.addEventListener("pumAfterOpen", () => {
         }
     }, 500); // Adds a small delay to ensure the popup fully loads
 });
+
+// Define a global initializeGame function for external code
+window.initializeGame = function() {
+    new Game("gameCanvas");
+};
