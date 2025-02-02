@@ -59,7 +59,7 @@ class Game {
         this.musicStarted = false;
         this.audioEnabled = false;
 
-        // Added property to control the game loop
+        // Control the game loop
         this.running = true;
         this.gameLoopRequestId = null;
 
@@ -98,19 +98,17 @@ class Game {
 
         // Dynamically calculate maxWidth and maxHeight for improved scaling
         const maxWidth = Math.min(
-            Math.max(800, window.innerWidth * 0.85), // Minimum width of 800px and 85% of window width
-            1200 * devicePixelRatio // Maximum width scaled with device pixel ratio
+            Math.max(800, window.innerWidth * 0.85),
+            1200 * devicePixelRatio
         );
         const maxHeight = Math.min(
-            Math.max(600, window.innerHeight * 0.8), // Minimum height of 600px and 80% of window height
-            900 * devicePixelRatio // Maximum height scaled with device pixel ratio
+            Math.max(600, window.innerHeight * 0.8),
+            900 * devicePixelRatio
         );
 
-        // Set canvas dimensions
         this.canvas.width = maxWidth;
         this.canvas.height = maxHeight;
 
-        // Apply CSS scaling for clarity
         this.canvas.style.width = `${this.canvas.width / devicePixelRatio}px`;
         this.canvas.style.height = `${this.canvas.height / devicePixelRatio}px`;
 
@@ -123,23 +121,23 @@ class Game {
 
     handleKeyDown(e) {
         if (e.key in this.keys) {
-            this.keys[e.key] = true; // Mark the key as pressed
-            this.startBackgroundMusic(); // Start music if not already playing
-            this.startSoundPlayback(); // Preload and start sounds
-            if (!this.audioEnabled) this.enableAudio(); // Enable audio
+            this.keys[e.key] = true;
+            this.startBackgroundMusic();
+            this.startSoundPlayback();
+            if (!this.audioEnabled) this.enableAudio();
             console.log("Key down:", e.key);
         }
     }
 
     handleKeyUp(e) {
         if (e.key in this.keys) {
-            this.keys[e.key] = false; // Mark the key as released
+            this.keys[e.key] = false;
             console.log("Key up:", e.key);
         }
     }
 
     handleTouchStart(e) {
-        e.preventDefault(); // Prevent scrolling
+        e.preventDefault();
         this.touchStartY = e.touches[0].clientY;
         this.startBackgroundMusic();
         this.startSoundPlayback();
@@ -148,7 +146,7 @@ class Game {
     }
 
     handleTouchMove(e) {
-        e.preventDefault(); // Prevent scrolling
+        e.preventDefault();
         const currentTouchY = e.touches[0].clientY;
         if (this.touchStartY !== null) {
             const swipeDistance = currentTouchY - this.touchStartY;
@@ -178,19 +176,19 @@ class Game {
     }
 
     handlePopupClose() {
-        // Stop all audio playback
+        // Stop audio playback
         if (this.musicStarted) {
             this.backgroundMusic.pause();
-            this.backgroundMusic.currentTime = 0; // Reset music to the start
+            this.backgroundMusic.currentTime = 0;
             this.musicStarted = false;
         }
         [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
             sound.pause();
-            sound.currentTime = 0; // Reset sound to the start
+            sound.currentTime = 0;
         });
         console.log("Popup closed. All sounds stopped.");
 
-        // Stop the game loop by setting running to false and canceling the next frame.
+        // Stop the game loop
         this.running = false;
         if (this.gameLoopRequestId) {
             cancelAnimationFrame(this.gameLoopRequestId);
@@ -210,7 +208,6 @@ class Game {
     }
 
     startSoundPlayback() {
-        // Preload sounds once during initialization
         if (!this.soundsPreloaded) {
             [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
                 sound.play().catch(() => {});
@@ -225,9 +222,8 @@ class Game {
         if (this.audioContext.state === "suspended") {
             this.audioContext.resume();
         }
-        // Ensure sounds are preloaded and ready to play
         [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach((sound) => {
-            sound.play().catch(() => {}); // Attempt to pre-play the sounds to unlock them
+            sound.play().catch(() => {});
             sound.pause();
         });
         this.audioEnabled = true;
@@ -235,7 +231,7 @@ class Game {
     }
 
     createObstacle(numObstacles = 1, targetY = null) {
-        if (this.obstacles.length >= 50) { // Limit to 50 obstacles
+        if (this.obstacles.length >= 50) {
             console.warn("Maximum obstacle count reached. Skipping generation.");
             return;
         }
@@ -243,7 +239,6 @@ class Game {
         const generatedObstacles = [];
         let attempts = 0;
 
-        // Create a spatial partition grid
         const gridSize = 100;
         const grid = {};
 
@@ -271,7 +266,6 @@ class Game {
 
             const newObstacle = new GameObject(-width, y, width, height, image, hitbox);
 
-            // Get grid cells to check
             const gridX = Math.floor(newObstacle.x / gridSize);
             const gridY = Math.floor(newObstacle.y / gridSize);
             const keysToCheck = [
@@ -282,7 +276,6 @@ class Game {
                 `${gridX},${gridY + 1}`,
             ];
 
-            // Check overlap within relevant grid cells using standard checks
             const isOverlapping = keysToCheck.some(key => {
                 return grid[key] && grid[key].some(obstacle =>
                     newObstacle.y < obstacle.y + obstacle.height &&
@@ -334,20 +327,17 @@ class Game {
     update(deltaTime) {
         const currentTime = performance.now();
 
-        // Spawn obstacles and power-ups at regular intervals
         if (currentTime - this.lastSpawnTime > this.spawnInterval) {
             const numObstacles = Math.random() < 0.5 ? 1 : 2;
             this.createObstacle(numObstacles);
             this.createPowerUp();
             this.lastSpawnTime = currentTime;
 
-            // Gradually decrease spawn interval for increased difficulty
             if (this.spawnInterval > 500) {
                 this.spawnInterval -= 10;
             }
         }
 
-        // Create a spatial partition grid for collision optimization
         const gridSize = 100;
         const grid = {};
 
@@ -359,19 +349,17 @@ class Game {
             grid[key].push(obstacle);
         });
 
-        // Move obstacles and check collisions
         this.obstacles.forEach((obstacle, index) => {
             obstacle.x += this.obstacleSpeed;
             if (obstacle.x > this.canvas.width) {
-                this.obstacles.splice(index, 1); // Remove obstacle if it leaves the screen
-                this.score++; // Increment score
+                this.obstacles.splice(index, 1);
+                this.score++;
                 if (this.audioEnabled) {
                     this.pointSound.currentTime = 0;
                     this.pointSound.play().catch(() => {});
                 }
             }
 
-            // Collision detection with player
             const playerHitbox = this.player.getHitbox();
             const gridX = Math.floor(obstacle.x / gridSize);
             const gridY = Math.floor(obstacle.y / gridSize);
@@ -402,24 +390,22 @@ class Game {
                     );
                     this.explosionSound.currentTime = 0;
                     this.explosionSound.play().catch(() => {});
-                    this.obstacles.splice(index, 1); // Remove obstacle
-                    this.score += 2; // Bonus score in full-send mode
+                    this.obstacles.splice(index, 1);
+                    this.score += 2;
                 } else {
                     this.collisionSound.currentTime = 0;
                     this.collisionSound.play().catch(() => {});
-                    this.gameOver = true; // End the game
+                    this.gameOver = true;
                 }
             }
         });
 
-        // Move power-ups
         this.powerUps.forEach((powerUp, index) => {
             powerUp.x += this.obstacleSpeed;
             if (powerUp.x > this.canvas.width) {
-                this.powerUps.splice(index, 1); // Remove power-up if it leaves the screen
+                this.powerUps.splice(index, 1);
             }
 
-            // Collision detection with player
             const playerHitbox = this.player.getHitbox();
             const powerUpHitbox = powerUp.getHitbox();
             if (
@@ -428,20 +414,18 @@ class Game {
                 playerHitbox.y < powerUpHitbox.y + powerUpHitbox.height &&
                 playerHitbox.y + playerHitbox.height > powerUpHitbox.y
             ) {
-                this.powerUps.splice(index, 1); // Remove collected power-up
-                this.activateFullSendMode(); // Activate full-send mode
+                this.powerUps.splice(index, 1);
+                this.activateFullSendMode();
             }
         });
 
-        // Update explosions (timed removal)
         this.explosions.forEach((explosion, index) => {
-            explosion.timer -= deltaTime / 16.67; // Update timer
+            explosion.timer -= deltaTime / 16.67;
             if (explosion.timer <= 0) {
-                this.explosions.splice(index, 1); // Remove explosion
+                this.explosions.splice(index, 1);
             }
         });
 
-        // Handle player movement
         if ((this.keys.ArrowUp || this.keys.KeyW) && this.player.y > 0) {
             this.player.y -= 5;
         }
@@ -449,7 +433,6 @@ class Game {
             this.player.y += 5;
         }
 
-        // Handle full-send mode timer
         if (this.isFullSendMode) {
             this.fullSendModeTimer -= deltaTime / 16.67;
             if (this.fullSendModeTimer <= 0) {
@@ -459,44 +442,40 @@ class Game {
     }
 
     draw() {
+        // Draw background
         this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Draw player
+        // Draw game objects
         this.player.draw(this.ctx);
-
-        // Draw obstacles
         this.obstacles.forEach((obstacle) => obstacle.draw(this.ctx));
-
-        // Draw power-ups
         this.powerUps.forEach((powerUp) => powerUp.draw(this.ctx));
-
-        // Draw explosions
         this.explosions.forEach((explosion) => explosion.draw(this.ctx));
 
         // Draw score
         this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
-        const fontSize = Math.min(this.canvas.width / 20, this.canvas.height / 20); // Dynamic font size
-        this.ctx.font = `${fontSize}px Arial`;
+        const fontSizeScore = Math.min(this.canvas.width / 20, this.canvas.height / 20);
+        this.ctx.font = `${fontSizeScore}px Arial`;
         this.ctx.textAlign = "left";
-        this.ctx.fillText(`Score: ${this.score}`, 10, fontSize);
+        this.ctx.fillText(`Score: ${this.score}`, 10, fontSizeScore);
 
-        // Display full send mode timer if active
+        // Display full send mode text (only when active)
         if (this.isFullSendMode) {
             this.ctx.fillStyle = "#FFF";
-            const fontSize = Math.min(this.canvas.width / 15, this.canvas.height / 15); // Resize font dynamically
+            const fontSize = Math.min(this.canvas.width / 15, this.canvas.height / 15);
             this.ctx.font = `${fontSize}px Arial`;
             this.ctx.textAlign = "center";
 
-            const text = `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`;
-            const lines = text.split("! ");
+            // First line: Timer information
+            const timerText = `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`;
+            this.ctx.fillText(timerText, this.canvas.width / 2, this.canvas.height / 2 - fontSize / 2);
 
-            lines.forEach((line, index) => {
-                this.ctx.fillText(line, this.canvas.width / 2, this.canvas.height / 2 + fontSize * index - fontSize);
-            });
+            // Second line: Visual indicator for double points
+            const indicatorText = "Double points awarded for hits!";
+            this.ctx.fillText(indicatorText, this.canvas.width / 2, this.canvas.height / 2 + fontSize / 2);
         }
 
-        // Display game over screen if applicable
+        // Display game over screen if needed
         if (this.gameOver) {
             this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -535,7 +514,6 @@ class Game {
         this.resizeCanvas();
         this.lastSpawnTime = performance.now();
         this.musicStarted = false;
-        // Optionally, you could restart the game loop here if needed.
         this.running = true;
         this.startBackgroundMusic();
         this.startGameLoop();
@@ -543,10 +521,10 @@ class Game {
 
     startGameLoop() {
         const gameLoop = (timestamp) => {
-            if (!this.running) return; // Stop scheduling frames if not running
+            if (!this.running) return;
             const deltaTime = timestamp - this.lastUpdateTime;
 
-            if (deltaTime >= (1000 / 60)) { // 60 FPS cap
+            if (deltaTime >= (1000 / 60)) {
                 this.lastUpdateTime = timestamp;
 
                 if (!this.gameOver) {
@@ -571,7 +549,7 @@ document.addEventListener("pumAfterOpen", () => {
         } else {
             console.error("Canvas not found inside popup!");
         }
-    }, 500); // Adds a small delay to ensure the popup fully loads
+    }, 500);
 });
 
 // Define a global initializeGame function for external code
