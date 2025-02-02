@@ -553,5 +553,9 @@ startGameLoop() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    new Game("gameCanvas");
+    if (document.getElementById("gameCanvas")) {
+        new Game("gameCanvas");
+    } else {
+        console.error("Canvas not found!");
+    }
 });
