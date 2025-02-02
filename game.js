@@ -552,5 +552,6 @@ startGameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-window.onload = () => new Game("gameCanvas");
-
+document.addEventListener("DOMContentLoaded", () => {
+    new Game("gameCanvas");
+});
