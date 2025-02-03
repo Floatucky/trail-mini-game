@@ -54,7 +54,7 @@ class Game {
       explosion: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Explosion.png"),
     };
 
-    // Game state variables (all in the base coordinate system).
+    // Game state variables (all coordinates in the base system).
     this.obstacles = [];
     this.powerUps = [];
     this.explosions = [];
@@ -77,7 +77,7 @@ class Game {
     this.musicStarted = false;
     this.audioEnabled = false;
 
-    // Increase the player movement speed (base units per update).
+    // Increase player movement speed for more responsive control.
     this.playerSpeed = 10;
 
     // For controlling the game loop.
@@ -120,14 +120,14 @@ class Game {
     // Use 95% of the viewport dimensions.
     const availableWidth = window.innerWidth * 0.95;
     const availableHeight = window.innerHeight * 0.95;
-    // Compute scale factors for base dimensions.
+    // Compute scale factors for the base dimensions.
     const scaleX = availableWidth / this.baseWidth;
     const scaleY = availableHeight / this.baseHeight;
-    // Use the larger scale factor so that the canvas covers at least one dimension fully.
-    this.scale = Math.max(scaleX, scaleY);
+    // Use the smaller scale factor so the entire game is visible without scrolling.
+    this.scale = Math.min(scaleX, scaleY);
     const cw = this.baseWidth * this.scale;
     const ch = this.baseHeight * this.scale;
-    // Set the canvas’s internal pixel dimensions.
+    // Set the canvas's internal pixel dimensions.
     this.canvas.width = cw * dpr;
     this.canvas.height = ch * dpr;
     // Set the CSS dimensions.
@@ -139,7 +139,7 @@ class Game {
     this.canvas.style.top = "50%";
     this.canvas.style.transform = "translate(-50%, -50%)";
 
-    // Reposition the player in base coordinates.
+    // Reposition the player in base coordinates (for example, near the right edge).
     this.player.x = this.baseWidth - this.player.width - Math.max(20, this.baseWidth * 0.02);
     this.player.y = Math.min(this.player.y, this.baseHeight - this.player.height);
 
@@ -177,7 +177,7 @@ class Game {
     e.preventDefault();
     const currentTouchY = e.touches[0].clientY;
     if (this.touchStartY !== null) {
-      // Convert swipe distance (in CSS pixels) into base coordinate units.
+      // Convert swipe distance (CSS pixels) into base coordinate units.
       const swipeDistance = currentTouchY - this.touchStartY;
       const moveDistance = (swipeDistance * 0.6) / this.scale;
       this.player.y = Math.max(0, Math.min(this.baseHeight - this.player.height, this.player.y + moveDistance));
@@ -471,9 +471,9 @@ class Game {
   draw() {
     const dpr = window.devicePixelRatio || 1;
     this.ctx.save();
-    // Scale for device pixel ratio.
+    // First, scale for device pixel ratio.
     this.ctx.scale(dpr, dpr);
-    // Scale the base coordinate system.
+    // Then, scale the base coordinate system.
     this.ctx.scale(this.scale, this.scale);
     // Draw background covering the entire base game area.
     this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
@@ -513,7 +513,7 @@ class Game {
       this.ctx.textAlign = "center";
       this.ctx.fillText("Game Over!", this.baseWidth / 2, this.baseHeight / 2 - 50);
       this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2);
-      // (You can add play-again button code here if desired.)
+      // (Optional: Add play-again button code here)
     }
 
     this.ctx.restore();
@@ -557,7 +557,7 @@ class Game {
 }
 
 // Do not auto-initialize the game on every page.
-// Instead, expose a global function (for example, called by a button click) to start the game.
+// Instead, expose a global function (e.g., called by a button click) to start the game.
 window.initializeGame = function () {
   new Game("gameCanvas");
 };
