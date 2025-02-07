@@ -164,6 +164,10 @@ resizeCanvas() {
 
   // --- INPUT HANDLERS ---
   handleKeyDown(e) {
+  // Prevent default behavior for arrow keys so that they don't scroll the page.
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+    e.preventDefault();
+  }
     if (e.key in this.keys) {
       this.keys[e.key] = true;
       this.startBackgroundMusic();
