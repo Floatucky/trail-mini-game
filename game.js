@@ -123,8 +123,12 @@ class Game {
     // Compute scale factors for the base dimensions.
     const scaleX = availableWidth / this.baseWidth;
     const scaleY = availableHeight / this.baseHeight;
-    // Use the smaller scale factor so the entire game is visible without scrolling.
-    this.scale = Math.min(scaleX, scaleY);
+    // In portrait mode, use vertical scale to fill the screen; otherwise, use the smaller scale.
+    if (window.innerWidth < window.innerHeight) {
+      this.scale = scaleY;
+    } else {
+      this.scale = Math.min(scaleX, scaleY);
+    }
     const cw = this.baseWidth * this.scale;
     const ch = this.baseHeight * this.scale;
     // Set the canvas's internal pixel dimensions.
@@ -133,11 +137,11 @@ class Game {
     // Set the CSS dimensions.
     this.canvas.style.width = cw + "px";
     this.canvas.style.height = ch + "px";
-    // Center the canvas.
+    // Position the canvas: center horizontally; align to top.
     this.canvas.style.position = "absolute";
     this.canvas.style.left = "50%";
-    this.canvas.style.top = "50%";
-    this.canvas.style.transform = "translate(-50%, -50%)";
+    this.canvas.style.top = "0";  // Align to top so the entire game is visible.
+    this.canvas.style.transform = "translateX(-50%)";
 
     // Reposition the player in base coordinates (for example, near the right edge).
     this.player.x = this.baseWidth - this.player.width - Math.max(20, this.baseWidth * 0.02);
