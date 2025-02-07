@@ -114,41 +114,53 @@ class Game {
     return img;
   }
 
-  // --- RESIZING ---
-  resizeCanvas() {
-    const dpr = window.devicePixelRatio || 1;
-    // Use 95% of the viewport dimensions.
-    const availableWidth = window.innerWidth * 0.95;
-    const availableHeight = window.innerHeight * 0.95;
-    // Compute scale factors for the base dimensions.
-    const scaleX = availableWidth / this.baseWidth;
-    const scaleY = availableHeight / this.baseHeight;
-    // In portrait mode, use vertical scale to fill the screen; otherwise, use the smaller scale.
+resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  // Use 95% of the viewport dimensions.
+  const availableWidth = window.innerWidth * 0.95;
+  const availableHeight = window.innerHeight * 0.95;
+  const scaleX = availableWidth / this.baseWidth;
+  const scaleY = availableHeight / this.baseHeight;
+  
+  // Decide on scaling mode based on screen width and orientation.
+  if (window.innerWidth < 768) {
+    // Likely mobile:
     if (window.innerWidth < window.innerHeight) {
-      this.scale = scaleY;
-    } else {
+      // Portrait: use "contain" scaling so nothing overflows.
       this.scale = Math.min(scaleX, scaleY);
+    } else {
+      // Landscape: use "cover" scaling to make objects larger.
+      this.scale = Math.max(scaleX, scaleY);
     }
-    const cw = this.baseWidth * this.scale;
-    const ch = this.baseHeight * this.scale;
-    // Set the canvas's internal pixel dimensions.
-    this.canvas.width = cw * dpr;
-    this.canvas.height = ch * dpr;
-    // Set the CSS dimensions.
-    this.canvas.style.width = cw + "px";
-    this.canvas.style.height = ch + "px";
-    // Position the canvas: center horizontally; align to top.
-    this.canvas.style.position = "absolute";
-    this.canvas.style.left = "50%";
-    this.canvas.style.top = "0";  // Align to top so the entire game is visible.
-    this.canvas.style.transform = "translateX(-50%)";
-
-    // Reposition the player in base coordinates (for example, near the right edge).
-    this.player.x = this.baseWidth - this.player.width - Math.max(20, this.baseWidth * 0.02);
-    this.player.y = Math.min(this.player.y, this.baseHeight - this.player.height);
-
-    console.log("Canvas resized. Canvas size:", cw, "x", ch, "Scale:", this.scale);
+  } else {
+    // On larger screens (desktop/tablet), always use "contain" mode.
+    this.scale = Math.min(scaleX, scaleY);
   }
+  
+  const cw = this.baseWidth * this.scale;
+  const ch = this.baseHeight * this.scale;
+  
+  // Set the canvas's internal pixel dimensions.
+  this.canvas.width = cw * dpr;
+  this.canvas.height = ch * dpr;
+  // Set the CSS dimensions.
+  this.canvas.style.width = cw + "px";
+  this.canvas.style.height = ch + "px";
+  
+  // Position the canvas centered horizontally.
+  this.canvas.style.position = "absolute";
+  this.canvas.style.left = "50%";
+  // If the canvas height is less than the viewport height, center vertically.
+  // Otherwise, pin to the top.
+  this.canvas.style.top = (window.innerHeight > ch ? (window.innerHeight - ch) / 2 : 0) + "px";
+  this.canvas.style.transform = "translateX(-50%)";
+  
+  // Optionally, reposition your player relative to the new base coordinates.
+  this.player.x = this.baseWidth - this.player.width - Math.max(20, this.baseWidth * 0.02);
+  this.player.y = Math.min(this.player.y, this.baseHeight - this.player.height);
+  
+  console.log("Canvas resized. Canvas size:", cw, "x", ch, "Scale:", this.scale);
+}
 
   // --- INPUT HANDLERS ---
   handleKeyDown(e) {
