@@ -114,60 +114,60 @@ class Game {
     return img;
   }
 
-resizeCanvas() {
-  const dpr = window.devicePixelRatio || 1;
-  // Use 95% of the viewport dimensions.
-  const availableWidth = window.innerWidth * 0.95;
-  const availableHeight = window.innerHeight * 0.95;
-  const scaleX = availableWidth / this.baseWidth;
-  const scaleY = availableHeight / this.baseHeight;
-  
-  // Decide on scaling mode based on screen width and orientation.
-  if (window.innerWidth < 768) {
-    // Likely mobile:
-    if (window.innerWidth < window.innerHeight) {
-      // Portrait: use "contain" scaling so nothing overflows.
-      this.scale = Math.min(scaleX, scaleY);
+  resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    // Use 95% of the viewport dimensions.
+    const availableWidth = window.innerWidth * 0.95;
+    const availableHeight = window.innerHeight * 0.95;
+    const scaleX = availableWidth / this.baseWidth;
+    const scaleY = availableHeight / this.baseHeight;
+    
+    // Decide on scaling mode based on screen width and orientation.
+    if (window.innerWidth < 768) {
+      // Likely mobile:
+      if (window.innerWidth < window.innerHeight) {
+        // Portrait: use "contain" scaling so nothing overflows.
+        this.scale = Math.min(scaleX, scaleY);
+      } else {
+        // Landscape: use "cover" scaling to make objects larger.
+        this.scale = Math.max(scaleX, scaleY);
+      }
     } else {
-      // Landscape: use "cover" scaling to make objects larger.
-      this.scale = Math.max(scaleX, scaleY);
+      // On larger screens (desktop/tablet), always use "contain" mode.
+      this.scale = Math.min(scaleX, scaleY);
     }
-  } else {
-    // On larger screens (desktop/tablet), always use "contain" mode.
-    this.scale = Math.min(scaleX, scaleY);
+    
+    const cw = this.baseWidth * this.scale;
+    const ch = this.baseHeight * this.scale;
+    
+    // Set the canvas's internal pixel dimensions.
+    this.canvas.width = cw * dpr;
+    this.canvas.height = ch * dpr;
+    // Set the CSS dimensions.
+    this.canvas.style.width = cw + "px";
+    this.canvas.style.height = ch + "px";
+    
+    // Position the canvas centered horizontally.
+    this.canvas.style.position = "absolute";
+    this.canvas.style.left = "50%";
+    // If the canvas height is less than the viewport height, center vertically.
+    // Otherwise, pin to the top.
+    this.canvas.style.top = (window.innerHeight > ch ? (window.innerHeight - ch) / 2 : 0) + "px";
+    this.canvas.style.transform = "translateX(-50%)";
+    
+    // Reposition the player relative to the base coordinates.
+    this.player.x = this.baseWidth - this.player.width - Math.max(20, this.baseWidth * 0.02);
+    this.player.y = Math.min(this.player.y, this.baseHeight - this.player.height);
+    
+    console.log("Canvas resized. Canvas size:", cw, "x", ch, "Scale:", this.scale);
   }
-  
-  const cw = this.baseWidth * this.scale;
-  const ch = this.baseHeight * this.scale;
-  
-  // Set the canvas's internal pixel dimensions.
-  this.canvas.width = cw * dpr;
-  this.canvas.height = ch * dpr;
-  // Set the CSS dimensions.
-  this.canvas.style.width = cw + "px";
-  this.canvas.style.height = ch + "px";
-  
-  // Position the canvas centered horizontally.
-  this.canvas.style.position = "absolute";
-  this.canvas.style.left = "50%";
-  // If the canvas height is less than the viewport height, center vertically.
-  // Otherwise, pin to the top.
-  this.canvas.style.top = (window.innerHeight > ch ? (window.innerHeight - ch) / 2 : 0) + "px";
-  this.canvas.style.transform = "translateX(-50%)";
-  
-  // Optionally, reposition your player relative to the new base coordinates.
-  this.player.x = this.baseWidth - this.player.width - Math.max(20, this.baseWidth * 0.02);
-  this.player.y = Math.min(this.player.y, this.baseHeight - this.player.height);
-  
-  console.log("Canvas resized. Canvas size:", cw, "x", ch, "Scale:", this.scale);
-}
 
   // --- INPUT HANDLERS ---
   handleKeyDown(e) {
-  // Prevent default behavior for arrow keys so that they don't scroll the page.
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-    e.preventDefault();
-  }
+    // Prevent default behavior for arrow keys so that they don't scroll the page.
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+      e.preventDefault();
+    }
     if (e.key in this.keys) {
       this.keys[e.key] = true;
       this.startBackgroundMusic();
@@ -524,7 +524,7 @@ resizeCanvas() {
       this.ctx.fillText(indicatorText, this.baseWidth / 2, this.baseHeight / 2 + fontSize / 2);
     }
 
-    // If game over, overlay the game-over screen.
+    // If game over, overlay the game-over screen and add the Play Again button.
     if (this.gameOver) {
       this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
       this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
@@ -533,7 +533,21 @@ resizeCanvas() {
       this.ctx.textAlign = "center";
       this.ctx.fillText("Game Over!", this.baseWidth / 2, this.baseHeight / 2 - 50);
       this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2);
-      // (Optional: Add play-again button code here)
+
+      const popupContent = document.querySelector(".pum-content.popmake-content");
+      if (popupContent && !document.getElementById("playAgainButton")) {
+        const playAgainButton = document.createElement("button");
+        playAgainButton.id = "playAgainButton";
+        playAgainButton.textContent = "Play Again";
+        playAgainButton.style.cssText =
+          "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
+        popupContent.appendChild(playAgainButton);
+
+        playAgainButton.addEventListener("click", () => {
+          playAgainButton.remove();
+          this.resetGame();
+        });
+      }
     }
 
     this.ctx.restore();
