@@ -614,7 +614,33 @@ class Game {
   }
 }
 
-// Expose a global function to initialize the game.
+// Keep a reference so we can stop/destroy cleanly.
+window.__floatuckyGameInstance = null;
+
 window.initializeGame = function () {
-  new Game("gameCanvas");
+  // Prevent double-start if popup opens twice.
+  if (window.__floatuckyGameInstance && window.__floatuckyGameInstance.running) {
+    return;
+  }
+  window.__floatuckyGameInstance = new Game("gameCanvas");
 };
+
+// Clean shutdown hook for Popup close.
+window.destroyGame = function () {
+  const g = window.__floatuckyGameInstance;
+  if (!g) return;
+
+  try {
+    g.running = false;
+    if (g.gameLoopRequestId) cancelAnimationFrame(g.gameLoopRequestId);
+  } catch (e) {}
+
+  // Remove listeners (we’ll make this possible in Part A.2 below)
+  try {
+    if (typeof g.destroy === "function") g.destroy();
+  } catch (e) {}
+
+  window.__floatuckyGameInstance = null;
+};
+
+
