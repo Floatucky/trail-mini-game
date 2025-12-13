@@ -152,19 +152,24 @@ class Game {
     return img;
   }
 
-  /**
-   * Binds all required event listeners.
-   */
-  initEventListeners() {
-    window.addEventListener("resize", this.resizeCanvas.bind(this));
-    document.addEventListener("keydown", this.handleKeyDown.bind(this));
-    document.addEventListener("keyup", this.handleKeyUp.bind(this));
-    this.canvas.addEventListener("touchstart", this.handleTouchStart.bind(this));
-    this.canvas.addEventListener("touchmove", this.handleTouchMove.bind(this));
-    this.canvas.addEventListener("touchend", this.handleTouchEnd.bind(this));
-    document.addEventListener("visibilitychange", this.handleVisibilityChange.bind(this));
-    document.addEventListener("popupclose", this.handlePopupClose.bind(this));
-  }
+initEventListeners() {
+  // Store bound handlers so we can remove them later.
+  this._onResize = this.resizeCanvas.bind(this);
+  this._onKeyDown = this.handleKeyDown.bind(this);
+  this._onKeyUp = this.handleKeyUp.bind(this);
+  this._onTouchStart = this.handleTouchStart.bind(this);
+  this._onTouchMove = this.handleTouchMove.bind(this);
+  this._onTouchEnd = this.handleTouchEnd.bind(this);
+  this._onVisibilityChange = this.handleVisibilityChange.bind(this);
+
+  window.addEventListener("resize", this._onResize);
+  document.addEventListener("keydown", this._onKeyDown);
+  document.addEventListener("keyup", this._onKeyUp);
+  this.canvas.addEventListener("touchstart", this._onTouchStart, { passive: false });
+  this.canvas.addEventListener("touchmove", this._onTouchMove, { passive: false });
+  this.canvas.addEventListener("touchend", this._onTouchEnd);
+  document.addEventListener("visibilitychange", this._onVisibilityChange);
+}
 
   /**
    * Resizes the canvas based on the viewport size and sets scaling.
@@ -613,6 +618,42 @@ class Game {
     this.gameLoopRequestId = requestAnimationFrame(gameLoop);
   }
 }
+destroy() {
+  // Stop loop
+  this.running = false;
+  if (this.gameLoopRequestId) cancelAnimationFrame(this.gameLoopRequestId);
+
+  // Remove event listeners
+  try {
+    window.removeEventListener("resize", this._onResize);
+    document.removeEventListener("keydown", this._onKeyDown);
+    document.removeEventListener("keyup", this._onKeyUp);
+    document.removeEventListener("visibilitychange", this._onVisibilityChange);
+    if (this.canvas) {
+      this.canvas.removeEventListener("touchstart", this._onTouchStart);
+      this.canvas.removeEventListener("touchmove", this._onTouchMove);
+      this.canvas.removeEventListener("touchend", this._onTouchEnd);
+    }
+  } catch (e) {}
+
+  // Stop audio
+  try {
+    this.backgroundMusic.pause();
+    this.backgroundMusic.currentTime = 0;
+    this.musicStarted = false;
+  } catch (e) {}
+
+  [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
+    try { sound.pause(); sound.currentTime = 0; } catch (e) {}
+  });
+
+  // Close audio context (releases resources)
+  try {
+    if (this.audioContext && this.audioContext.state !== "closed") {
+      this.audioContext.close();
+    }
+  } catch (e) {}
+}
 
 // Keep a reference so we can stop/destroy cleanly.
 window.__floatuckyGameInstance = null;
@@ -642,5 +683,6 @@ window.destroyGame = function () {
 
   window.__floatuckyGameInstance = null;
 };
+
 
 
