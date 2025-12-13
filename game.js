@@ -29,7 +29,7 @@ class GameObject {
 
   /**
    * Draws the object on the provided canvas context.
-   * @param {CanvasRenderingContext2D} ctx 
+   * @param {CanvasRenderingContext2D} ctx
    */
   draw(ctx) {
     ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
@@ -115,6 +115,7 @@ class Game {
     this.touchStartY = null;
     this.musicStarted = false;
     this.audioEnabled = false;
+    this.soundsPreloaded = false;
 
     // Increase player speed for responsiveness.
     this.playerSpeed = 10;
@@ -136,6 +137,7 @@ class Game {
     // Initial canvas setup and event listener binding.
     this.resizeCanvas();
     this.initEventListeners();
+
     console.log("Game initialized.");
     this.startGameLoop();
   }
@@ -152,24 +154,29 @@ class Game {
     return img;
   }
 
-initEventListeners() {
-  // Store bound handlers so we can remove them later.
-  this._onResize = this.resizeCanvas.bind(this);
-  this._onKeyDown = this.handleKeyDown.bind(this);
-  this._onKeyUp = this.handleKeyUp.bind(this);
-  this._onTouchStart = this.handleTouchStart.bind(this);
-  this._onTouchMove = this.handleTouchMove.bind(this);
-  this._onTouchEnd = this.handleTouchEnd.bind(this);
-  this._onVisibilityChange = this.handleVisibilityChange.bind(this);
+  /**
+   * Binds all required event listeners, storing bound refs so we can remove them later.
+   */
+  initEventListeners() {
+    this._onResize = this.resizeCanvas.bind(this);
+    this._onKeyDown = this.handleKeyDown.bind(this);
+    this._onKeyUp = this.handleKeyUp.bind(this);
+    this._onTouchStart = this.handleTouchStart.bind(this);
+    this._onTouchMove = this.handleTouchMove.bind(this);
+    this._onTouchEnd = this.handleTouchEnd.bind(this);
+    this._onVisibilityChange = this.handleVisibilityChange.bind(this);
 
-  window.addEventListener("resize", this._onResize);
-  document.addEventListener("keydown", this._onKeyDown);
-  document.addEventListener("keyup", this._onKeyUp);
-  this.canvas.addEventListener("touchstart", this._onTouchStart, { passive: false });
-  this.canvas.addEventListener("touchmove", this._onTouchMove, { passive: false });
-  this.canvas.addEventListener("touchend", this._onTouchEnd);
-  document.addEventListener("visibilitychange", this._onVisibilityChange);
-}
+    window.addEventListener("resize", this._onResize);
+    document.addEventListener("keydown", this._onKeyDown);
+    document.addEventListener("keyup", this._onKeyUp);
+
+    // Use passive:false so preventDefault works on mobile
+    this.canvas.addEventListener("touchstart", this._onTouchStart, { passive: false });
+    this.canvas.addEventListener("touchmove", this._onTouchMove, { passive: false });
+    this.canvas.addEventListener("touchend", this._onTouchEnd);
+
+    document.addEventListener("visibilitychange", this._onVisibilityChange);
+  }
 
   /**
    * Resizes the canvas based on the viewport size and sets scaling.
@@ -220,14 +227,14 @@ initEventListeners() {
       this.startBackgroundMusic();
       this.startSoundPlayback();
       if (!this.audioEnabled) this.enableAudio();
-      console.log("Key down:", e.key);
+      // console.log("Key down:", e.key);
     }
   }
 
   handleKeyUp(e) {
     if (this.keys.hasOwnProperty(e.key)) {
       this.keys[e.key] = false;
-      console.log("Key up:", e.key);
+      // console.log("Key up:", e.key);
     }
   }
 
@@ -237,7 +244,7 @@ initEventListeners() {
     this.startBackgroundMusic();
     this.startSoundPlayback();
     if (!this.audioEnabled) this.enableAudio();
-    console.log("Touch start at Y:", this.touchStartY);
+    // console.log("Touch start at Y:", this.touchStartY);
   }
 
   handleTouchMove(e) {
@@ -248,12 +255,12 @@ initEventListeners() {
       const moveDistance = (swipeDistance * 0.6) / this.scale;
       this.player.y = Math.max(0, Math.min(this.baseHeight - this.player.height, this.player.y + moveDistance));
       this.touchStartY = currentTouchY;
-      console.log("Touch move. New player Y:", this.player.y);
+      // console.log("Touch move. New player Y:", this.player.y);
     }
   }
 
   handleTouchEnd() {
-    console.log("Touch end.");
+    // console.log("Touch end.");
     this.touchStartY = null;
   }
 
@@ -262,25 +269,8 @@ initEventListeners() {
       this.backgroundMusic.pause();
       console.log("Game hidden. Background music paused.");
     } else if (!document.hidden && this.musicStarted) {
-      this.backgroundMusic.play();
+      this.backgroundMusic.play().catch(() => {});
       console.log("Game visible. Background music resumed.");
-    }
-  }
-
-  handlePopupClose() {
-    if (this.musicStarted) {
-      this.backgroundMusic.pause();
-      this.backgroundMusic.currentTime = 0;
-      this.musicStarted = false;
-    }
-    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
-      sound.pause();
-      sound.currentTime = 0;
-    });
-    console.log("Popup closed. All sounds stopped.");
-    this.running = false;
-    if (this.gameLoopRequestId) {
-      cancelAnimationFrame(this.gameLoopRequestId);
     }
   }
 
@@ -290,11 +280,13 @@ initEventListeners() {
     if (!this.musicStarted) {
       this.backgroundMusic.loop = true;
       this.backgroundMusic.volume = 0.5;
+
+      // Must be resumed from a user gesture on most browsers
       this.audioContext.resume().then(() => {
         this.backgroundMusic.play().catch(error => console.error("Background music error:", error));
         this.musicStarted = true;
         console.log("Background music started.");
-      });
+      }).catch(() => {});
     }
   }
 
@@ -311,7 +303,7 @@ initEventListeners() {
 
   enableAudio() {
     if (this.audioContext.state === "suspended") {
-      this.audioContext.resume();
+      this.audioContext.resume().catch(() => {});
     }
     [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
       sound.play().catch(() => {});
@@ -328,10 +320,12 @@ initEventListeners() {
       console.warn("Maximum obstacle count reached. Skipping generation.");
       return;
     }
+
     const generatedObstacles = [];
     let attempts = 0;
     const gridSize = 100;
     const grid = {};
+
     this.obstacles.forEach(obstacle => {
       const gridX = Math.floor(obstacle.x / gridSize);
       const gridY = Math.floor(obstacle.y / gridSize);
@@ -339,19 +333,25 @@ initEventListeners() {
       if (!grid[key]) grid[key] = [];
       grid[key].push(obstacle);
     });
+
     while (generatedObstacles.length < numObstacles && attempts < 50) {
       const type = Math.random() < 0.5 ? "tree" : "rock";
       const image = this.images[type];
       const isSmall = Math.random() < 0.5;
+
       const width = isSmall ? (type === "tree" ? 50 : 60) : (type === "tree" ? 100 : 80);
       const height = isSmall ? (type === "tree" ? 50 : 40) : (type === "tree" ? 100 : 75);
+
       const y = targetY !== null
         ? Math.min(Math.max(targetY - height / 2, 0), this.baseHeight - height)
         : Math.random() * (this.baseHeight - height);
+
       const hitbox = type === "tree"
         ? { xOffset: width * 0.35, yOffset: height * 0.15, width: width * 0.3, height: height * 0.7 }
         : { xOffset: width * 0.15, yOffset: height * 0.2, width: width * 0.7, height: height * 0.6 };
+
       const newObstacle = new GameObject(-width, y, width, height, image, hitbox);
+
       const gridX = Math.floor(newObstacle.x / gridSize);
       const gridY = Math.floor(newObstacle.y / gridSize);
       const keysToCheck = [
@@ -361,12 +361,14 @@ initEventListeners() {
         `${gridX},${gridY - 1}`,
         `${gridX},${gridY + 1}`,
       ];
+
       const isOverlapping = keysToCheck.some(key => {
         return grid[key] && grid[key].some(obstacle =>
           newObstacle.y < obstacle.y + obstacle.height &&
           newObstacle.y + newObstacle.height > obstacle.y
         );
       });
+
       if (!isOverlapping) {
         generatedObstacles.push(newObstacle);
         const newKey = `${gridX},${gridY}`;
@@ -375,6 +377,7 @@ initEventListeners() {
       }
       attempts++;
     }
+
     this.obstacles.push(...generatedObstacles);
   }
 
@@ -383,14 +386,23 @@ initEventListeners() {
       const size = 50;
       let y;
       let isOverlapping;
+
       do {
         y = Math.random() * (this.baseHeight - size);
         isOverlapping = this.obstacles.some(obstacle =>
           y < obstacle.y + obstacle.height && y + size > obstacle.y
         );
       } while (isOverlapping);
-      this.powerUps.push(new GameObject(-size, y, size, size, this.images.powerUp,
-        { xOffset: 0, yOffset: 0, width: size, height: size }));
+
+      this.powerUps.push(
+        new GameObject(-size, y, size, size, this.images.powerUp, {
+          xOffset: 0,
+          yOffset: 0,
+          width: size,
+          height: size,
+        })
+      );
+
       console.log("Power-up created at Y:", y);
     }
   }
@@ -401,25 +413,27 @@ initEventListeners() {
       this.fullSendModeTimer = 300;
       this.powerUpSound.play().catch(error => console.error("Power-up sound error:", error));
       console.log("Full send mode activated.");
-    } else {
-      console.log("Full send mode already active. Skipping reactivation.");
     }
   }
 
   // --- GAME UPDATE LOGIC ---
   update(deltaTime) {
     const currentTime = performance.now();
+
     if (currentTime - this.lastSpawnTime > this.spawnInterval) {
       const numObstacles = Math.random() < 0.5 ? 1 : 2;
       this.createObstacle(numObstacles);
       this.createPowerUp();
       this.lastSpawnTime = currentTime;
+
       if (this.spawnInterval > MIN_SPAWN_INTERVAL) {
         this.spawnInterval -= 10;
       }
     }
+
     const gridSize = 100;
     const grid = {};
+
     this.obstacles.forEach(obstacle => {
       const gridX = Math.floor(obstacle.x / gridSize);
       const gridY = Math.floor(obstacle.y / gridSize);
@@ -427,19 +441,24 @@ initEventListeners() {
       if (!grid[key]) grid[key] = [];
       grid[key].push(obstacle);
     });
+
     this.obstacles.forEach((obstacle, index) => {
       obstacle.x += this.obstacleSpeed;
+
       if (obstacle.x > this.baseWidth) {
         this.obstacles.splice(index, 1);
         this.score++;
+
         if (this.audioEnabled) {
           this.pointSound.currentTime = 0;
           this.pointSound.play().catch(() => {});
         }
       }
+
       const playerHitbox = this.player.getHitbox();
       const gridX = Math.floor(obstacle.x / gridSize);
       const gridY = Math.floor(obstacle.y / gridSize);
+
       const keysToCheck = [
         `${gridX},${gridY}`,
         `${gridX - 1},${gridY}`,
@@ -447,6 +466,7 @@ initEventListeners() {
         `${gridX},${gridY - 1}`,
         `${gridX},${gridY + 1}`,
       ];
+
       const collisionDetected = keysToCheck.some(key =>
         grid[key] && grid[key].some(otherObstacle => {
           const obstacleHitbox = otherObstacle.getHitbox();
@@ -458,12 +478,15 @@ initEventListeners() {
           );
         })
       );
+
       if (collisionDetected) {
         if (this.isFullSendMode) {
           this.explosions.push(
-            new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion,
-              { xOffset: 0, yOffset: 0, width: 50, height: 50 })
+            new GameObject(obstacle.x, obstacle.y, 50, 50, this.images.explosion, {
+              xOffset: 0, yOffset: 0, width: 50, height: 50
+            })
           );
+
           this.explosionSound.currentTime = 0;
           this.explosionSound.play().catch(() => {});
           this.obstacles.splice(index, 1);
@@ -475,13 +498,16 @@ initEventListeners() {
         }
       }
     });
+
     this.powerUps.forEach((powerUp, index) => {
       powerUp.x += this.obstacleSpeed;
       if (powerUp.x > this.baseWidth) {
         this.powerUps.splice(index, 1);
       }
+
       const playerHitbox = this.player.getHitbox();
       const powerUpHitbox = powerUp.getHitbox();
+
       if (
         playerHitbox.x < powerUpHitbox.x + powerUpHitbox.width &&
         playerHitbox.x + playerHitbox.width > powerUpHitbox.x &&
@@ -492,18 +518,21 @@ initEventListeners() {
         this.activateFullSendMode();
       }
     });
+
     this.explosions.forEach((explosion, index) => {
       explosion.timer -= deltaTime / 16.67;
       if (explosion.timer <= 0) {
         this.explosions.splice(index, 1);
       }
     });
+
     if ((this.keys.ArrowUp || this.keys.KeyW) && this.player.y > 0) {
       this.player.y -= this.playerSpeed;
     }
     if ((this.keys.ArrowDown || this.keys.KeyS) && this.player.y < this.baseHeight - this.player.height) {
       this.player.y += this.playerSpeed;
     }
+
     if (this.isFullSendMode) {
       this.fullSendModeTimer -= deltaTime / 16.67;
       if (this.fullSendModeTimer <= 0) {
@@ -515,24 +544,30 @@ initEventListeners() {
   // --- DRAWING ---
   draw() {
     const dpr = window.devicePixelRatio || 1;
+
     this.ctx.save();
+
     // Scale for device pixel ratio and base coordinate system.
     this.ctx.scale(dpr, dpr);
     this.ctx.scale(this.scale, this.scale);
+
     // Draw background.
     this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
     this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
+
     // Draw game objects.
     this.player.draw(this.ctx);
     this.obstacles.forEach(obstacle => obstacle.draw(this.ctx));
     this.powerUps.forEach(powerUp => powerUp.draw(this.ctx));
     this.explosions.forEach(explosion => explosion.draw(this.ctx));
+
     // Draw score.
     const fontSizeScore = Math.min(this.baseWidth / 20, this.baseHeight / 20);
     this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
     this.ctx.font = `${fontSizeScore}px Arial`;
     this.ctx.textAlign = "left";
     this.ctx.fillText(`Score: ${this.score}`, 10, fontSizeScore);
+
     // Display full-send mode timer if active.
     if (this.isFullSendMode) {
       this.ctx.fillStyle = "#FFF";
@@ -544,6 +579,7 @@ initEventListeners() {
       const indicatorText = "Double points awarded for hits!";
       this.ctx.fillText(indicatorText, this.baseWidth / 2, this.baseHeight / 2 + fontSize / 2);
     }
+
     // Game over overlay and Play Again button.
     if (this.gameOver) {
       this.ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
@@ -555,6 +591,7 @@ initEventListeners() {
       this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2);
       this.createPlayAgainButton();
     }
+
     this.ctx.restore();
   }
 
@@ -570,6 +607,7 @@ initEventListeners() {
       playAgainButton.style.cssText =
         "position: relative; display: block; margin: 20px auto; padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50; color: #FFF;";
       popupContent.appendChild(playAgainButton);
+
       playAgainButton.addEventListener("click", () => {
         playAgainButton.remove();
         this.resetGame();
@@ -577,7 +615,6 @@ initEventListeners() {
     }
   }
 
-  // --- RESET & GAME LOOP ---
   /**
    * Resets the game state and restarts the game.
    */
@@ -589,10 +626,13 @@ initEventListeners() {
     this.explosions = [];
     this.obstacleSpeed = 3;
     this.spawnInterval = 1500;
+
     this.resizeCanvas();
     this.lastSpawnTime = performance.now();
+
     this.musicStarted = false;
     this.running = true;
+
     this.startBackgroundMusic();
     this.startGameLoop();
   }
@@ -603,9 +643,11 @@ initEventListeners() {
   startGameLoop() {
     const gameLoop = (timestamp) => {
       if (!this.running) return;
+
       const deltaTime = timestamp - this.lastUpdateTime;
       if (deltaTime >= FPS_INTERVAL) {
         this.lastUpdateTime = timestamp;
+
         if (!this.gameOver) {
           this.update(deltaTime);
           this.draw();
@@ -613,76 +655,78 @@ initEventListeners() {
           this.backgroundMusic.pause();
         }
       }
+
       this.gameLoopRequestId = requestAnimationFrame(gameLoop);
     };
+
     this.gameLoopRequestId = requestAnimationFrame(gameLoop);
   }
+
+  /**
+   * Cleanly stops the game loop, removes listeners, and stops audio.
+   * Called via window.destroyGame() when the popup closes.
+   */
+  destroy() {
+    // Stop loop
+    this.running = false;
+    if (this.gameLoopRequestId) cancelAnimationFrame(this.gameLoopRequestId);
+
+    // Remove event listeners
+    try {
+      window.removeEventListener("resize", this._onResize);
+      document.removeEventListener("keydown", this._onKeyDown);
+      document.removeEventListener("keyup", this._onKeyUp);
+      document.removeEventListener("visibilitychange", this._onVisibilityChange);
+
+      if (this.canvas) {
+        this.canvas.removeEventListener("touchstart", this._onTouchStart);
+        this.canvas.removeEventListener("touchmove", this._onTouchMove);
+        this.canvas.removeEventListener("touchend", this._onTouchEnd);
+      }
+    } catch (e) {}
+
+    // Stop audio
+    try {
+      this.backgroundMusic.pause();
+      this.backgroundMusic.currentTime = 0;
+      this.musicStarted = false;
+    } catch (e) {}
+
+    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
+      try { sound.pause(); sound.currentTime = 0; } catch (e) {}
+    });
+
+    // Close audio context (releases resources)
+    try {
+      if (this.audioContext && this.audioContext.state !== "closed") {
+        this.audioContext.close();
+      }
+    } catch (e) {}
+  }
 }
-destroy() {
-  // Stop loop
-  this.running = false;
-  if (this.gameLoopRequestId) cancelAnimationFrame(this.gameLoopRequestId);
 
-  // Remove event listeners
-  try {
-    window.removeEventListener("resize", this._onResize);
-    document.removeEventListener("keydown", this._onKeyDown);
-    document.removeEventListener("keyup", this._onKeyUp);
-    document.removeEventListener("visibilitychange", this._onVisibilityChange);
-    if (this.canvas) {
-      this.canvas.removeEventListener("touchstart", this._onTouchStart);
-      this.canvas.removeEventListener("touchmove", this._onTouchMove);
-      this.canvas.removeEventListener("touchend", this._onTouchEnd);
-    }
-  } catch (e) {}
-
-  // Stop audio
-  try {
-    this.backgroundMusic.pause();
-    this.backgroundMusic.currentTime = 0;
-    this.musicStarted = false;
-  } catch (e) {}
-
-  [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
-    try { sound.pause(); sound.currentTime = 0; } catch (e) {}
-  });
-
-  // Close audio context (releases resources)
-  try {
-    if (this.audioContext && this.audioContext.state !== "closed") {
-      this.audioContext.close();
-    }
-  } catch (e) {}
-}
+/* -----------------------------
+   Global start/stop hooks
+------------------------------ */
 
 // Keep a reference so we can stop/destroy cleanly.
 window.__floatuckyGameInstance = null;
 
+// Start the game (called when popup opens)
 window.initializeGame = function () {
   // Prevent double-start if popup opens twice.
-  if (window.__floatuckyGameInstance && window.__floatuckyGameInstance.running) {
-    return;
-  }
+  if (window.__floatuckyGameInstance && window.__floatuckyGameInstance.running) return;
   window.__floatuckyGameInstance = new Game("gameCanvas");
 };
 
-// Clean shutdown hook for Popup close.
+// Stop the game (called when popup closes)
 window.destroyGame = function () {
   const g = window.__floatuckyGameInstance;
   if (!g) return;
 
-  try {
-    g.running = false;
-    if (g.gameLoopRequestId) cancelAnimationFrame(g.gameLoopRequestId);
-  } catch (e) {}
-
-  // Remove listeners (we’ll make this possible in Part A.2 below)
   try {
     if (typeof g.destroy === "function") g.destroy();
   } catch (e) {}
 
   window.__floatuckyGameInstance = null;
 };
-
-
-
