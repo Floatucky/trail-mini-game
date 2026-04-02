@@ -4,9 +4,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
   var scriptLoaded = false;
   var scriptLoading = false;
+  var startTimeout = null;
 
   function loadGameScriptOnce(callback) {
-    if (scriptLoaded) { callback(); return; }
+    if (scriptLoaded) {
+      callback();
+      return;
+    }
+
     if (scriptLoading) return;
 
     if (document.querySelector('script[data-floatucky-game="1"]')) {
@@ -39,24 +44,47 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function startGameSoon() {
-    setTimeout(function () {
+    if (startTimeout) {
+      clearTimeout(startTimeout);
+      startTimeout = null;
+    }
+
+    startTimeout = setTimeout(function () {
       var canvas = document.getElementById("gameCanvas");
       console.log("[Floatucky Game] Canvas exists:", !!canvas);
+
+      if (!canvas) {
+        console.error("[Floatucky Game] gameCanvas not found inside popup");
+        return;
+      }
 
       if (window.initializeGame) {
         console.log("[Floatucky Game] Starting game");
         window.initializeGame();
+
+        // One extra resize pass after popup is fully visible
+        setTimeout(function () {
+          if (
+            window.__floatuckyGameInstance &&
+            typeof window.__floatuckyGameInstance.resizeCanvas === "function"
+          ) {
+            window.__floatuckyGameInstance.resizeCanvas();
+          }
+        }, 120);
       } else {
         console.error("[Floatucky Game] initializeGame not found");
       }
-    }, 150);
+    }, 180);
   }
 
   var trigger = document.querySelector(".hidden-trigger");
   if (trigger) {
     trigger.addEventListener("click", function () {
       document.body.classList.add("popup-open");
-      if (window.PUM && window.PUM.open) window.PUM.open(POPUP_ID);
+
+      if (window.PUM && window.PUM.open) {
+        window.PUM.open(POPUP_ID);
+      }
 
       loadGameScriptOnce(function () {
         startGameSoon();
@@ -66,6 +94,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.addEventListener("pumAfterClose", function () {
     document.body.classList.remove("popup-open");
+
+    if (startTimeout) {
+      clearTimeout(startTimeout);
+      startTimeout = null;
+    }
 
     if (window.destroyGame) {
       console.log("[Floatucky Game] Stopping game");
