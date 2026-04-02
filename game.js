@@ -157,25 +157,36 @@ class Game {
     document.addEventListener("keyup", this._onKeyUp);
   }
 
-  resizeCanvas() {
-    const dpr = window.devicePixelRatio || 1;
+resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
 
-    const scaleX = (window.innerWidth * 0.95) / this.baseWidth;
-    const scaleY = (window.innerHeight * 0.9) / this.baseHeight;
+  const scaleX = (window.innerWidth * 0.95) / this.baseWidth;
+  const scaleY = (window.innerHeight * 0.85) / this.baseHeight;
 
-    this.scale = Math.min(scaleX, scaleY);
+  this.scale = Math.min(scaleX, scaleY);
 
-    const cw = this.baseWidth * this.scale;
-    const ch = this.baseHeight * this.scale;
+  const cw = this.baseWidth * this.scale;
+  const ch = this.baseHeight * this.scale;
 
-    this.canvas.width = cw * dpr;
-    this.canvas.height = ch * dpr;
-    this.canvas.style.width = cw + "px";
-    this.canvas.style.height = ch + "px";
+  this.canvas.width = cw * dpr;
+  this.canvas.height = ch * dpr;
 
-    this.player.x = this.baseWidth - this.player.width - 20;
-    this.player.y = this.baseHeight / 2;
-  }
+  this.canvas.style.width = `${cw}px`;
+  this.canvas.style.height = `${ch}px`;
+
+  // 🚨 CRITICAL FIX: remove vertical positioning
+  this.canvas.style.position = "relative";
+  this.canvas.style.left = "0";
+  this.canvas.style.top = "0";
+  this.canvas.style.transform = "none";
+
+  // Keep player inside bounds
+  this.player.x = this.baseWidth - this.player.width - 20;
+  this.player.y = Math.max(
+    0,
+    Math.min(this.player.y, this.baseHeight - this.player.height)
+  );
+}
 
   startBackgroundMusic() {
     if (!this.musicStarted) {
@@ -227,6 +238,10 @@ class Game {
     if (this.keys.ArrowUp) this.player.y -= this.playerSpeed;
     if (this.keys.ArrowDown) this.player.y += this.playerSpeed;
 
+    this.player.y = Math.max(
+  0,
+  Math.min(this.baseHeight - this.player.height, this.player.y)
+);
     const playerHitbox = this.player.getHitbox();
 
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
