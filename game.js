@@ -160,8 +160,13 @@ class Game {
 resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
 
-  const scaleX = (window.innerWidth * 0.95) / this.baseWidth;
-  const scaleY = (window.innerHeight * 0.85) / this.baseHeight;
+  // 🔥 Use popup height instead of full window
+  const popup = document.getElementById("game-wrap");
+  const availableWidth = popup ? popup.clientWidth : window.innerWidth;
+  const availableHeight = popup ? popup.clientHeight : window.innerHeight;
+
+  const scaleX = (availableWidth * 0.95) / this.baseWidth;
+  const scaleY = (availableHeight * 0.95) / this.baseHeight;
 
   this.scale = Math.min(scaleX, scaleY);
 
@@ -174,13 +179,13 @@ resizeCanvas() {
   this.canvas.style.width = `${cw}px`;
   this.canvas.style.height = `${ch}px`;
 
-  // 🚨 CRITICAL FIX: remove vertical positioning
+  // 🚨 NO positioning hacks anymore
   this.canvas.style.position = "relative";
   this.canvas.style.left = "0";
   this.canvas.style.top = "0";
   this.canvas.style.transform = "none";
 
-  // Keep player inside bounds
+  // Keep player in bounds
   this.player.x = this.baseWidth - this.player.width - 20;
   this.player.y = Math.max(
     0,
