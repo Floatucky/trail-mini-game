@@ -1,12 +1,3 @@
-/**
- * Floatucky Trail Mini Game
- * Stabilized version:
- * - Better mobile sizing
- * - Safer array updates (reverse loops instead of forEach + splice)
- * - Simpler, more stable collision checks
- * - Cleaner popup open/close lifecycle
- */
-
 const FPS_INTERVAL = 1000 / 60;
 const MAX_OBSTACLES = 40;
 const MAX_POWERUPS = 3;
@@ -42,16 +33,18 @@ class GameObject {
 class Game {
   constructor(canvasId) {
     this.canvas = document.getElementById(canvasId);
-    if (!this.canvas) {
-      console.error("Canvas not found:", canvasId);
-      return;
-    }
+    if (!this.canvas) return;
 
     this.ctx = this.canvas.getContext("2d");
+
+    this.loopToken = 0;
+    this.running = true;
+    this.gameLoopRequestId = null;
 
     this.setLogicalResolution();
 
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
     this.backgroundMusic = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
     this.collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
     this.pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
@@ -66,18 +59,39 @@ class Game {
       explosion: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Explosion.png")
     };
 
+    this.resetCoreState();
+
+    this.player = new GameObject(
+      0,
+      0,
+      this.isMobilePortrait ? 120 : 100,
+      this.isMobilePortrait ? 48 : 40,
+      this.images.player,
+      this.isMobilePortrait
+        ? { xOffset: 8, yOffset: 12, width: 98, height: 28 }
+        : { xOffset: 5, yOffset: 10, width: 85, height: 25 }
+    );
+
+    this.initEventListeners();
+    this.resizeCanvas();
+    this.startGameLoop();
+  }
+
+  resetCoreState() {
     this.obstacles = [];
     this.powerUps = [];
     this.explosions = [];
 
     this.score = 0;
     this.gameOver = false;
+
     this.isFullSendMode = false;
     this.fullSendModeTimer = 0;
 
     this.spawnInterval = 1350;
     this.obstacleSpeed = 3;
-    this.lastSpawnTime = 0;
+
+    this.lastSpawnTime = performance.now();
     this.lastUpdateTime = 0;
 
     this.keys = {
@@ -93,31 +107,10 @@ class Game {
     };
 
     this.touchStartY = null;
+
     this.musicStarted = false;
     this.audioEnabled = false;
     this.soundsPreloaded = false;
-    this.running = true;
-    this.gameLoopRequestId = null;
-    this.scale = 1;
-
-    this.playerSpeed = this.isMobilePortrait ? 14 : 10;
-
-    this.player = new GameObject(
-      0,
-      0,
-      this.isMobilePortrait ? 120 : 100,
-      this.isMobilePortrait ? 48 : 40,
-      this.images.player,
-      this.isMobilePortrait
-        ? { xOffset: 8, yOffset: 12, width: 98, height: 28 }
-        : { xOffset: 5, yOffset: 10, width: 85, height: 25 }
-    );
-
-    this.resizeCanvas();
-    this.initEventListeners();
-
-    console.log("Game initialized.");
-    this.startGameLoop();
   }
 
   setLogicalResolution() {
@@ -130,175 +123,67 @@ class Game {
       this.baseWidth = 1200;
       this.baseHeight = 900;
     }
+
+    this.playerSpeed = this.isMobilePortrait ? 14 : 10;
   }
 
   loadImage(src) {
     const img = new Image();
     img.src = src;
-    img.onerror = () => console.error("Error loading image:", src);
     return img;
   }
 
   initEventListeners() {
-    this._onResize = this.handleResize.bind(this);
-    this._onKeyDown = this.handleKeyDown.bind(this);
-    this._onKeyUp = this.handleKeyUp.bind(this);
-    this._onTouchStart = this.handleTouchStart.bind(this);
-    this._onTouchMove = this.handleTouchMove.bind(this);
-    this._onTouchEnd = this.handleTouchEnd.bind(this);
-    this._onVisibilityChange = this.handleVisibilityChange.bind(this);
+    this._onResize = () => {
+      this.setLogicalResolution();
+      this.resizeCanvas();
+    };
+
+    this._onKeyDown = (e) => {
+      if (this.keys.hasOwnProperty(e.key)) {
+        this.keys[e.key] = true;
+        this.startBackgroundMusic();
+      }
+    };
+
+    this._onKeyUp = (e) => {
+      if (this.keys.hasOwnProperty(e.key)) {
+        this.keys[e.key] = false;
+      }
+    };
 
     window.addEventListener("resize", this._onResize);
     document.addEventListener("keydown", this._onKeyDown);
     document.addEventListener("keyup", this._onKeyUp);
-    this.canvas.addEventListener("touchstart", this._onTouchStart, { passive: false });
-    this.canvas.addEventListener("touchmove", this._onTouchMove, { passive: false });
-    this.canvas.addEventListener("touchend", this._onTouchEnd);
-    document.addEventListener("visibilitychange", this._onVisibilityChange);
-  }
-
-  handleResize() {
-    this.setLogicalResolution();
-    this.playerSpeed = this.isMobilePortrait ? 14 : 10;
-    this.resizeCanvas();
-  }
-
-  getAvailablePopupSize() {
-    const wrap = this.canvas.parentElement;
-    const rect = wrap ? wrap.getBoundingClientRect() : null;
-
-    let availableWidth = window.innerWidth * 0.96;
-    let availableHeight = window.innerHeight * 0.90;
-
-    if (rect && rect.width > 0 && rect.height > 0) {
-      availableWidth = Math.min(availableWidth, rect.width * 0.98);
-      availableHeight = Math.min(availableHeight, rect.height * 0.98);
-    }
-
-    return { availableWidth, availableHeight };
   }
 
   resizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
-    const sizes = this.getAvailablePopupSize();
-    const scaleX = sizes.availableWidth / this.baseWidth;
-    const scaleY = sizes.availableHeight / this.baseHeight;
+
+    const scaleX = (window.innerWidth * 0.95) / this.baseWidth;
+    const scaleY = (window.innerHeight * 0.9) / this.baseHeight;
 
     this.scale = Math.min(scaleX, scaleY);
 
-    const cw = Math.max(1, this.baseWidth * this.scale);
-    const ch = Math.max(1, this.baseHeight * this.scale);
+    const cw = this.baseWidth * this.scale;
+    const ch = this.baseHeight * this.scale;
 
-    this.canvas.width = Math.floor(cw * dpr);
-    this.canvas.height = Math.floor(ch * dpr);
-    this.canvas.style.width = `${cw}px`;
-    this.canvas.style.height = `${ch}px`;
-    this.canvas.style.display = "block";
-    this.canvas.style.margin = "0 auto";
-    this.canvas.style.position = "relative";
-    this.canvas.style.left = "0";
-    this.canvas.style.top = "0";
-    this.canvas.style.transform = "none";
+    this.canvas.width = cw * dpr;
+    this.canvas.height = ch * dpr;
+    this.canvas.style.width = cw + "px";
+    this.canvas.style.height = ch + "px";
 
-    this.player.x = this.baseWidth - this.player.width - Math.max(20, this.baseWidth * 0.02);
-    this.player.y = Math.min(
-      Math.max(this.player.y, 0),
-      this.baseHeight - this.player.height
-    );
-
-    console.log("Canvas resized:", cw, ch, "Scale:", this.scale);
-  }
-
-  handleKeyDown(e) {
-    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-      e.preventDefault();
-    }
-
-    if (Object.prototype.hasOwnProperty.call(this.keys, e.key)) {
-      this.keys[e.key] = true;
-      this.startBackgroundMusic();
-      this.startSoundPlayback();
-      if (!this.audioEnabled) this.enableAudio();
-    }
-  }
-
-  handleKeyUp(e) {
-    if (Object.prototype.hasOwnProperty.call(this.keys, e.key)) {
-      this.keys[e.key] = false;
-    }
-  }
-
-  handleTouchStart(e) {
-    e.preventDefault();
-    this.touchStartY = e.touches[0].clientY;
-    this.startBackgroundMusic();
-    this.startSoundPlayback();
-    if (!this.audioEnabled) this.enableAudio();
-  }
-
-  handleTouchMove(e) {
-    e.preventDefault();
-    const currentTouchY = e.touches[0].clientY;
-
-    if (this.touchStartY !== null) {
-      const swipeDistance = currentTouchY - this.touchStartY;
-      const touchMultiplier = this.isMobilePortrait ? 1.15 : 0.75;
-      const moveDistance = (swipeDistance * touchMultiplier) / this.scale;
-
-      this.player.y = Math.max(
-        0,
-        Math.min(this.baseHeight - this.player.height, this.player.y + moveDistance)
-      );
-
-      this.touchStartY = currentTouchY;
-    }
-  }
-
-  handleTouchEnd() {
-    this.touchStartY = null;
-  }
-
-  handleVisibilityChange() {
-    if (document.hidden && this.musicStarted) {
-      this.backgroundMusic.pause();
-    } else if (!document.hidden && this.musicStarted && !this.gameOver) {
-      this.backgroundMusic.play().catch(() => {});
-    }
+    this.player.x = this.baseWidth - this.player.width - 20;
+    this.player.y = this.baseHeight / 2;
   }
 
   startBackgroundMusic() {
     if (!this.musicStarted) {
       this.backgroundMusic.loop = true;
       this.backgroundMusic.volume = 0.5;
-
-      this.audioContext.resume().then(() => {
-        this.backgroundMusic.play().catch(() => {});
-        this.musicStarted = true;
-      }).catch(() => {});
+      this.backgroundMusic.play().catch(() => {});
+      this.musicStarted = true;
     }
-  }
-
-  startSoundPlayback() {
-    if (!this.soundsPreloaded) {
-      [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
-        sound.play().catch(() => {});
-        sound.pause();
-      });
-      this.soundsPreloaded = true;
-    }
-  }
-
-  enableAudio() {
-    if (this.audioContext.state === "suspended") {
-      this.audioContext.resume().catch(() => {});
-    }
-
-    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
-      sound.play().catch(() => {});
-      sound.pause();
-    });
-
-    this.audioEnabled = true;
   }
 
   rectsOverlap(a, b) {
@@ -310,198 +195,53 @@ class Game {
     );
   }
 
-  createObstacle(numObstacles = 1) {
+  createObstacle() {
     if (this.obstacles.length >= MAX_OBSTACLES) return;
 
-    let created = 0;
-    let attempts = 0;
+    const width = 80;
+    const height = 80;
+    const y = Math.random() * (this.baseHeight - height);
 
-    while (created < numObstacles && attempts < 30 && this.obstacles.length < MAX_OBSTACLES) {
-      const type = Math.random() < 0.5 ? "tree" : "rock";
-      const image = this.images[type];
-      const isSmall = Math.random() < 0.5;
-
-      let width;
-      let height;
-
-      if (type === "tree") {
-        width = isSmall ? 60 : 100;
-        height = isSmall ? 60 : 100;
-      } else {
-        width = isSmall ? 68 : 86;
-        height = isSmall ? 44 : 78;
-      }
-
-      const y = Math.random() * (this.baseHeight - height);
-
-      const hitbox = type === "tree"
-        ? { xOffset: width * 0.35, yOffset: height * 0.15, width: width * 0.3, height: height * 0.7 }
-        : { xOffset: width * 0.15, yOffset: height * 0.2, width: width * 0.7, height: height * 0.6 };
-
-      const newObstacle = new GameObject(-width, y, width, height, image, hitbox);
-
-      let overlapsLane = false;
-      for (let i = 0; i < this.obstacles.length; i++) {
-        const other = this.obstacles[i];
-        if (
-          newObstacle.y < other.y + other.height + 18 &&
-          newObstacle.y + newObstacle.height > other.y - 18 &&
-          other.x < 180
-        ) {
-          overlapsLane = true;
-          break;
-        }
-      }
-
-      if (!overlapsLane) {
-        this.obstacles.push(newObstacle);
-        created++;
-      }
-
-      attempts++;
-    }
-  }
-
-  createPowerUp() {
-    if (this.powerUps.length >= MAX_POWERUPS) return;
-    if (Math.random() >= 0.1) return;
-
-    const size = this.isMobilePortrait ? 64 : 50;
-    let attempts = 0;
-
-    while (attempts < 20) {
-      const y = Math.random() * (this.baseHeight - size);
-      const powerUp = new GameObject(
-        -size,
-        y,
-        size,
-        size,
-        this.images.powerUp,
-        { xOffset: 0, yOffset: 0, width: size, height: size }
-      );
-
-      let overlaps = false;
-
-      for (let i = 0; i < this.obstacles.length; i++) {
-        if (this.rectsOverlap(powerUp.getHitbox(), this.obstacles[i].getHitbox())) {
-          overlaps = true;
-          break;
-        }
-      }
-
-      if (!overlaps) {
-        this.powerUps.push(powerUp);
-        return;
-      }
-
-      attempts++;
-    }
-  }
-
-  activateFullSendMode() {
-    if (!this.isFullSendMode) {
-      this.isFullSendMode = true;
-      this.fullSendModeTimer = 300;
-      this.powerUpSound.currentTime = 0;
-      this.powerUpSound.play().catch(() => {});
-    }
+    this.obstacles.push(
+      new GameObject(-width, y, width, height, this.images.tree, {
+        xOffset: 20,
+        yOffset: 10,
+        width: 40,
+        height: 60
+      })
+    );
   }
 
   update(deltaTime) {
-    const currentTime = performance.now();
+    const now = performance.now();
 
-    if (currentTime - this.lastSpawnTime > this.spawnInterval) {
-      const numObstacles = Math.random() < 0.55 ? 1 : 2;
-      this.createObstacle(numObstacles);
-      this.createPowerUp();
-      this.lastSpawnTime = currentTime;
+    if (now - this.lastSpawnTime > this.spawnInterval) {
+      this.createObstacle();
+      this.lastSpawnTime = now;
 
       if (this.spawnInterval > MIN_SPAWN_INTERVAL) {
         this.spawnInterval -= 10;
       }
-
-      if (this.obstacleSpeed < 8.5) {
-        this.obstacleSpeed += 0.04;
-      }
     }
 
-    if ((this.keys.ArrowUp || this.keys.KeyW) && this.player.y > 0) {
-      this.player.y -= this.playerSpeed;
-    }
-
-    if ((this.keys.ArrowDown || this.keys.KeyS) && this.player.y < this.baseHeight - this.player.height) {
-      this.player.y += this.playerSpeed;
-    }
+    if (this.keys.ArrowUp) this.player.y -= this.playerSpeed;
+    if (this.keys.ArrowDown) this.player.y += this.playerSpeed;
 
     const playerHitbox = this.player.getHitbox();
 
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
-      const obstacle = this.obstacles[i];
-      obstacle.x += this.obstacleSpeed;
+      const o = this.obstacles[i];
+      o.x += this.obstacleSpeed;
 
-      if (obstacle.x > this.baseWidth + obstacle.width) {
+      if (o.x > this.baseWidth) {
         this.obstacles.splice(i, 1);
         this.score++;
-
-        if (this.audioEnabled) {
-          this.pointSound.currentTime = 0;
-          this.pointSound.play().catch(() => {});
-        }
         continue;
       }
 
-      if (this.rectsOverlap(playerHitbox, obstacle.getHitbox())) {
-        if (this.isFullSendMode) {
-          this.explosions.push(
-            new GameObject(
-              obstacle.x,
-              obstacle.y,
-              50,
-              50,
-              this.images.explosion,
-              { xOffset: 0, yOffset: 0, width: 50, height: 50 }
-            )
-          );
-
-          this.explosionSound.currentTime = 0;
-          this.explosionSound.play().catch(() => {});
-          this.obstacles.splice(i, 1);
-          this.score += 2;
-        } else {
-          this.collisionSound.currentTime = 0;
-          this.collisionSound.play().catch(() => {});
-          this.gameOver = true;
-          return;
-        }
-      }
-    }
-
-    for (let i = this.powerUps.length - 1; i >= 0; i--) {
-      const powerUp = this.powerUps[i];
-      powerUp.x += this.obstacleSpeed;
-
-      if (powerUp.x > this.baseWidth + powerUp.width) {
-        this.powerUps.splice(i, 1);
-        continue;
-      }
-
-      if (this.rectsOverlap(playerHitbox, powerUp.getHitbox())) {
-        this.powerUps.splice(i, 1);
-        this.activateFullSendMode();
-      }
-    }
-
-    for (let i = this.explosions.length - 1; i >= 0; i--) {
-      this.explosions[i].timer -= deltaTime / 16.67;
-      if (this.explosions[i].timer <= 0) {
-        this.explosions.splice(i, 1);
-      }
-    }
-
-    if (this.isFullSendMode) {
-      this.fullSendModeTimer -= deltaTime / 16.67;
-      if (this.fullSendModeTimer <= 0) {
-        this.isFullSendMode = false;
+      if (this.rectsOverlap(playerHitbox, o.getHitbox())) {
+        this.gameOver = true;
+        return;
       }
     }
   }
@@ -509,245 +249,118 @@ class Game {
   draw() {
     const dpr = window.devicePixelRatio || 1;
 
-    this.ctx.save();
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     this.ctx.scale(dpr, dpr);
     this.ctx.scale(this.scale, this.scale);
 
-    this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
+    this.ctx.fillStyle = "#D2B48C";
     this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
 
     this.player.draw(this.ctx);
-    for (let i = 0; i < this.obstacles.length; i++) this.obstacles[i].draw(this.ctx);
-    for (let i = 0; i < this.powerUps.length; i++) this.powerUps[i].draw(this.ctx);
-    for (let i = 0; i < this.explosions.length; i++) this.explosions[i].draw(this.ctx);
 
-    const fontSizeScore = this.isMobilePortrait ? 34 : Math.min(this.baseWidth / 20, this.baseHeight / 20);
-    this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
-    this.ctx.font = `bold ${fontSizeScore}px Arial`;
-    this.ctx.textAlign = "left";
-    this.ctx.fillText(`Score: ${this.score}`, 14, fontSizeScore + 4);
+    this.obstacles.forEach(o => o.draw(this.ctx));
 
-    if (this.isFullSendMode) {
-      this.ctx.fillStyle = "#FFF";
-      const fontSize = this.isMobilePortrait ? 34 : Math.min(this.baseWidth / 15, this.baseHeight / 15);
-      this.ctx.font = `bold ${fontSize}px Arial`;
-      this.ctx.textAlign = "center";
-      this.ctx.fillText(
-        `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`,
-        this.baseWidth / 2,
-        this.baseHeight / 2 - fontSize / 2
-      );
-      this.ctx.fillText(
-        "Double points awarded for hits!",
-        this.baseWidth / 2,
-        this.baseHeight / 2 + fontSize / 2
-      );
-    }
+    this.ctx.fillStyle = "#fff";
+    this.ctx.font = "30px Arial";
+    this.ctx.fillText("Score: " + this.score, 10, 40);
 
     if (this.gameOver) {
-      this.ctx.fillStyle = "rgba(0,0,0,0.55)";
+      this.ctx.fillStyle = "rgba(0,0,0,0.5)";
       this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
-      this.ctx.fillStyle = "#FFF";
-      this.ctx.font = "bold 40px Arial";
-      this.ctx.textAlign = "center";
-      this.ctx.fillText("Game Over!", this.baseWidth / 2, this.baseHeight / 2 - 50);
-      this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2);
+
+      this.ctx.fillStyle = "#fff";
+      this.ctx.fillText("Game Over", this.baseWidth / 2 - 80, this.baseHeight / 2);
+
       this.createPlayAgainButton();
     }
-
-    this.ctx.restore();
   }
 
-createPlayAgainButton() {
-  var gameWrap = document.getElementById("game-wrap");
-  if (!gameWrap) return;
+  createPlayAgainButton() {
+    if (document.getElementById("playAgainButton")) return;
 
-  var existingButton = gameWrap.querySelector("#playAgainButton");
-  if (existingButton) return;
+    const btn = document.createElement("button");
+    btn.id = "playAgainButton";
+    btn.textContent = "Play Again";
 
-  var playAgainButton = document.createElement("button");
-  playAgainButton.id = "playAgainButton";
-  playAgainButton.textContent = "Play Again";
-  playAgainButton.style.cssText =
-    "position:absolute; left:50%; bottom:20px; transform:translateX(-50%); z-index:50; padding:12px 22px; font-size:16px; cursor:pointer; border:none; border-radius:6px; background-color:#4CAF50; color:#FFF; box-shadow:0 4px 12px rgba(0,0,0,0.35);";
+    btn.style.position = "absolute";
+    btn.style.bottom = "20px";
+    btn.style.left = "50%";
+    btn.style.transform = "translateX(-50%)";
 
-  gameWrap.appendChild(playAgainButton);
+    document.body.appendChild(btn);
 
-  playAgainButton.addEventListener("click", () => {
-    this.resetGame();
-  });
-}
-
-resetGame() {
-  // Remove old Play Again button
-  var oldButton = document.getElementById("playAgainButton");
-  if (oldButton) oldButton.remove();
-
-  // Hard stop current animation loop before restarting
-  if (this.gameLoopRequestId) {
-    cancelAnimationFrame(this.gameLoopRequestId);
-    this.gameLoopRequestId = null;
+    btn.onclick = () => this.resetGame();
   }
 
-  // Reset gameplay state
-  this.gameOver = false;
-  this.score = 0;
-  this.obstacles = [];
-  this.powerUps = [];
-  this.explosions = [];
-  this.isFullSendMode = false;
-  this.fullSendModeTimer = 0;
-
-  // Reset difficulty
-  this.obstacleSpeed = 3;
-  this.spawnInterval = 1350;
-
-  // Reset timers
-  this.lastSpawnTime = performance.now();
-  this.lastUpdateTime = 0;
-
-  // Reset input state
-  this.keys = {
-    ArrowUp: false,
-    ArrowDown: false,
-    ArrowLeft: false,
-    ArrowRight: false,
-    Space: false,
-    KeyW: false,
-    KeyA: false,
-    KeyS: false,
-    KeyD: false
-  };
-  this.touchStartY = null;
-
-  // Reset player position
-  this.player.x = this.baseWidth - this.player.width - Math.max(20, this.baseWidth * 0.02);
-  this.player.y = (this.baseHeight - this.player.height) / 2;
-
-  // Reset sounds
-  try {
-    this.backgroundMusic.pause();
-    this.backgroundMusic.currentTime = 0;
-  } catch (e) {}
-
-  [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
-    try {
-      sound.pause();
-      sound.currentTime = 0;
-    } catch (e) {}
-  });
-
-  // Reset audio flags
-  this.musicStarted = false;
-  this.audioEnabled = false;
-  this.soundsPreloaded = false;
-
-  // Resize and restart
-  this.running = true;
-  this.resizeCanvas();
-  this.draw();
-  this.startGameLoop();
-}
-
- startGameLoop() {
-  // Safety: never allow two loops at once
-  if (this.gameLoopRequestId) {
-    cancelAnimationFrame(this.gameLoopRequestId);
-    this.gameLoopRequestId = null;
-  }
-
-  const gameLoop = (timestamp) => {
-    if (!this.running) {
-      this.gameLoopRequestId = null;
-      return;
-    }
-
-    if (!this.lastUpdateTime) {
-      this.lastUpdateTime = timestamp;
-    }
-
-    const deltaTime = timestamp - this.lastUpdateTime;
-
-    if (deltaTime >= FPS_INTERVAL) {
-      this.lastUpdateTime = timestamp;
-
-      if (!this.gameOver) {
-        this.update(deltaTime);
-      } else {
-        this.backgroundMusic.pause();
-      }
-
-      this.draw();
-    }
-
-    this.gameLoopRequestId = requestAnimationFrame(gameLoop);
-  };
-
-  this.gameLoopRequestId = requestAnimationFrame(gameLoop);
-}
-
-  destroy() {
+  resetGame() {
+    this.loopToken++;
     this.running = false;
 
     if (this.gameLoopRequestId) {
       cancelAnimationFrame(this.gameLoopRequestId);
-      this.gameLoopRequestId = null;
     }
-var oldButton = document.getElementById("playAgainButton");
-if (oldButton) oldButton.remove();
-    try {
-      window.removeEventListener("resize", this._onResize);
-      document.removeEventListener("keydown", this._onKeyDown);
-      document.removeEventListener("keyup", this._onKeyUp);
-      document.removeEventListener("visibilitychange", this._onVisibilityChange);
 
-      if (this.canvas) {
-        this.canvas.removeEventListener("touchstart", this._onTouchStart);
-        this.canvas.removeEventListener("touchmove", this._onTouchMove);
-        this.canvas.removeEventListener("touchend", this._onTouchEnd);
+    const btn = document.getElementById("playAgainButton");
+    if (btn) btn.remove();
+
+    this.resetCoreState();
+
+    this.player.y = this.baseHeight / 2;
+
+    this.running = true;
+    this.startGameLoop();
+  }
+
+  startGameLoop() {
+    const token = ++this.loopToken;
+
+    const loop = (t) => {
+      if (token !== this.loopToken) return;
+      if (!this.running) return;
+
+      if (!this.lastUpdateTime) this.lastUpdateTime = t;
+
+      const dt = t - this.lastUpdateTime;
+
+      if (dt >= FPS_INTERVAL) {
+        this.lastUpdateTime = t;
+        this.update(dt);
+        this.draw();
       }
-    } catch (e) {}
 
-    try {
-      this.backgroundMusic.pause();
-      this.backgroundMusic.currentTime = 0;
-      this.musicStarted = false;
-    } catch (e) {}
+      this.gameLoopRequestId = requestAnimationFrame(loop);
+    };
 
-    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
-      try {
-        sound.pause();
-        sound.currentTime = 0;
-      } catch (e) {}
-    });
+    this.gameLoopRequestId = requestAnimationFrame(loop);
+  }
 
-    try {
-      if (this.audioContext && this.audioContext.state !== "closed") {
-        this.audioContext.close();
-      }
-    } catch (e) {}
+  destroy() {
+    this.loopToken++;
+    this.running = false;
+
+    if (this.gameLoopRequestId) {
+      cancelAnimationFrame(this.gameLoopRequestId);
+    }
+
+    const btn = document.getElementById("playAgainButton");
+    if (btn) btn.remove();
+
+    this.backgroundMusic.pause();
+    this.backgroundMusic.currentTime = 0;
   }
 }
 
 window.__floatuckyGameInstance = null;
 
 window.initializeGame = function () {
-  if (window.__floatuckyGameInstance && window.__floatuckyGameInstance.running) {
-    return;
-  }
+  if (window.__floatuckyGameInstance) return;
   window.__floatuckyGameInstance = new Game("gameCanvas");
 };
 
 window.destroyGame = function () {
-  const g = window.__floatuckyGameInstance;
-  if (!g) return;
-
-  try {
-    if (typeof g.destroy === "function") g.destroy();
-  } catch (e) {}
-
+  if (!window.__floatuckyGameInstance) return;
+  window.__floatuckyGameInstance.destroy();
   window.__floatuckyGameInstance = null;
 };
