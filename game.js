@@ -561,23 +561,23 @@ class Game {
     this.ctx.restore();
   }
 
-  createPlayAgainButton() {
-    const popupContent = document.querySelector(".pum-content.popmake-content, .pum-content");
-    if (popupContent && !document.getElementById("playAgainButton")) {
-      const playAgainButton = document.createElement("button");
-      playAgainButton.id = "playAgainButton";
-      playAgainButton.textContent = "Play Again";
-      playAgainButton.style.cssText =
-        "position: relative; display: block; margin: 20px auto; padding: 12px 22px; font-size: 16px; cursor: pointer; border: none; border-radius: 6px; background-color: #4CAF50; color: #FFF; z-index: 10;";
+createPlayAgainButton() {
+  var gameWrap = document.getElementById("game-wrap");
+  if (gameWrap && !document.getElementById("playAgainButton")) {
+    var playAgainButton = document.createElement("button");
+    playAgainButton.id = "playAgainButton";
+    playAgainButton.textContent = "Play Again";
+    playAgainButton.style.cssText =
+      "position:absolute; left:50%; bottom:20px; transform:translateX(-50%); z-index:20; padding:12px 22px; font-size:16px; cursor:pointer; border:none; border-radius:6px; background-color:#4CAF50; color:#FFF; box-shadow:0 4px 12px rgba(0,0,0,0.35);";
 
-      popupContent.appendChild(playAgainButton);
+    gameWrap.appendChild(playAgainButton);
 
-      playAgainButton.addEventListener("click", () => {
-        playAgainButton.remove();
-        this.resetGame();
-      });
-    }
+    playAgainButton.addEventListener("click", () => {
+      playAgainButton.remove();
+      this.resetGame();
+    });
   }
+}
 
   resetGame() {
     this.gameOver = false;
