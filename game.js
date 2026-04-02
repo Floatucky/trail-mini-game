@@ -75,7 +75,7 @@ class Game {
     this.isFullSendMode = false;
     this.fullSendModeTimer = 0;
 
-    this.spawnInterval = 1500;
+    this.spawnInterval = 1350;
     this.obstacleSpeed = 3;
     this.lastSpawnTime = 0;
     this.lastUpdateTime = 0;
@@ -421,7 +421,7 @@ class Game {
       }
 
       if (this.obstacleSpeed < 8.5) {
-        this.obstacleSpeed += 0.03;
+        this.obstacleSpeed += 0.04;
       }
     }
 
