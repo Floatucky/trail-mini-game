@@ -563,78 +563,131 @@ class Game {
 
 createPlayAgainButton() {
   var gameWrap = document.getElementById("game-wrap");
-  if (gameWrap && !document.getElementById("playAgainButton")) {
-    var playAgainButton = document.createElement("button");
-    playAgainButton.id = "playAgainButton";
-    playAgainButton.textContent = "Play Again";
-    playAgainButton.style.cssText =
-      "position:absolute; left:50%; bottom:20px; transform:translateX(-50%); z-index:20; padding:12px 22px; font-size:16px; cursor:pointer; border:none; border-radius:6px; background-color:#4CAF50; color:#FFF; box-shadow:0 4px 12px rgba(0,0,0,0.35);";
+  if (!gameWrap) return;
 
-    gameWrap.appendChild(playAgainButton);
+  var existingButton = gameWrap.querySelector("#playAgainButton");
+  if (existingButton) return;
 
-    playAgainButton.addEventListener("click", () => {
-      playAgainButton.remove();
-      this.resetGame();
-    });
-  }
+  var playAgainButton = document.createElement("button");
+  playAgainButton.id = "playAgainButton";
+  playAgainButton.textContent = "Play Again";
+  playAgainButton.style.cssText =
+    "position:absolute; left:50%; bottom:20px; transform:translateX(-50%); z-index:50; padding:12px 22px; font-size:16px; cursor:pointer; border:none; border-radius:6px; background-color:#4CAF50; color:#FFF; box-shadow:0 4px 12px rgba(0,0,0,0.35);";
+
+  gameWrap.appendChild(playAgainButton);
+
+  playAgainButton.addEventListener("click", () => {
+    this.resetGame();
+  });
 }
 
-  resetGame() {
-    this.gameOver = false;
-    this.score = 0;
-    this.obstacles = [];
-    this.powerUps = [];
-    this.explosions = [];
-    this.isFullSendMode = false;
-    this.fullSendModeTimer = 0;
-    this.obstacleSpeed = 3;
-    this.spawnInterval = 1500;
-    this.lastSpawnTime = performance.now();
-    this.lastUpdateTime = performance.now();
-    this.player.y = Math.max(0, Math.min(this.player.y, this.baseHeight - this.player.height));
+resetGame() {
+  // Remove old Play Again button
+  var oldButton = document.getElementById("playAgainButton");
+  if (oldButton) oldButton.remove();
 
-    this.resizeCanvas();
-
-    this.musicStarted = false;
-    this.running = true;
-
-    this.startBackgroundMusic();
-
-    if (!this.gameLoopRequestId) {
-      this.startGameLoop();
-    }
+  // Hard stop current animation loop before restarting
+  if (this.gameLoopRequestId) {
+    cancelAnimationFrame(this.gameLoopRequestId);
+    this.gameLoopRequestId = null;
   }
 
-  startGameLoop() {
-    const gameLoop = (timestamp) => {
-      if (!this.running) {
-        this.gameLoopRequestId = null;
-        return;
+  // Reset gameplay state
+  this.gameOver = false;
+  this.score = 0;
+  this.obstacles = [];
+  this.powerUps = [];
+  this.explosions = [];
+  this.isFullSendMode = false;
+  this.fullSendModeTimer = 0;
+
+  // Reset difficulty
+  this.obstacleSpeed = 3;
+  this.spawnInterval = 1350;
+
+  // Reset timers
+  this.lastSpawnTime = performance.now();
+  this.lastUpdateTime = 0;
+
+  // Reset input state
+  this.keys = {
+    ArrowUp: false,
+    ArrowDown: false,
+    ArrowLeft: false,
+    ArrowRight: false,
+    Space: false,
+    KeyW: false,
+    KeyA: false,
+    KeyS: false,
+    KeyD: false
+  };
+  this.touchStartY = null;
+
+  // Reset player position
+  this.player.x = this.baseWidth - this.player.width - Math.max(20, this.baseWidth * 0.02);
+  this.player.y = (this.baseHeight - this.player.height) / 2;
+
+  // Reset sounds
+  try {
+    this.backgroundMusic.pause();
+    this.backgroundMusic.currentTime = 0;
+  } catch (e) {}
+
+  [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
+    try {
+      sound.pause();
+      sound.currentTime = 0;
+    } catch (e) {}
+  });
+
+  // Reset audio flags
+  this.musicStarted = false;
+  this.audioEnabled = false;
+  this.soundsPreloaded = false;
+
+  // Resize and restart
+  this.running = true;
+  this.resizeCanvas();
+  this.draw();
+  this.startGameLoop();
+}
+
+ startGameLoop() {
+  // Safety: never allow two loops at once
+  if (this.gameLoopRequestId) {
+    cancelAnimationFrame(this.gameLoopRequestId);
+    this.gameLoopRequestId = null;
+  }
+
+  const gameLoop = (timestamp) => {
+    if (!this.running) {
+      this.gameLoopRequestId = null;
+      return;
+    }
+
+    if (!this.lastUpdateTime) {
+      this.lastUpdateTime = timestamp;
+    }
+
+    const deltaTime = timestamp - this.lastUpdateTime;
+
+    if (deltaTime >= FPS_INTERVAL) {
+      this.lastUpdateTime = timestamp;
+
+      if (!this.gameOver) {
+        this.update(deltaTime);
+      } else {
+        this.backgroundMusic.pause();
       }
 
-      if (!this.lastUpdateTime) {
-        this.lastUpdateTime = timestamp;
-      }
-
-      const deltaTime = timestamp - this.lastUpdateTime;
-
-      if (deltaTime >= FPS_INTERVAL) {
-        this.lastUpdateTime = timestamp;
-
-        if (!this.gameOver) {
-          this.update(deltaTime);
-        } else {
-          this.backgroundMusic.pause();
-        }
-
-        this.draw();
-      }
-
-      this.gameLoopRequestId = requestAnimationFrame(gameLoop);
-    };
+      this.draw();
+    }
 
     this.gameLoopRequestId = requestAnimationFrame(gameLoop);
-  }
+  };
+
+  this.gameLoopRequestId = requestAnimationFrame(gameLoop);
+}
 
   destroy() {
     this.running = false;
@@ -643,7 +696,8 @@ createPlayAgainButton() {
       cancelAnimationFrame(this.gameLoopRequestId);
       this.gameLoopRequestId = null;
     }
-
+var oldButton = document.getElementById("playAgainButton");
+if (oldButton) oldButton.remove();
     try {
       window.removeEventListener("resize", this._onResize);
       document.removeEventListener("keydown", this._onKeyDown);
