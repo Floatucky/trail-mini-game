@@ -6,6 +6,28 @@ document.addEventListener("DOMContentLoaded", function () {
   var scriptLoading = false;
   var startTimeout = null;
 
+  function stopGameNow() {
+    document.body.classList.remove("popup-open");
+
+    if (startTimeout) {
+      clearTimeout(startTimeout);
+      startTimeout = null;
+    }
+
+    if (window.destroyGame) {
+      console.log("[Floatucky Game] Stopping game");
+      window.destroyGame();
+    }
+
+    var audios = document.querySelectorAll("audio");
+    for (var i = 0; i < audios.length; i++) {
+      try {
+        audios[i].pause();
+        audios[i].currentTime = 0;
+      } catch (e) {}
+    }
+  }
+
   function loadGameScriptOnce(callback) {
     if (scriptLoaded) {
       callback();
@@ -62,7 +84,6 @@ document.addEventListener("DOMContentLoaded", function () {
         console.log("[Floatucky Game] Starting game");
         window.initializeGame();
 
-        // One extra resize pass after popup is fully visible
         setTimeout(function () {
           if (
             window.__floatuckyGameInstance &&
@@ -92,17 +113,31 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // DOM event path
   document.addEventListener("pumAfterClose", function () {
-    document.body.classList.remove("popup-open");
+    stopGameNow();
+  });
 
-    if (startTimeout) {
-      clearTimeout(startTimeout);
-      startTimeout = null;
-    }
+  // jQuery / Popup Maker event path
+  if (window.jQuery) {
+    window.jQuery(document).on("pumAfterClose", function () {
+      stopGameNow();
+    });
+  }
 
-    if (window.destroyGame) {
-      console.log("[Floatucky Game] Stopping game");
-      window.destroyGame();
+  // Safety: clicking the close button should stop immediately
+  document.addEventListener("click", function (e) {
+    var target = e.target;
+    if (!target) return;
+
+    if (
+      target.closest(".pum-close") ||
+      target.closest(".pum-overlay") ||
+      target.closest(".pum-close-pop")
+    ) {
+      setTimeout(function () {
+        stopGameNow();
+      }, 50);
     }
   });
 });
