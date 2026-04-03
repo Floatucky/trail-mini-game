@@ -29,7 +29,10 @@ class Game {
     this.score = 0;
     this.gameOver = false;
 
+    // AUDIO
     this.music = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-music.mp3");
+    this.hitSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
+
     this.music.loop = true;
 
     this.resizeCanvas();
@@ -89,10 +92,12 @@ class Game {
   }
 
   update() {
+    if (this.gameOver) return; // 🔥 STOP EVERYTHING AFTER DEATH
+
     if (this.keys.ArrowUp) this.player.y -= 10;
     if (this.keys.ArrowDown) this.player.y += 10;
 
-    // clamp
+    // clamp player
     this.player.y = Math.max(0, Math.min(this.baseHeight - this.player.height, this.player.y));
 
     this.obstacles.forEach(o => o.x += 5);
@@ -103,19 +108,32 @@ class Game {
         return false;
       }
 
+      // COLLISION
       if (
         this.player.x < o.x + o.width &&
         this.player.x + this.player.width > o.x &&
         this.player.y < o.y + o.height &&
         this.player.y + this.player.height > o.y
       ) {
-        this.gameOver = true;
+        this.triggerGameOver();
       }
 
       return true;
     });
 
     if (Math.random() < 0.02) this.spawnObstacle();
+  }
+
+  triggerGameOver() {
+    if (this.gameOver) return;
+
+    this.gameOver = true;
+
+    // STOP GAME LOOP STATE
+    this.music.pause();
+
+    this.hitSound.currentTime = 0;
+    this.hitSound.play().catch(()=>{});
   }
 
   draw() {
@@ -143,17 +161,17 @@ class Game {
     this.ctx.fillText("Score: " + this.score, 20, 40);
 
     if (this.gameOver) {
-      this.ctx.fillStyle = "rgba(0,0,0,0.5)";
+      this.ctx.fillStyle = "rgba(0,0,0,0.6)";
       this.ctx.fillRect(0,0,this.baseWidth,this.baseHeight);
 
       this.ctx.fillStyle = "#fff";
       this.ctx.fillText("Game Over", this.baseWidth/2 - 80, this.baseHeight/2);
 
-      this.showRestart();
+      this.createRestartButton();
     }
   }
 
-  showRestart() {
+  createRestartButton() {
     if (document.getElementById("restartBtn")) return;
 
     const btn = document.createElement("button");
@@ -167,7 +185,20 @@ class Game {
 
     document.body.appendChild(btn);
 
-    btn.onclick = () => location.reload();
+    btn.onclick = () => {
+      btn.remove();
+      this.resetGame();
+    };
+  }
+
+  resetGame() {
+    this.obstacles = [];
+    this.score = 0;
+    this.gameOver = false;
+
+    this.player.y = this.baseHeight / 2;
+
+    this.music.currentTime = 0;
   }
 
   loop = (t) => {
@@ -179,8 +210,7 @@ class Game {
 
     if (dt >= FPS_INTERVAL) {
       this.last = t;
-
-      if (!this.gameOver) this.update();
+      this.update();
       this.draw();
     }
 
