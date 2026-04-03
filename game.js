@@ -365,10 +365,7 @@ class Game {
 
 activateFullSendMode() {
   this.isFullSendMode = true;
-
-  // Add 5 seconds every time a bucket is collected
-  this.fullSendModeTimer += 300;
-
+  this.fullSendModeTimer = Math.max(0, this.fullSendModeTimer) + 300;
   this.powerUpSound.currentTime = 0;
   this.powerUpSound.play().catch(() => {});
 }
