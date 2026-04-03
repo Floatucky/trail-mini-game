@@ -363,13 +363,15 @@ class Game {
     }
   }
 
-  activateFullSendMode() {
-    if (!this.isFullSendMode) {
-      this.isFullSendMode = true;
-      this.fullSendModeTimer = 300;
-      this.powerUpSound.currentTime = 0;
-      this.powerUpSound.play().catch(() => {});
-    }
+activateFullSendMode() {
+  this.isFullSendMode = true;
+
+  // Add 5 seconds every time a bucket is collected
+  this.fullSendModeTimer += 300;
+
+  this.powerUpSound.currentTime = 0;
+  this.powerUpSound.play().catch(() => {});
+}
   }
 
   update(deltaTime) {
