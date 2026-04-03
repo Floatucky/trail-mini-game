@@ -145,7 +145,7 @@ class Game {
         e.preventDefault();
       }
 
-      if (this.isPaused && ["ArrowUp", "ArrowDown", "KeyW", "KeyS"].includes(e.code || e.key)) {
+      if (this.isPaused || this.gameOver) {
         return;
       }
 
@@ -168,6 +168,26 @@ class Game {
     };
 
     this._onTouchStart = (e) => {
+      const target = e.target;
+      const insideCanvas = target === this.canvas || this.canvas.contains(target);
+      const insidePopup = !!target.closest("#pum-65009");
+
+      if (this.isPaused && insideCanvas) {
+        e.preventDefault();
+        this.resumeGame();
+        return;
+      }
+
+      if (this.gameOver) return;
+
+      if (insidePopup && !insideCanvas) {
+        e.preventDefault();
+        this.pauseGame();
+        return;
+      }
+
+      if (!insideCanvas) return;
+
       e.preventDefault();
 
       if (this.isPaused) return;
@@ -179,13 +199,16 @@ class Game {
     };
 
     this._onTouchMove = (e) => {
-      e.preventDefault();
-
-      if (this.isPaused) return;
+      if (this.isPaused || this.gameOver) {
+        e.preventDefault();
+        return;
+      }
 
       const currentTouchY = e.touches[0].clientY;
 
       if (this.touchStartY !== null) {
+        e.preventDefault();
+
         const swipeDistance = currentTouchY - this.touchStartY;
         const touchMultiplier = this.isMobilePortrait ? 1.15 : 0.75;
         const moveDistance = (swipeDistance * touchMultiplier) / this.scale;
@@ -210,25 +233,32 @@ class Game {
     };
 
     this._onPointerDown = (e) => {
-      if (this.gameOver || this.isPaused) return;
-
       const target = e.target;
       if (!target) return;
 
-      const gameWrap = document.getElementById("game-wrap");
-      if (!gameWrap) return;
-
       const insidePopup = !!target.closest("#pum-65009");
-      const clickedCanvas = target === this.canvas || this.canvas.contains(target);
+      const insideCanvas = target === this.canvas || this.canvas.contains(target);
       const clickedPlayAgain = !!target.closest("#playAgainButton");
-      const clickedPauseResume = !!target.closest("#pauseResumeButton");
-      const clickedPauseOverlay = !!target.closest("#pauseOverlay");
       const clickedClose = !!target.closest(".pum-close") || !!target.closest(".pum-close-pop");
 
       if (!insidePopup) return;
-      if (clickedCanvas || clickedPlayAgain || clickedPauseResume || clickedPauseOverlay || clickedClose) return;
+      if (clickedClose) return;
 
-      this.pauseGame();
+      if (this.gameOver) {
+        return;
+      }
+
+      if (this.isPaused) {
+        if (insideCanvas) {
+          e.preventDefault();
+          this.resumeGame();
+        }
+        return;
+      }
+
+      if (!insideCanvas && !clickedPlayAgain) {
+        this.pauseGame();
+      }
     };
 
     window.addEventListener("resize", this._onResize);
@@ -419,63 +449,17 @@ class Game {
     try {
       this.backgroundMusic.pause();
     } catch (e) {}
-
-    this.createPauseOverlay();
   }
 
   resumeGame() {
-    if (!this.isPaused) return;
+    if (!this.isPaused || this.gameOver) return;
 
     this.isPaused = false;
     this.lastUpdateTime = performance.now();
-    this.removePauseOverlay();
 
-    if (this.musicStarted && !this.gameOver) {
+    if (this.musicStarted) {
       this.backgroundMusic.play().catch(() => {});
     }
-  }
-
-  createPauseOverlay() {
-    const gameWrap = document.getElementById("game-wrap");
-    if (!gameWrap) return;
-
-    let overlay = document.getElementById("pauseOverlay");
-    if (overlay) return;
-
-    overlay = document.createElement("div");
-    overlay.id = "pauseOverlay";
-    overlay.style.cssText =
-      "position:absolute; inset:0; z-index:70; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.6); color:#fff; text-align:center; padding:20px; box-sizing:border-box;";
-
-    const title = document.createElement("div");
-    title.textContent = "Paused";
-    title.style.cssText =
-      "font: 700 42px 'Permanent Marker', cursive; margin-bottom:12px;";
-
-    const subtitle = document.createElement("div");
-    subtitle.textContent = "Click Resume to continue";
-    subtitle.style.cssText =
-      "font: 24px 'Permanent Marker', cursive; margin-bottom:22px;";
-
-    const button = document.createElement("button");
-    button.id = "pauseResumeButton";
-    button.textContent = "Resume";
-    button.style.cssText =
-      "padding:12px 22px; font-size:16px; cursor:pointer; border:none; border-radius:6px; background-color:#0a70dc; color:#FFF; box-shadow:0 4px 12px rgba(0,0,0,0.35);";
-
-    button.addEventListener("click", () => {
-      this.resumeGame();
-    });
-
-    overlay.appendChild(title);
-    overlay.appendChild(subtitle);
-    overlay.appendChild(button);
-    gameWrap.appendChild(overlay);
-  }
-
-  removePauseOverlay() {
-    const overlay = document.getElementById("pauseOverlay");
-    if (overlay) overlay.remove();
   }
 
   update(deltaTime) {
@@ -587,7 +571,6 @@ class Game {
 
     this.gameOver = true;
     this.isPaused = false;
-    this.removePauseOverlay();
 
     try {
       this.backgroundMusic.pause();
@@ -595,6 +578,26 @@ class Game {
 
     this.collisionSound.currentTime = 0;
     this.collisionSound.play().catch(() => {});
+  }
+
+  drawPauseOverlay() {
+    this.ctx.fillStyle = "rgba(0,0,0,0.62)";
+    this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
+
+    this.ctx.fillStyle = "#FFF";
+    this.ctx.textAlign = "center";
+    this.ctx.font = `700 42px "Permanent Marker", cursive`;
+    this.ctx.fillText("Paused", this.baseWidth / 2, this.baseHeight / 2 - 40);
+
+    this.ctx.font = `700 24px "Permanent Marker", cursive`;
+    this.ctx.fillText("Click or tap the game to resume", this.baseWidth / 2, this.baseHeight / 2 + 8);
+
+    this.ctx.fillStyle = "#0a70dc";
+    this.ctx.fillRect(this.baseWidth / 2 - 95, this.baseHeight / 2 + 34, 190, 52);
+
+    this.ctx.fillStyle = "#FFF";
+    this.ctx.font = `700 26px "Permanent Marker", cursive`;
+    this.ctx.fillText("Resume", this.baseWidth / 2, this.baseHeight / 2 + 70);
   }
 
   draw() {
@@ -635,6 +638,10 @@ class Game {
         this.baseWidth / 2,
         this.baseHeight / 2 + fontSize / 2
       );
+    }
+
+    if (this.isPaused && !this.gameOver) {
+      this.drawPauseOverlay();
     }
 
     if (this.gameOver) {
@@ -683,7 +690,6 @@ class Game {
 
     var oldButton = document.getElementById("playAgainButton");
     if (oldButton) oldButton.remove();
-    this.removePauseOverlay();
 
     this.resetCoreState();
 
@@ -767,7 +773,6 @@ class Game {
 
     var oldButton = document.getElementById("playAgainButton");
     if (oldButton) oldButton.remove();
-    this.removePauseOverlay();
 
     try {
       window.removeEventListener("resize", this._onResize);
