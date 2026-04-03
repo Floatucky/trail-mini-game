@@ -369,7 +369,6 @@ activateFullSendMode() {
   this.powerUpSound.currentTime = 0;
   this.powerUpSound.play().catch(() => {});
 }
-  }
 
   update(deltaTime) {
     if (this.gameOver) return;
