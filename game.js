@@ -215,15 +215,20 @@ class Game {
       const target = e.target;
       if (!target) return;
 
-      const clickedCanvas = this.canvas.contains(target);
-      const clickedResume = target.closest("#pauseResumeButton");
-      const clickedPlayAgain = target.closest("#playAgainButton");
-      const clickedClose = target.closest(".pum-close") || target.closest(".pum-close-pop");
+      const gameWrap = document.getElementById("game-wrap");
+      if (!gameWrap) return;
 
-      if (clickedResume || clickedPlayAgain || clickedClose) return;
-      if (!clickedCanvas) {
-        this.pauseGame();
-      }
+      const insidePopup = !!target.closest("#pum-65009");
+      const clickedCanvas = target === this.canvas || this.canvas.contains(target);
+      const clickedPlayAgain = !!target.closest("#playAgainButton");
+      const clickedPauseResume = !!target.closest("#pauseResumeButton");
+      const clickedPauseOverlay = !!target.closest("#pauseOverlay");
+      const clickedClose = !!target.closest(".pum-close") || !!target.closest(".pum-close-pop");
+
+      if (!insidePopup) return;
+      if (clickedCanvas || clickedPlayAgain || clickedPauseResume || clickedPauseOverlay || clickedClose) return;
+
+      this.pauseGame();
     };
 
     window.addEventListener("resize", this._onResize);
@@ -415,7 +420,7 @@ class Game {
       this.backgroundMusic.pause();
     } catch (e) {}
 
-    this.createPauseButton();
+    this.createPauseOverlay();
   }
 
   resumeGame() {
@@ -423,36 +428,54 @@ class Game {
 
     this.isPaused = false;
     this.lastUpdateTime = performance.now();
-    this.removePauseButton();
+    this.removePauseOverlay();
 
     if (this.musicStarted && !this.gameOver) {
       this.backgroundMusic.play().catch(() => {});
     }
   }
 
-  createPauseButton() {
-    var gameWrap = document.getElementById("game-wrap");
+  createPauseOverlay() {
+    const gameWrap = document.getElementById("game-wrap");
     if (!gameWrap) return;
 
-    var existingButton = gameWrap.querySelector("#pauseResumeButton");
-    if (existingButton) return;
+    let overlay = document.getElementById("pauseOverlay");
+    if (overlay) return;
 
-    var pauseButton = document.createElement("button");
-    pauseButton.id = "pauseResumeButton";
-    pauseButton.textContent = "Resume";
-    pauseButton.style.cssText =
-      "position:absolute; left:50%; bottom:20px; transform:translateX(-50%); z-index:60; padding:12px 22px; font-size:16px; cursor:pointer; border:none; border-radius:6px; background-color:#0a70dc; color:#FFF; box-shadow:0 4px 12px rgba(0,0,0,0.35);";
+    overlay = document.createElement("div");
+    overlay.id = "pauseOverlay";
+    overlay.style.cssText =
+      "position:absolute; inset:0; z-index:70; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.6); color:#fff; text-align:center; padding:20px; box-sizing:border-box;";
 
-    gameWrap.appendChild(pauseButton);
+    const title = document.createElement("div");
+    title.textContent = "Paused";
+    title.style.cssText =
+      "font: 700 42px 'Permanent Marker', cursive; margin-bottom:12px;";
 
-    pauseButton.addEventListener("click", () => {
+    const subtitle = document.createElement("div");
+    subtitle.textContent = "Click Resume to continue";
+    subtitle.style.cssText =
+      "font: 24px 'Permanent Marker', cursive; margin-bottom:22px;";
+
+    const button = document.createElement("button");
+    button.id = "pauseResumeButton";
+    button.textContent = "Resume";
+    button.style.cssText =
+      "padding:12px 22px; font-size:16px; cursor:pointer; border:none; border-radius:6px; background-color:#0a70dc; color:#FFF; box-shadow:0 4px 12px rgba(0,0,0,0.35);";
+
+    button.addEventListener("click", () => {
       this.resumeGame();
     });
+
+    overlay.appendChild(title);
+    overlay.appendChild(subtitle);
+    overlay.appendChild(button);
+    gameWrap.appendChild(overlay);
   }
 
-  removePauseButton() {
-    var oldPauseButton = document.getElementById("pauseResumeButton");
-    if (oldPauseButton) oldPauseButton.remove();
+  removePauseOverlay() {
+    const overlay = document.getElementById("pauseOverlay");
+    if (overlay) overlay.remove();
   }
 
   update(deltaTime) {
@@ -564,7 +587,7 @@ class Game {
 
     this.gameOver = true;
     this.isPaused = false;
-    this.removePauseButton();
+    this.removePauseOverlay();
 
     try {
       this.backgroundMusic.pause();
@@ -593,14 +616,14 @@ class Game {
 
     const fontSizeScore = this.isMobilePortrait ? 34 : Math.min(this.baseWidth / 20, this.baseHeight / 20);
     this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
-    this.ctx.font = `bold ${fontSizeScore}px Arial`;
+    this.ctx.font = `700 ${fontSizeScore}px "Permanent Marker", cursive`;
     this.ctx.textAlign = "left";
     this.ctx.fillText(`Score: ${this.score}`, 14, fontSizeScore + 4);
 
     if (this.isFullSendMode) {
-      this.ctx.fillStyle = "#FFF";
       const fontSize = this.isMobilePortrait ? 34 : Math.min(this.baseWidth / 15, this.baseHeight / 15);
-      this.ctx.font = `bold ${fontSize}px Arial`;
+      this.ctx.fillStyle = "#FFF";
+      this.ctx.font = `700 ${fontSize}px "Permanent Marker", cursive`;
       this.ctx.textAlign = "center";
       this.ctx.fillText(
         `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`,
@@ -614,22 +637,11 @@ class Game {
       );
     }
 
-    if (this.isPaused && !this.gameOver) {
-      this.ctx.fillStyle = "rgba(0,0,0,0.55)";
-      this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
-      this.ctx.fillStyle = "#FFF";
-      this.ctx.font = "bold 40px Arial";
-      this.ctx.textAlign = "center";
-      this.ctx.fillText("Paused", this.baseWidth / 2, this.baseHeight / 2 - 20);
-      this.ctx.font = "24px Arial";
-      this.ctx.fillText("Click Resume to continue", this.baseWidth / 2, this.baseHeight / 2 + 25);
-    }
-
     if (this.gameOver) {
       this.ctx.fillStyle = "rgba(0,0,0,0.55)";
       this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
       this.ctx.fillStyle = "#FFF";
-      this.ctx.font = "bold 40px Arial";
+      this.ctx.font = `700 40px "Permanent Marker", cursive`;
       this.ctx.textAlign = "center";
       this.ctx.fillText("Game Over!", this.baseWidth / 2, this.baseHeight / 2 - 50);
       this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2);
@@ -671,7 +683,7 @@ class Game {
 
     var oldButton = document.getElementById("playAgainButton");
     if (oldButton) oldButton.remove();
-    this.removePauseButton();
+    this.removePauseOverlay();
 
     this.resetCoreState();
 
@@ -755,7 +767,7 @@ class Game {
 
     var oldButton = document.getElementById("playAgainButton");
     if (oldButton) oldButton.remove();
-    this.removePauseButton();
+    this.removePauseOverlay();
 
     try {
       window.removeEventListener("resize", this._onResize);
