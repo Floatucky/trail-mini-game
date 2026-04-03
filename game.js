@@ -1,6 +1,7 @@
 const FPS_INTERVAL = 1000 / 60;
 const MAX_OBSTACLES = 40;
-const MIN_SPAWN_INTERVAL = 500;
+const MAX_POWERUPS = 3;
+const MIN_SPAWN_INTERVAL = 550;
 
 class GameObject {
   constructor(x, y, width, height, image, hitbox) {
@@ -14,7 +15,7 @@ class GameObject {
   }
 
   draw(ctx) {
-    if (this.image.complete) {
+    if (this.image && this.image.complete && this.image.naturalWidth > 0) {
       ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
     }
   }
@@ -24,7 +25,7 @@ class GameObject {
       x: this.x + this.hitbox.xOffset,
       y: this.y + this.hitbox.yOffset,
       width: this.hitbox.width,
-      height: this.hitbox.height,
+      height: this.hitbox.height
     };
   }
 }
@@ -36,12 +37,11 @@ class Game {
 
     this.ctx = this.canvas.getContext("2d");
 
-    this.baseWidth = 1200;
-    this.baseHeight = 900;
-
-    this.scale = 1;
+    this.loopToken = 0;
     this.running = true;
-    this.loopId = null;
+    this.gameLoopRequestId = null;
+
+    this.setLogicalResolution();
 
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -49,23 +49,44 @@ class Game {
     this.collisionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/game-end.mp3");
     this.pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
     this.powerUpSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/powerup-recieved.mp3");
+    this.explosionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/explosion.mp3");
 
     this.images = {
       player: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Blue-wheel.png"),
       tree: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/tree.png"),
       rock: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/rock.png"),
+      powerUp: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Chicken-Bucket.png"),
+      explosion: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Explosion.png")
     };
 
-    this.resetState();
+    this.resetCoreState();
+
+    this.player = new GameObject(
+      0,
+      0,
+      this.isMobilePortrait ? 120 : 100,
+      this.isMobilePortrait ? 48 : 40,
+      this.images.player,
+      this.isMobilePortrait
+        ? { xOffset: 8, yOffset: 12, width: 98, height: 28 }
+        : { xOffset: 5, yOffset: 10, width: 85, height: 25 }
+    );
+
+    this.initEventListeners();
     this.resizeCanvas();
-    this.bindEvents();
-    this.start();
+    this.startGameLoop();
   }
 
-  resetState() {
+  resetCoreState() {
     this.obstacles = [];
+    this.powerUps = [];
+    this.explosions = [];
+
     this.score = 0;
     this.gameOver = false;
+
+    this.isFullSendMode = false;
+    this.fullSendModeTimer = 0;
 
     this.spawnInterval = 1350;
     this.obstacleSpeed = 3;
@@ -73,19 +94,37 @@ class Game {
     this.lastSpawnTime = performance.now();
     this.lastUpdateTime = 0;
 
-    this.player = new GameObject(
-      this.baseWidth - 120,
-      this.baseHeight / 2,
-      100,
-      40,
-      this.images.player,
-      { xOffset: 5, yOffset: 10, width: 85, height: 25 }
-    );
-
     this.keys = {
       ArrowUp: false,
-      ArrowDown: false
+      ArrowDown: false,
+      ArrowLeft: false,
+      ArrowRight: false,
+      Space: false,
+      KeyW: false,
+      KeyA: false,
+      KeyS: false,
+      KeyD: false
     };
+
+    this.touchStartY = null;
+
+    this.musicStarted = false;
+    this.audioEnabled = false;
+    this.soundsPreloaded = false;
+  }
+
+  setLogicalResolution() {
+    this.isMobilePortrait = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+
+    if (this.isMobilePortrait) {
+      this.baseWidth = 700;
+      this.baseHeight = 900;
+    } else {
+      this.baseWidth = 1200;
+      this.baseHeight = 900;
+    }
+
+    this.playerSpeed = this.isMobilePortrait ? 14 : 10;
   }
 
   loadImage(src) {
@@ -94,108 +133,345 @@ class Game {
     return img;
   }
 
-  bindEvents() {
-    this.keyDown = (e) => {
-      if (["ArrowUp","ArrowDown"].includes(e.key)) e.preventDefault();
+  initEventListeners() {
+    this._onResize = () => {
+      this.setLogicalResolution();
+      this.resizeCanvas();
+    };
+
+    this._onKeyDown = (e) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        e.preventDefault();
+      }
 
       if (this.keys.hasOwnProperty(e.key)) {
         this.keys[e.key] = true;
-        this.backgroundMusic.play().catch(()=>{});
+        this.startBackgroundMusic();
+        this.startSoundPlayback();
+        if (!this.audioEnabled) this.enableAudio();
       }
     };
 
-    this.keyUp = (e) => {
-      if (["ArrowUp","ArrowDown"].includes(e.key)) e.preventDefault();
+    this._onKeyUp = (e) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        e.preventDefault();
+      }
 
       if (this.keys.hasOwnProperty(e.key)) {
         this.keys[e.key] = false;
       }
     };
 
-    document.addEventListener("keydown", this.keyDown);
-    document.addEventListener("keyup", this.keyUp);
+    this._onTouchStart = (e) => {
+      e.preventDefault();
+      this.touchStartY = e.touches[0].clientY;
+      this.startBackgroundMusic();
+      this.startSoundPlayback();
+      if (!this.audioEnabled) this.enableAudio();
+    };
+
+    this._onTouchMove = (e) => {
+      e.preventDefault();
+      const currentTouchY = e.touches[0].clientY;
+
+      if (this.touchStartY !== null) {
+        const swipeDistance = currentTouchY - this.touchStartY;
+        const touchMultiplier = this.isMobilePortrait ? 1.15 : 0.75;
+        const moveDistance = (swipeDistance * touchMultiplier) / this.scale;
+
+        this.player.y = Math.max(
+          0,
+          Math.min(this.baseHeight - this.player.height, this.player.y + moveDistance)
+        );
+
+        this.touchStartY = currentTouchY;
+      }
+    };
+
+    this._onTouchEnd = () => {
+      this.touchStartY = null;
+    };
+
+    this._onVisibilityChange = () => {
+      if (document.hidden && this.musicStarted) {
+        this.backgroundMusic.pause();
+      } else if (!document.hidden && this.musicStarted && !this.gameOver) {
+        this.backgroundMusic.play().catch(() => {});
+      }
+    };
+
+    window.addEventListener("resize", this._onResize);
+    document.addEventListener("keydown", this._onKeyDown);
+    document.addEventListener("keyup", this._onKeyUp);
+    this.canvas.addEventListener("touchstart", this._onTouchStart, { passive: false });
+    this.canvas.addEventListener("touchmove", this._onTouchMove, { passive: false });
+    this.canvas.addEventListener("touchend", this._onTouchEnd);
+    document.addEventListener("visibilitychange", this._onVisibilityChange);
   }
 
   resizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
 
-    const maxW = window.innerWidth * 0.95;
-    const maxH = window.innerHeight * 0.85;
+    const maxWidth = window.innerWidth * 0.95;
+    const maxHeight = window.innerHeight * 0.85;
 
-    const scale = Math.min(maxW / this.baseWidth, maxH / this.baseHeight);
+    const scaleX = maxWidth / this.baseWidth;
+    const scaleY = maxHeight / this.baseHeight;
 
-    const cw = this.baseWidth * scale;
-    const ch = this.baseHeight * scale;
+    this.scale = Math.min(scaleX, scaleY);
+
+    const cw = this.baseWidth * this.scale;
+    const ch = this.baseHeight * this.scale;
 
     this.canvas.width = cw * dpr;
     this.canvas.height = ch * dpr;
 
-    this.canvas.style.width = cw + "px";
-    this.canvas.style.height = ch + "px";
+    this.canvas.style.width = `${cw}px`;
+    this.canvas.style.height = `${ch}px`;
+    this.canvas.style.position = "relative";
+    this.canvas.style.left = "0";
+    this.canvas.style.top = "0";
+    this.canvas.style.transform = "none";
 
-    this.scale = scale;
-  }
-
-  createObstacle() {
-    if (this.obstacles.length >= MAX_OBSTACLES) return;
-
-    const type = Math.random() < 0.5 ? "tree" : "rock";
-    const width = type === "tree" ? 100 : 80;
-    const height = type === "tree" ? 100 : 75;
-
-    const y = Math.random() * (this.baseHeight - height);
-
-    const hitbox = type === "tree"
-      ? { xOffset: width * 0.35, yOffset: height * 0.15, width: width * 0.3, height: height * 0.7 }
-      : { xOffset: width * 0.15, yOffset: height * 0.2, width: width * 0.7, height: height * 0.6 };
-
-    this.obstacles.push(
-      new GameObject(-width, y, width, height, this.images[type], hitbox)
+    this.player.x = this.baseWidth - this.player.width - 20;
+    this.player.y = Math.max(
+      0,
+      Math.min(this.player.y, this.baseHeight - this.player.height)
     );
   }
 
-  update(delta) {
+  startBackgroundMusic() {
+    if (!this.musicStarted) {
+      this.backgroundMusic.loop = true;
+      this.backgroundMusic.volume = 0.5;
+      this.backgroundMusic.play().catch(() => {});
+      this.musicStarted = true;
+    }
+  }
+
+  startSoundPlayback() {
+    if (!this.soundsPreloaded) {
+      [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
+        sound.play().catch(() => {});
+        sound.pause();
+      });
+      this.soundsPreloaded = true;
+    }
+  }
+
+  enableAudio() {
+    if (this.audioContext.state === "suspended") {
+      this.audioContext.resume().catch(() => {});
+    }
+    this.audioEnabled = true;
+  }
+
+  rectsOverlap(a, b) {
+    return (
+      a.x < b.x + b.width &&
+      a.x + a.width > b.x &&
+      a.y < b.y + b.height &&
+      a.y + a.height > b.y
+    );
+  }
+
+  createObstacle(numObstacles = 1) {
+    if (this.obstacles.length >= MAX_OBSTACLES) return;
+
+    let created = 0;
+    let attempts = 0;
+
+    while (created < numObstacles && attempts < 30 && this.obstacles.length < MAX_OBSTACLES) {
+      const type = Math.random() < 0.5 ? "tree" : "rock";
+      const image = this.images[type];
+      const isSmall = Math.random() < 0.5;
+
+      let width;
+      let height;
+
+      if (type === "tree") {
+        width = isSmall ? 60 : 100;
+        height = isSmall ? 60 : 100;
+      } else {
+        width = isSmall ? 68 : 86;
+        height = isSmall ? 44 : 78;
+      }
+
+      const y = Math.random() * (this.baseHeight - height);
+
+      const hitbox = type === "tree"
+        ? { xOffset: width * 0.35, yOffset: height * 0.15, width: width * 0.3, height: height * 0.7 }
+        : { xOffset: width * 0.15, yOffset: height * 0.2, width: width * 0.7, height: height * 0.6 };
+
+      const newObstacle = new GameObject(-width, y, width, height, image, hitbox);
+
+      let overlapsLane = false;
+      for (let i = 0; i < this.obstacles.length; i++) {
+        const other = this.obstacles[i];
+        if (
+          newObstacle.y < other.y + other.height + 18 &&
+          newObstacle.y + newObstacle.height > other.y - 18 &&
+          other.x < 180
+        ) {
+          overlapsLane = true;
+          break;
+        }
+      }
+
+      if (!overlapsLane) {
+        this.obstacles.push(newObstacle);
+        created++;
+      }
+
+      attempts++;
+    }
+  }
+
+  createPowerUp() {
+    if (this.powerUps.length >= MAX_POWERUPS) return;
+    if (Math.random() >= 0.1) return;
+
+    const size = this.isMobilePortrait ? 64 : 50;
+    let attempts = 0;
+
+    while (attempts < 20) {
+      const y = Math.random() * (this.baseHeight - size);
+      const powerUp = new GameObject(
+        -size,
+        y,
+        size,
+        size,
+        this.images.powerUp,
+        { xOffset: 0, yOffset: 0, width: size, height: size }
+      );
+
+      let overlaps = false;
+
+      for (let i = 0; i < this.obstacles.length; i++) {
+        if (this.rectsOverlap(powerUp.getHitbox(), this.obstacles[i].getHitbox())) {
+          overlaps = true;
+          break;
+        }
+      }
+
+      if (!overlaps) {
+        this.powerUps.push(powerUp);
+        return;
+      }
+
+      attempts++;
+    }
+  }
+
+  activateFullSendMode() {
+    if (!this.isFullSendMode) {
+      this.isFullSendMode = true;
+      this.fullSendModeTimer = 300;
+      this.powerUpSound.currentTime = 0;
+      this.powerUpSound.play().catch(() => {});
+    }
+  }
+
+  update(deltaTime) {
     if (this.gameOver) return;
 
-    const now = performance.now();
+    const currentTime = performance.now();
 
-    if (now - this.lastSpawnTime > this.spawnInterval) {
-      this.createObstacle();
-      this.lastSpawnTime = now;
+    if (currentTime - this.lastSpawnTime > this.spawnInterval) {
+      const numObstacles = Math.random() < 0.55 ? 1 : 2;
+      this.createObstacle(numObstacles);
+      this.createPowerUp();
+      this.lastSpawnTime = currentTime;
 
       if (this.spawnInterval > MIN_SPAWN_INTERVAL) {
         this.spawnInterval -= 10;
       }
+
+      if (this.obstacleSpeed < 8.5) {
+        this.obstacleSpeed += 0.03;
+      }
     }
 
-    if (this.keys.ArrowUp) this.player.y -= 10;
-    if (this.keys.ArrowDown) this.player.y += 10;
+    if ((this.keys.ArrowUp || this.keys.KeyW) && this.player.y > 0) {
+      this.player.y -= this.playerSpeed;
+    }
 
-    // clamp player
-    this.player.y = Math.max(0, Math.min(this.baseHeight - this.player.height, this.player.y));
+    if ((this.keys.ArrowDown || this.keys.KeyS) && this.player.y < this.baseHeight - this.player.height) {
+      this.player.y += this.playerSpeed;
+    }
+
+    this.player.y = Math.max(
+      0,
+      Math.min(this.baseHeight - this.player.height, this.player.y)
+    );
+
+    const playerHitbox = this.player.getHitbox();
 
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
-      const o = this.obstacles[i];
-      o.x += this.obstacleSpeed;
+      const obstacle = this.obstacles[i];
+      obstacle.x += this.obstacleSpeed;
 
-      if (o.x > this.baseWidth) {
+      if (obstacle.x > this.baseWidth + obstacle.width) {
         this.obstacles.splice(i, 1);
         this.score++;
-        this.pointSound.play().catch(()=>{});
+
+        if (this.audioEnabled) {
+          this.pointSound.currentTime = 0;
+          this.pointSound.play().catch(() => {});
+        }
         continue;
       }
 
-      const p = this.player.getHitbox();
-      const h = o.getHitbox();
+      if (this.rectsOverlap(playerHitbox, obstacle.getHitbox())) {
+        if (this.isFullSendMode) {
+          this.explosions.push(
+            new GameObject(
+              obstacle.x,
+              obstacle.y,
+              50,
+              50,
+              this.images.explosion,
+              { xOffset: 0, yOffset: 0, width: 50, height: 50 }
+            )
+          );
 
-      if (
-        p.x < h.x + h.width &&
-        p.x + p.width > h.x &&
-        p.y < h.y + h.height &&
-        p.y + p.height > h.y
-      ) {
-        this.triggerGameOver();
-        return;
+          this.explosionSound.currentTime = 0;
+          this.explosionSound.play().catch(() => {});
+          this.obstacles.splice(i, 1);
+          this.score += 2;
+        } else {
+          this.triggerGameOver();
+          return;
+        }
+      }
+    }
+
+    for (let i = this.powerUps.length - 1; i >= 0; i--) {
+      const powerUp = this.powerUps[i];
+      powerUp.x += this.obstacleSpeed;
+
+      if (powerUp.x > this.baseWidth + powerUp.width) {
+        this.powerUps.splice(i, 1);
+        continue;
+      }
+
+      if (this.rectsOverlap(playerHitbox, powerUp.getHitbox())) {
+        this.powerUps.splice(i, 1);
+        this.activateFullSendMode();
+      }
+    }
+
+    for (let i = this.explosions.length - 1; i >= 0; i--) {
+      this.explosions[i].timer -= deltaTime / 16.67;
+      if (this.explosions[i].timer <= 0) {
+        this.explosions.splice(i, 1);
+      }
+    }
+
+    if (this.isFullSendMode) {
+      this.fullSendModeTimer -= deltaTime / 16.67;
+      if (this.fullSendModeTimer <= 0) {
+        this.isFullSendMode = false;
       }
     }
   }
@@ -204,104 +480,238 @@ class Game {
     if (this.gameOver) return;
 
     this.gameOver = true;
-    this.backgroundMusic.pause();
+
+    try {
+      this.backgroundMusic.pause();
+    } catch (e) {}
 
     this.collisionSound.currentTime = 0;
-    this.collisionSound.play().catch(()=>{});
+    this.collisionSound.play().catch(() => {});
   }
 
   draw() {
     const dpr = window.devicePixelRatio || 1;
 
-    this.ctx.setTransform(1,0,0,1,0,0);
-    this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     this.ctx.scale(dpr, dpr);
     this.ctx.scale(this.scale, this.scale);
 
-    this.ctx.fillStyle = "#D2B48C";
-    this.ctx.fillRect(0,0,this.baseWidth,this.baseHeight);
+    this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
+    this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
 
     this.player.draw(this.ctx);
-    this.obstacles.forEach(o => o.draw(this.ctx));
+    for (let i = 0; i < this.obstacles.length; i++) this.obstacles[i].draw(this.ctx);
+    for (let i = 0; i < this.powerUps.length; i++) this.powerUps[i].draw(this.ctx);
+    for (let i = 0; i < this.explosions.length; i++) this.explosions[i].draw(this.ctx);
 
-    this.ctx.fillStyle = "#fff";
-    this.ctx.font = "30px Arial";
-    this.ctx.fillText("Score: " + this.score, 10, 40);
+    const fontSizeScore = this.isMobilePortrait ? 34 : Math.min(this.baseWidth / 20, this.baseHeight / 20);
+    this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
+    this.ctx.font = `bold ${fontSizeScore}px Arial`;
+    this.ctx.textAlign = "left";
+    this.ctx.fillText(`Score: ${this.score}`, 14, fontSizeScore + 4);
+
+    if (this.isFullSendMode) {
+      this.ctx.fillStyle = "#FFF";
+      const fontSize = this.isMobilePortrait ? 34 : Math.min(this.baseWidth / 15, this.baseHeight / 15);
+      this.ctx.font = `bold ${fontSize}px Arial`;
+      this.ctx.textAlign = "center";
+      this.ctx.fillText(
+        `FULL SEND MODE! Ends in: ${Math.ceil(this.fullSendModeTimer / 60)}`,
+        this.baseWidth / 2,
+        this.baseHeight / 2 - fontSize / 2
+      );
+      this.ctx.fillText(
+        "Double points awarded for hits!",
+        this.baseWidth / 2,
+        this.baseHeight / 2 + fontSize / 2
+      );
+    }
 
     if (this.gameOver) {
-      this.ctx.fillStyle = "rgba(0,0,0,0.6)";
-      this.ctx.fillRect(0,0,this.baseWidth,this.baseHeight);
-
-      this.ctx.fillStyle = "#fff";
-      this.ctx.fillText("Game Over", this.baseWidth/2 - 80, this.baseHeight/2);
-
-      this.drawRestart();
+      this.ctx.fillStyle = "rgba(0,0,0,0.55)";
+      this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
+      this.ctx.fillStyle = "#FFF";
+      this.ctx.font = "bold 40px Arial";
+      this.ctx.textAlign = "center";
+      this.ctx.fillText("Game Over!", this.baseWidth / 2, this.baseHeight / 2 - 50);
+      this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2);
+      this.createPlayAgainButton();
     }
+
+    this.ctx.restore();
   }
 
-  drawRestart() {
-    if (document.getElementById("restartBtn")) return;
+  createPlayAgainButton() {
+    var gameWrap = document.getElementById("game-wrap");
+    if (!gameWrap) return;
 
-    const btn = document.createElement("button");
-    btn.id = "restartBtn";
-    btn.innerText = "Play Again";
+    var existingButton = gameWrap.querySelector("#playAgainButton");
+    if (existingButton) return;
 
-    btn.style.position = "absolute";
-    btn.style.bottom = "20px";
-    btn.style.left = "50%";
-    btn.style.transform = "translateX(-50%)";
+    var playAgainButton = document.createElement("button");
+    playAgainButton.id = "playAgainButton";
+    playAgainButton.textContent = "Play Again";
+    playAgainButton.style.cssText =
+      "position:absolute; left:50%; bottom:20px; transform:translateX(-50%); z-index:50; padding:12px 22px; font-size:16px; cursor:pointer; border:none; border-radius:6px; background-color:#4CAF50; color:#FFF; box-shadow:0 4px 12px rgba(0,0,0,0.35);";
 
-    document.body.appendChild(btn);
+    gameWrap.appendChild(playAgainButton);
 
-    btn.onclick = () => {
-      btn.remove();
-      this.resetState();
+    playAgainButton.addEventListener("click", () => {
+      playAgainButton.disabled = true;
+      this.resetGame();
+    });
+  }
+
+  resetGame() {
+    this.loopToken++;
+
+    this.running = false;
+    if (this.gameLoopRequestId) {
+      cancelAnimationFrame(this.gameLoopRequestId);
+      this.gameLoopRequestId = null;
+    }
+
+    var oldButton = document.getElementById("playAgainButton");
+    if (oldButton) oldButton.remove();
+
+    this.resetCoreState();
+
+    this.player = new GameObject(
+      0,
+      (this.baseHeight - (this.isMobilePortrait ? 48 : 40)) / 2,
+      this.isMobilePortrait ? 120 : 100,
+      this.isMobilePortrait ? 48 : 40,
+      this.images.player,
+      this.isMobilePortrait
+        ? { xOffset: 8, yOffset: 12, width: 98, height: 28 }
+        : { xOffset: 5, yOffset: 10, width: 85, height: 25 }
+    );
+
+    try {
+      this.backgroundMusic.pause();
+      this.backgroundMusic.currentTime = 0;
+    } catch (e) {}
+
+    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
+      try {
+        sound.pause();
+        sound.currentTime = 0;
+      } catch (e) {}
+    });
+
+    this.resizeCanvas();
+    this.draw();
+
+    this.running = true;
+    this.startGameLoop();
+  }
+
+  startGameLoop() {
+    if (this.gameLoopRequestId) {
+      cancelAnimationFrame(this.gameLoopRequestId);
+      this.gameLoopRequestId = null;
+    }
+
+    this.loopToken++;
+    const myLoopToken = this.loopToken;
+
+    const gameLoop = (timestamp) => {
+      if (myLoopToken !== this.loopToken) return;
+
+      if (!this.running) {
+        this.gameLoopRequestId = null;
+        return;
+      }
+
+      if (!this.lastUpdateTime) {
+        this.lastUpdateTime = timestamp;
+      }
+
+      const deltaTime = timestamp - this.lastUpdateTime;
+
+      if (deltaTime >= FPS_INTERVAL) {
+        this.lastUpdateTime = timestamp;
+
+        if (!this.gameOver) {
+          this.update(deltaTime);
+        } else {
+          try {
+            this.backgroundMusic.pause();
+          } catch (e) {}
+        }
+
+        this.draw();
+      }
+
+      this.gameLoopRequestId = requestAnimationFrame(gameLoop);
     };
-  }
 
-  loop = (t) => {
-    if (!this.running) return;
-
-    if (!this.lastUpdateTime) this.lastUpdateTime = t;
-
-    const delta = t - this.lastUpdateTime;
-
-    if (delta >= FPS_INTERVAL) {
-      this.lastUpdateTime = t;
-      this.update(delta);
-      this.draw();
-    }
-
-    this.loopId = requestAnimationFrame(this.loop);
-  };
-
-  start() {
-    this.loopId = requestAnimationFrame(this.loop);
+    this.gameLoopRequestId = requestAnimationFrame(gameLoop);
   }
 
   destroy() {
+    this.loopToken++;
     this.running = false;
-    cancelAnimationFrame(this.loopId);
 
-    document.removeEventListener("keydown", this.keyDown);
-    document.removeEventListener("keyup", this.keyUp);
+    if (this.gameLoopRequestId) {
+      cancelAnimationFrame(this.gameLoopRequestId);
+      this.gameLoopRequestId = null;
+    }
 
-    this.backgroundMusic.pause();
+    var oldButton = document.getElementById("playAgainButton");
+    if (oldButton) oldButton.remove();
+
+    try {
+      window.removeEventListener("resize", this._onResize);
+      document.removeEventListener("keydown", this._onKeyDown);
+      document.removeEventListener("keyup", this._onKeyUp);
+      document.removeEventListener("visibilitychange", this._onVisibilityChange);
+
+      if (this.canvas) {
+        this.canvas.removeEventListener("touchstart", this._onTouchStart);
+        this.canvas.removeEventListener("touchmove", this._onTouchMove);
+        this.canvas.removeEventListener("touchend", this._onTouchEnd);
+      }
+    } catch (e) {}
+
+    try {
+      this.backgroundMusic.pause();
+      this.backgroundMusic.currentTime = 0;
+      this.musicStarted = false;
+    } catch (e) {}
+
+    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
+      try {
+        sound.pause();
+        sound.currentTime = 0;
+      } catch (e) {}
+    });
+
+    try {
+      if (this.audioContext && this.audioContext.state !== "closed") {
+        this.audioContext.close();
+      }
+    } catch (e) {}
   }
 }
 
 window.__floatuckyGameInstance = null;
 
 window.initializeGame = function () {
-  if (!window.__floatuckyGameInstance) {
-    window.__floatuckyGameInstance = new Game("gameCanvas");
+  if (window.__floatuckyGameInstance) {
+    try {
+      window.__floatuckyGameInstance.destroy();
+    } catch (e) {}
+    window.__floatuckyGameInstance = null;
   }
+
+  window.__floatuckyGameInstance = new Game("gameCanvas");
 };
 
 window.destroyGame = function () {
-  if (window.__floatuckyGameInstance) {
-    window.__floatuckyGameInstance.destroy();
-    window.__floatuckyGameInstance = null;
-  }
+  if (!window.__floatuckyGameInstance) return;
+  window.__floatuckyGameInstance.destroy();
+  window.__floatuckyGameInstance = null;
 };
