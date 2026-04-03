@@ -388,7 +388,7 @@ class Game {
       }
 
       if (this.obstacleSpeed < 8.5) {
-        this.obstacleSpeed += 0.03;
+        this.obstacleSpeed += 0.04;
       }
     }
 
