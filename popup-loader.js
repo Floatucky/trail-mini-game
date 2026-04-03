@@ -1,38 +1,84 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const POPUP_ID = 65009;
-  const GAME_SRC = "https://floatucky.github.io/trail-mini-game/game.js";
+  var POPUP_ID = 65009;
+  var GAME_SRC = "https://floatucky.github.io/trail-mini-game/game.js";
 
-  let loaded = false;
+  var scriptLoaded = false;
+  var scriptLoading = false;
+  var startTimeout = null;
 
-  function loadGame(cb) {
-    if (loaded) return cb();
+  function loadGameScriptOnce(callback) {
+    if (scriptLoaded) {
+      callback();
+      return;
+    }
 
-    const s = document.createElement("script");
+    if (scriptLoading) return;
+
+    if (document.querySelector('script[data-floatucky-game="1"]')) {
+      scriptLoaded = true;
+      callback();
+      return;
+    }
+
+    scriptLoading = true;
+
+    var s = document.createElement("script");
     s.src = GAME_SRC;
+    s.async = true;
+    s.setAttribute("data-floatucky-game", "1");
 
-    s.onload = () => {
-      loaded = true;
-      cb();
+    s.onload = function () {
+      scriptLoaded = true;
+      scriptLoading = false;
+      callback();
+    };
+
+    s.onerror = function () {
+      scriptLoading = false;
+      console.error("Failed to load game.js:", GAME_SRC);
     };
 
     document.body.appendChild(s);
   }
 
-  document.querySelector(".hidden-trigger")?.addEventListener("click", () => {
-    document.body.style.overflow = "hidden";
+  function startGameSoon() {
+    if (startTimeout) {
+      clearTimeout(startTimeout);
+      startTimeout = null;
+    }
 
-    if (window.PUM) window.PUM.open(POPUP_ID);
+    startTimeout = setTimeout(function () {
+      if (window.initializeGame) {
+        window.initializeGame();
+      }
+    }, 180);
+  }
 
-    loadGame(() => {
-      setTimeout(() => {
-        if (window.initializeGame) window.initializeGame();
-      }, 100);
+  var trigger = document.querySelector(".hidden-trigger");
+  if (trigger) {
+    trigger.addEventListener("click", function () {
+      document.body.classList.add("popup-open");
+
+      if (window.PUM && window.PUM.open) {
+        window.PUM.open(POPUP_ID);
+      }
+
+      loadGameScriptOnce(function () {
+        startGameSoon();
+      });
     });
-  });
+  }
 
-  document.addEventListener("pumAfterClose", () => {
-    document.body.style.overflow = "";
+  document.addEventListener("pumAfterClose", function () {
+    document.body.classList.remove("popup-open");
 
-    if (window.destroyGame) window.destroyGame();
+    if (startTimeout) {
+      clearTimeout(startTimeout);
+      startTimeout = null;
+    }
+
+    if (window.destroyGame) {
+      window.destroyGame();
+    }
   });
 });
