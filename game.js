@@ -145,9 +145,7 @@ class Game {
         e.preventDefault();
       }
 
-      if (this.isPaused || this.gameOver) {
-        return;
-      }
+      if (this.isPaused || this.gameOver) return;
 
       if (this.keys.hasOwnProperty(e.key)) {
         this.keys[e.key] = true;
@@ -167,31 +165,60 @@ class Game {
       }
     };
 
-    this._onTouchStart = (e) => {
-      const target = e.target;
-      const insideCanvas = target === this.canvas || this.canvas.contains(target);
-      const insidePopup = !!target.closest("#pum-65009");
+    this._onCanvasPointerDown = (e) => {
+      if (this.gameOver) return;
 
-      if (this.isPaused && insideCanvas) {
+      if (this.isPaused) {
         e.preventDefault();
         this.resumeGame();
         return;
       }
 
+      this.startBackgroundMusic();
+      this.startSoundPlayback();
+      if (!this.audioEnabled) this.enableAudio();
+    };
+
+    this._onPointerDown = (e) => {
+      const target = e.target;
+      if (!target) return;
+
+      const insidePopup = !!target.closest("#pum-65009");
+      const insideCanvas = target === this.canvas || this.canvas.contains(target);
+      const clickedPlayAgain = !!target.closest("#playAgainButton");
+      const clickedClose = !!target.closest(".pum-close") || !!target.closest(".pum-close-pop");
+
+      if (!insidePopup) return;
+      if (clickedClose) return;
       if (this.gameOver) return;
 
-      if (insidePopup && !insideCanvas) {
+      if (!insideCanvas && !this.isPaused && !clickedPlayAgain) {
+        this.pauseGame();
+      }
+    };
+
+    this._onTouchStart = (e) => {
+      const target = e.target;
+      const insideCanvas = target === this.canvas || this.canvas.contains(target);
+      const insidePopup = !!target.closest("#pum-65009");
+
+      if (this.gameOver) return;
+
+      if (insideCanvas && this.isPaused) {
+        e.preventDefault();
+        this.resumeGame();
+        return;
+      }
+
+      if (insidePopup && !insideCanvas && !this.isPaused) {
         e.preventDefault();
         this.pauseGame();
         return;
       }
 
-      if (!insideCanvas) return;
+      if (!insideCanvas || this.isPaused) return;
 
       e.preventDefault();
-
-      if (this.isPaused) return;
-
       this.touchStartY = e.touches[0].clientY;
       this.startBackgroundMusic();
       this.startSoundPlayback();
@@ -232,45 +259,16 @@ class Game {
       }
     };
 
-    this._onPointerDown = (e) => {
-      const target = e.target;
-      if (!target) return;
-
-      const insidePopup = !!target.closest("#pum-65009");
-      const insideCanvas = target === this.canvas || this.canvas.contains(target);
-      const clickedPlayAgain = !!target.closest("#playAgainButton");
-      const clickedClose = !!target.closest(".pum-close") || !!target.closest(".pum-close-pop");
-
-      if (!insidePopup) return;
-      if (clickedClose) return;
-
-      if (this.gameOver) {
-        return;
-      }
-
-      if (this.isPaused) {
-        if (insideCanvas) {
-          e.preventDefault();
-          this.resumeGame();
-        }
-        return;
-      }
-
-      if (!insideCanvas && !clickedPlayAgain) {
-        this.pauseGame();
-      }
-    };
-
     window.addEventListener("resize", this._onResize);
     document.addEventListener("keydown", this._onKeyDown);
     document.addEventListener("keyup", this._onKeyUp);
     document.addEventListener("pointerdown", this._onPointerDown, true);
+    document.addEventListener("visibilitychange", this._onVisibilityChange);
 
+    this.canvas.addEventListener("pointerdown", this._onCanvasPointerDown);
     this.canvas.addEventListener("touchstart", this._onTouchStart, { passive: false });
     this.canvas.addEventListener("touchmove", this._onTouchMove, { passive: false });
     this.canvas.addEventListener("touchend", this._onTouchEnd);
-
-    document.addEventListener("visibilitychange", this._onVisibilityChange);
   }
 
   resizeCanvas() {
@@ -782,6 +780,7 @@ class Game {
       document.removeEventListener("visibilitychange", this._onVisibilityChange);
 
       if (this.canvas) {
+        this.canvas.removeEventListener("pointerdown", this._onCanvasPointerDown);
         this.canvas.removeEventListener("touchstart", this._onTouchStart);
         this.canvas.removeEventListener("touchmove", this._onTouchMove);
         this.canvas.removeEventListener("touchend", this._onTouchEnd);
