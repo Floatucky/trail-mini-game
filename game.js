@@ -84,6 +84,7 @@ class Game {
 
     this.score = 0;
     this.gameOver = false;
+    this.isPaused = false;
 
     this.isFullSendMode = false;
     this.fullSendModeTimer = 0;
@@ -144,6 +145,10 @@ class Game {
         e.preventDefault();
       }
 
+      if (this.isPaused && ["ArrowUp", "ArrowDown", "KeyW", "KeyS"].includes(e.code || e.key)) {
+        return;
+      }
+
       if (this.keys.hasOwnProperty(e.key)) {
         this.keys[e.key] = true;
         this.startBackgroundMusic();
@@ -164,6 +169,9 @@ class Game {
 
     this._onTouchStart = (e) => {
       e.preventDefault();
+
+      if (this.isPaused) return;
+
       this.touchStartY = e.touches[0].clientY;
       this.startBackgroundMusic();
       this.startSoundPlayback();
@@ -172,6 +180,9 @@ class Game {
 
     this._onTouchMove = (e) => {
       e.preventDefault();
+
+      if (this.isPaused) return;
+
       const currentTouchY = e.touches[0].clientY;
 
       if (this.touchStartY !== null) {
@@ -193,19 +204,37 @@ class Game {
     };
 
     this._onVisibilityChange = () => {
-      if (document.hidden && this.musicStarted) {
-        this.backgroundMusic.pause();
-      } else if (!document.hidden && this.musicStarted && !this.gameOver) {
-        this.backgroundMusic.play().catch(() => {});
+      if (document.hidden && !this.gameOver) {
+        this.pauseGame();
+      }
+    };
+
+    this._onPointerDown = (e) => {
+      if (this.gameOver || this.isPaused) return;
+
+      const target = e.target;
+      if (!target) return;
+
+      const clickedCanvas = this.canvas.contains(target);
+      const clickedResume = target.closest("#pauseResumeButton");
+      const clickedPlayAgain = target.closest("#playAgainButton");
+      const clickedClose = target.closest(".pum-close") || target.closest(".pum-close-pop");
+
+      if (clickedResume || clickedPlayAgain || clickedClose) return;
+      if (!clickedCanvas) {
+        this.pauseGame();
       }
     };
 
     window.addEventListener("resize", this._onResize);
     document.addEventListener("keydown", this._onKeyDown);
     document.addEventListener("keyup", this._onKeyUp);
+    document.addEventListener("pointerdown", this._onPointerDown, true);
+
     this.canvas.addEventListener("touchstart", this._onTouchStart, { passive: false });
     this.canvas.addEventListener("touchmove", this._onTouchMove, { passive: false });
     this.canvas.addEventListener("touchend", this._onTouchEnd);
+
     document.addEventListener("visibilitychange", this._onVisibilityChange);
   }
 
@@ -246,6 +275,8 @@ class Game {
       this.backgroundMusic.volume = 0.5;
       this.backgroundMusic.play().catch(() => {});
       this.musicStarted = true;
+    } else if (this.backgroundMusic.paused && !this.gameOver && !this.isPaused) {
+      this.backgroundMusic.play().catch(() => {});
     }
   }
 
@@ -363,15 +394,69 @@ class Game {
     }
   }
 
-activateFullSendMode() {
-  this.isFullSendMode = true;
-  this.fullSendModeTimer = Math.max(0, this.fullSendModeTimer) + 300;
-  this.powerUpSound.currentTime = 0;
-  this.powerUpSound.play().catch(() => {});
-}
+  activateFullSendMode() {
+    this.isFullSendMode = true;
+    this.fullSendModeTimer = Math.max(0, this.fullSendModeTimer) + 300;
+    this.powerUpSound.currentTime = 0;
+    this.powerUpSound.play().catch(() => {});
+  }
+
+  pauseGame() {
+    if (this.gameOver || this.isPaused) return;
+
+    this.isPaused = true;
+    this.keys.ArrowUp = false;
+    this.keys.ArrowDown = false;
+    this.keys.KeyW = false;
+    this.keys.KeyS = false;
+    this.touchStartY = null;
+
+    try {
+      this.backgroundMusic.pause();
+    } catch (e) {}
+
+    this.createPauseButton();
+  }
+
+  resumeGame() {
+    if (!this.isPaused) return;
+
+    this.isPaused = false;
+    this.lastUpdateTime = performance.now();
+    this.removePauseButton();
+
+    if (this.musicStarted && !this.gameOver) {
+      this.backgroundMusic.play().catch(() => {});
+    }
+  }
+
+  createPauseButton() {
+    var gameWrap = document.getElementById("game-wrap");
+    if (!gameWrap) return;
+
+    var existingButton = gameWrap.querySelector("#pauseResumeButton");
+    if (existingButton) return;
+
+    var pauseButton = document.createElement("button");
+    pauseButton.id = "pauseResumeButton";
+    pauseButton.textContent = "Resume";
+    pauseButton.style.cssText =
+      "position:absolute; left:50%; bottom:20px; transform:translateX(-50%); z-index:60; padding:12px 22px; font-size:16px; cursor:pointer; border:none; border-radius:6px; background-color:#0a70dc; color:#FFF; box-shadow:0 4px 12px rgba(0,0,0,0.35);";
+
+    gameWrap.appendChild(pauseButton);
+
+    pauseButton.addEventListener("click", () => {
+      this.resumeGame();
+    });
+  }
+
+  removePauseButton() {
+    var oldPauseButton = document.getElementById("pauseResumeButton");
+    if (oldPauseButton) oldPauseButton.remove();
+  }
 
   update(deltaTime) {
-    if (this.gameOver) return;
+    if (this.gameOver || this.isPaused) return;
 
     const currentTime = performance.now();
 
@@ -386,7 +471,7 @@ activateFullSendMode() {
       }
 
       if (this.obstacleSpeed < 8.5) {
-        this.obstacleSpeed += 0.04;
+        this.obstacleSpeed += 0.03;
       }
     }
 
@@ -478,6 +563,8 @@ activateFullSendMode() {
     if (this.gameOver) return;
 
     this.gameOver = true;
+    this.isPaused = false;
+    this.removePauseButton();
 
     try {
       this.backgroundMusic.pause();
@@ -527,6 +614,17 @@ activateFullSendMode() {
       );
     }
 
+    if (this.isPaused && !this.gameOver) {
+      this.ctx.fillStyle = "rgba(0,0,0,0.55)";
+      this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
+      this.ctx.fillStyle = "#FFF";
+      this.ctx.font = "bold 40px Arial";
+      this.ctx.textAlign = "center";
+      this.ctx.fillText("Paused", this.baseWidth / 2, this.baseHeight / 2 - 20);
+      this.ctx.font = "24px Arial";
+      this.ctx.fillText("Click Resume to continue", this.baseWidth / 2, this.baseHeight / 2 + 25);
+    }
+
     if (this.gameOver) {
       this.ctx.fillStyle = "rgba(0,0,0,0.55)";
       this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
@@ -573,6 +671,7 @@ activateFullSendMode() {
 
     var oldButton = document.getElementById("playAgainButton");
     if (oldButton) oldButton.remove();
+    this.removePauseButton();
 
     this.resetCoreState();
 
@@ -632,12 +731,8 @@ activateFullSendMode() {
       if (deltaTime >= FPS_INTERVAL) {
         this.lastUpdateTime = timestamp;
 
-        if (!this.gameOver) {
+        if (!this.gameOver && !this.isPaused) {
           this.update(deltaTime);
-        } else {
-          try {
-            this.backgroundMusic.pause();
-          } catch (e) {}
         }
 
         this.draw();
@@ -660,11 +755,13 @@ activateFullSendMode() {
 
     var oldButton = document.getElementById("playAgainButton");
     if (oldButton) oldButton.remove();
+    this.removePauseButton();
 
     try {
       window.removeEventListener("resize", this._onResize);
       document.removeEventListener("keydown", this._onKeyDown);
       document.removeEventListener("keyup", this._onKeyUp);
+      document.removeEventListener("pointerdown", this._onPointerDown, true);
       document.removeEventListener("visibilitychange", this._onVisibilityChange);
 
       if (this.canvas) {
