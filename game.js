@@ -136,14 +136,16 @@ class Game {
 
   initEventListeners() {
   this._onResize = () => {
-    this.setLogicalResolution();
     this.resizeCanvas();
   };
 
   this._onKeyDown = (e) => {
     if (["ArrowUp", "ArrowDown"].includes(e.key)) e.preventDefault();
 
-    if (this.isPaused || this.gameOver) return;
+    if (this.isPaused && !this.gameOver) {
+      this.resumeGame();
+      return;
+    }
 
     if (this.keys.hasOwnProperty(e.key)) {
       this.keys[e.key] = true;
@@ -159,59 +161,28 @@ class Game {
     }
   };
 
-  // 🔥 SIMPLE + RELIABLE CLICK SYSTEM
-  this._onPointerDown = (e) => {
-    const rect = this.canvas.getBoundingClientRect();
-
-    const insideCanvas =
-      e.clientX >= rect.left &&
-      e.clientX <= rect.right &&
-      e.clientY >= rect.top &&
-      e.clientY <= rect.bottom;
-
+  // 🔥 ONLY listen on CANVAS (not document)
+  this._onCanvasClick = () => {
     if (this.gameOver) return;
 
-    // 🔥 RESUME
     if (this.isPaused) {
-      if (insideCanvas) {
-        this.resumeGame();
-      }
-      return;
-    }
-
-    // 🔥 PAUSE ONLY if NOT on game
-    if (!insideCanvas) {
+      this.resumeGame();
+    } else {
       this.pauseGame();
     }
   };
 
-  // 🔥 MOBILE = SAME LOGIC
+  // 🔥 MOBILE TAP
   this._onTouchStart = (e) => {
-    const touch = e.touches[0];
-    const rect = this.canvas.getBoundingClientRect();
-
-    const insideCanvas =
-      touch.clientX >= rect.left &&
-      touch.clientX <= rect.right &&
-      touch.clientY >= rect.top &&
-      touch.clientY <= rect.bottom;
-
     if (this.gameOver) return;
 
     if (this.isPaused) {
-      if (insideCanvas) {
-        e.preventDefault();
-        this.resumeGame();
-      }
+      this.resumeGame();
       return;
     }
 
-    if (!insideCanvas) {
-      this.pauseGame();
-      return;
-    }
+    this.touchStartY = e.touches[0].clientY;
 
-    this.touchStartY = touch.clientY;
     this.startBackgroundMusic();
     this.startSoundPlayback();
     if (!this.audioEnabled) this.enableAudio();
@@ -249,7 +220,9 @@ class Game {
   window.addEventListener("resize", this._onResize);
   document.addEventListener("keydown", this._onKeyDown);
   document.addEventListener("keyup", this._onKeyUp);
-  document.addEventListener("pointerdown", this._onPointerDown, true);
+
+  // 🔥 CRITICAL: click ONLY on canvas
+  this.canvas.addEventListener("click", this._onCanvasClick);
 
   this.canvas.addEventListener("touchstart", this._onTouchStart, { passive: false });
   this.canvas.addEventListener("touchmove", this._onTouchMove, { passive: false });
@@ -261,15 +234,16 @@ class Game {
   resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
 
-  // 🔥 Fill popup cleanly (no bars)
-  const maxWidth = window.innerWidth * 0.92;
-  const maxHeight = window.innerHeight * 0.80;
+  const container = this.canvas.parentElement;
+  const rect = container.getBoundingClientRect();
 
-  const scaleX = maxWidth / this.baseWidth;
-  const scaleY = maxHeight / this.baseHeight;
+  const width = rect.width;
+  const height = rect.height;
 
-  // 🔥 ALWAYS fill BOTH directions (no letterboxing)
-  this.scale = Math.min(scaleX, scaleY);
+  this.scale = Math.min(
+    width / this.baseWidth,
+    height / this.baseHeight
+  );
 
   const cw = this.baseWidth * this.scale;
   const ch = this.baseHeight * this.scale;
@@ -280,9 +254,10 @@ class Game {
   this.canvas.style.width = `${cw}px`;
   this.canvas.style.height = `${ch}px`;
 
-  // 🔥 CRITICAL: center INSIDE wrapper (not page)
-  this.canvas.style.position = "relative";
-  this.canvas.style.display = "block";
+  this.canvas.style.position = "absolute";
+  this.canvas.style.left = "50%";
+  this.canvas.style.top = "50%";
+  this.canvas.style.transform = "translate(-50%, -50%)";
 
   this.player.x = this.baseWidth - this.player.width - 20;
   this.player.y = Math.max(
