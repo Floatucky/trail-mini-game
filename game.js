@@ -159,40 +159,33 @@ class Game {
     }
   };
 
-  // 🔥 FIXED POINTER HANDLING
+  // 🔥 SIMPLE + RELIABLE CLICK SYSTEM
   this._onPointerDown = (e) => {
-    const popup = document.getElementById("pum-65009");
-    if (!popup) return;
-
-    const canvasRect = this.canvas.getBoundingClientRect();
+    const rect = this.canvas.getBoundingClientRect();
 
     const insideCanvas =
-      e.clientX >= canvasRect.left &&
-      e.clientX <= canvasRect.right &&
-      e.clientY >= canvasRect.top &&
-      e.clientY <= canvasRect.bottom;
+      e.clientX >= rect.left &&
+      e.clientX <= rect.right &&
+      e.clientY >= rect.top &&
+      e.clientY <= rect.bottom;
 
     if (this.gameOver) return;
 
-    // 🔥 RESUME (ANY click inside canvas OR black bars)
+    // 🔥 RESUME
     if (this.isPaused) {
       if (insideCanvas) {
-        e.preventDefault();
         this.resumeGame();
       }
       return;
     }
 
-    // 🔥 PAUSE (ONLY if clicking INSIDE popup but OUTSIDE canvas)
+    // 🔥 PAUSE ONLY if NOT on game
     if (!insideCanvas) {
-      const insidePopup = popup.contains(e.target);
-      if (insidePopup) {
-        this.pauseGame();
-      }
+      this.pauseGame();
     }
   };
 
-  // MOBILE TOUCH (same logic)
+  // 🔥 MOBILE = SAME LOGIC
   this._onTouchStart = (e) => {
     const touch = e.touches[0];
     const rect = this.canvas.getBoundingClientRect();
@@ -233,6 +226,7 @@ class Game {
       e.preventDefault();
 
       const move = (currentTouchY - this.touchStartY) / this.scale;
+
       this.player.y = Math.max(
         0,
         Math.min(this.baseHeight - this.player.height, this.player.y + move)
@@ -265,35 +259,37 @@ class Game {
 }
   
   resizeCanvas() {
-    const dpr = window.devicePixelRatio || 1;
+  const dpr = window.devicePixelRatio || 1;
 
-    const maxWidth = window.innerWidth * 0.95;
-    const maxHeight = window.innerHeight * 0.85;
+  // 🔥 Fill popup cleanly (no bars)
+  const maxWidth = window.innerWidth * 0.92;
+  const maxHeight = window.innerHeight * 0.80;
 
-    const scaleX = maxWidth / this.baseWidth;
-    const scaleY = maxHeight / this.baseHeight;
+  const scaleX = maxWidth / this.baseWidth;
+  const scaleY = maxHeight / this.baseHeight;
 
-    this.scale = Math.min(scaleX, scaleY);
+  // 🔥 ALWAYS fill BOTH directions (no letterboxing)
+  this.scale = Math.min(scaleX, scaleY);
 
-    const cw = this.baseWidth * this.scale;
-    const ch = this.baseHeight * this.scale;
+  const cw = this.baseWidth * this.scale;
+  const ch = this.baseHeight * this.scale;
 
-    this.canvas.width = cw * dpr;
-    this.canvas.height = ch * dpr;
+  this.canvas.width = cw * dpr;
+  this.canvas.height = ch * dpr;
 
-    this.canvas.style.width = `${cw}px`;
-    this.canvas.style.height = `${ch}px`;
-    this.canvas.style.position = "relative";
-    this.canvas.style.left = "0";
-    this.canvas.style.top = "0";
-    this.canvas.style.transform = "none";
+  this.canvas.style.width = `${cw}px`;
+  this.canvas.style.height = `${ch}px`;
 
-    this.player.x = this.baseWidth - this.player.width - 20;
-    this.player.y = Math.max(
-      0,
-      Math.min(this.player.y, this.baseHeight - this.player.height)
-    );
-  }
+  // 🔥 CRITICAL: center INSIDE wrapper (not page)
+  this.canvas.style.position = "relative";
+  this.canvas.style.display = "block";
+
+  this.player.x = this.baseWidth - this.player.width - 20;
+  this.player.y = Math.max(
+    0,
+    Math.min(this.player.y, this.baseHeight - this.player.height)
+  );
+}
 
   startBackgroundMusic() {
     if (!this.musicStarted) {
