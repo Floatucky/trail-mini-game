@@ -136,12 +136,14 @@ class Game {
 
   initEventListeners() {
   this._onResize = () => {
+    this.setLogicalResolution();
     this.resizeCanvas();
   };
 
   this._onKeyDown = (e) => {
     if (["ArrowUp", "ArrowDown"].includes(e.key)) e.preventDefault();
 
+    // 🔥 ALWAYS allow resume
     if (this.isPaused && !this.gameOver) {
       this.resumeGame();
       return;
@@ -161,18 +163,28 @@ class Game {
     }
   };
 
-  // 🔥 ONLY listen on CANVAS (not document)
-  this._onCanvasClick = () => {
+  // 🔥 GLOBAL CLICK HANDLER (THIS IS THE FIX)
+  this._onAnyClick = () => {
     if (this.gameOver) return;
 
     if (this.isPaused) {
       this.resumeGame();
-    } else {
+    }
+  };
+
+  // 🔥 PAUSE ONLY when clicking OUTSIDE game-wrap
+  this._onOutsideClick = (e) => {
+    if (this.gameOver) return;
+
+    const wrap = document.getElementById("game-wrap");
+    if (!wrap) return;
+
+    if (!wrap.contains(e.target)) {
       this.pauseGame();
     }
   };
 
-  // 🔥 MOBILE TAP
+  // 🔥 MOBILE SAME LOGIC
   this._onTouchStart = (e) => {
     if (this.gameOver) return;
 
@@ -221,8 +233,9 @@ class Game {
   document.addEventListener("keydown", this._onKeyDown);
   document.addEventListener("keyup", this._onKeyUp);
 
-  // 🔥 CRITICAL: click ONLY on canvas
-  this.canvas.addEventListener("click", this._onCanvasClick);
+  // 🔥 THIS IS THE MAGIC
+  document.addEventListener("pointerdown", this._onAnyClick);
+  document.addEventListener("pointerdown", this._onOutsideClick);
 
   this.canvas.addEventListener("touchstart", this._onTouchStart, { passive: false });
   this.canvas.addEventListener("touchmove", this._onTouchMove, { passive: false });
