@@ -442,20 +442,31 @@ class Game {
 
     const currentTime = performance.now();
 
-    if (currentTime - this.lastSpawnTime > this.spawnInterval) {
-      const numObstacles = Math.random() < 0.55 ? 1 : 2;
-      this.createObstacle(numObstacles);
-      this.createPowerUp();
-      this.lastSpawnTime = currentTime;
+   if (currentTime - this.lastSpawnTime > this.spawnInterval) {
 
-      if (this.spawnInterval > MIN_SPAWN_INTERVAL) {
-        this.spawnInterval -= 10;
-      }
+  // ===== DIFFICULTY SCALING =====
+  const difficulty = 1 + (this.score / 100);
 
-      if (this.obstacleSpeed < 8.5) {
-        this.obstacleSpeed += 0.03;
-      }
-    }
+  // ===== MORE OBSTACLES OVER TIME =====
+  const maxSpawn = Math.min(4, 1 + Math.floor(this.score / 120));
+  const numObstacles = Math.floor(Math.random() * maxSpawn) + 1;
+
+  this.createObstacle(numObstacles);
+  this.createPowerUp();
+  this.lastSpawnTime = currentTime;
+
+  // ===== SPAWN SPEED (keeps getting faster forever) =====
+  this.spawnInterval = Math.max(
+    250,
+    1200 - (this.score * 6)
+  );
+
+  // randomness so it doesn't feel robotic
+  this.spawnInterval *= (0.85 + Math.random() * 0.3);
+
+  // ===== OBSTACLE SPEED (NO HARD CAP ANYMORE) =====
+  this.obstacleSpeed = 3 + (this.score * 0.02);
+}
 
     if ((this.keys.ArrowUp || this.keys.KeyW) && this.player.y > 0) {
       this.player.y -= this.playerSpeed;
