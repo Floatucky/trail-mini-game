@@ -338,7 +338,19 @@ class Game {
         height = isSmall ? 44 : 78;
       }
 
-      const y = Math.random() * (this.baseHeight - height);
+      let y;
+
+if (Math.random() < 0.3) {
+  // 🎯 target player (with slight offset so it's not unfair)
+  const offset = (Math.random() - 0.5) * 80;
+  y = this.player.y + offset;
+} else {
+  // 🎲 normal random spawn
+  y = Math.random() * (this.baseHeight - height);
+}
+
+// clamp inside screen
+y = Math.max(0, Math.min(this.baseHeight - height, y));
 
       const hitbox = type === "tree"
         ? { xOffset: width * 0.35, yOffset: height * 0.15, width: width * 0.3, height: height * 0.7 }
