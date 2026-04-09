@@ -659,27 +659,7 @@ validateInitials(name) {
 
     this.ctx.restore();
   }
-  
-const nameInput = document.createElement("input");
-nameInput.id = "playerInitials";
-nameInput.placeholder = "Enter Initials (2-3 letters)";
-nameInput.maxLength = 3;
-
-nameInput.style.cssText = `
-  position:absolute;
-  left:50%;
-  bottom:80px;
-  transform:translateX(-50%);
-  padding:8px;
-  font-size:16px;
-  text-align:center;
-  text-transform:uppercase;
-  border-radius:6px;
-  border:none;
-`;
-
-gameWrap.appendChild(nameInput);
-  
+ 
   createPlayAgainButton() {
     var gameWrap = document.getElementById("game-wrap");
     if (!gameWrap) return;
@@ -687,6 +667,17 @@ gameWrap.appendChild(nameInput);
     var existingButton = gameWrap.querySelector("#playAgainButton");
     if (existingButton) return;
 
+// ===== NAME INPUT =====
+var nameInput = document.createElement("input");
+nameInput.id = "playerInitials";
+nameInput.placeholder = "Enter Initials (2-3 letters)";
+nameInput.maxLength = 3;
+
+nameInput.style.cssText =
+  "position:absolute; left:50%; bottom:80px; transform:translateX(-50%); padding:8px; font-size:16px; text-align:center; text-transform:uppercase; border-radius:6px; border:none;";
+
+gameWrap.appendChild(nameInput);
+    
     var playAgainButton = document.createElement("button");
     playAgainButton.id = "playAgainButton";
     playAgainButton.textContent = "Play Again";
