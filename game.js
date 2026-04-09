@@ -697,16 +697,14 @@ playAgainButton.addEventListener("click", async () => {
   }
 
   try {
-    await fetch("https://script.google.com/macros/s/AKfycbz8hdcKBk_ut0IdQPhGPt8IfPcgIvoyUNwOXVEsRL8QulPALVEsSDnofNBt47AxGcB2/exec", {
-      method: "POST",
-      body: JSON.stringify({
-        name: name,
-        score: this.score
-      }),
-      headers: {
-        "Content-Type": "application/json"
-      }
-    });
+await fetch("https://script.google.com/macros/s/AKfycbz8hdcKBk_ut0IdQPhGPt8IfPcgIvoyUNwOXVEsRL8QulPALVEsSDnofNBt47AxGcB2/exec", {
+  method: "POST",
+  mode: "no-cors",
+  body: JSON.stringify({
+    name: name,
+    score: this.score
+  })
+});
   } catch (e) {
     console.warn("Score submit failed", e);
   }
