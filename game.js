@@ -674,7 +674,7 @@ nameInput.placeholder = "Enter Initials (2-3 letters)";
 nameInput.maxLength = 3;
 
 nameInput.style.cssText =
-  "position:absolute; left:50%; bottom:80px; transform:translateX(-50%); padding:10px 12px; font-size:18px; text-align:center; text-transform:uppercase; border-radius:6px; border:2px solid #0a70dc; background:#fff; color:#000; font-weight:bold; outline:none;";
+  "position:absolute; left:50%; bottom:100px; transform:translateX(-50%); padding:14px 16px; font-size:20px; width:260px; text-align:center; text-transform:uppercase; border-radius:8px; border:2px solid #0a70dc; background:#ffffff; color:#000; font-weight:bold; outline:none;";
 
 gameWrap.appendChild(nameInput);
     
