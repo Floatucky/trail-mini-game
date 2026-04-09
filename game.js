@@ -578,6 +578,10 @@ y = Math.max(0, Math.min(this.baseHeight - height, y));
     this.collisionSound.play().catch(() => {});
   }
 
+validateInitials(name) {
+  return /^[A-Z]{2,3}$/.test(name);
+}
+  
   drawPauseOverlay() {
     this.ctx.fillStyle = "rgba(0,0,0,0.62)";
     this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
@@ -655,7 +659,27 @@ y = Math.max(0, Math.min(this.baseHeight - height, y));
 
     this.ctx.restore();
   }
+  
+const nameInput = document.createElement("input");
+nameInput.id = "playerInitials";
+nameInput.placeholder = "Enter Initials (2-3 letters)";
+nameInput.maxLength = 3;
 
+nameInput.style.cssText = `
+  position:absolute;
+  left:50%;
+  bottom:80px;
+  transform:translateX(-50%);
+  padding:8px;
+  font-size:16px;
+  text-align:center;
+  text-transform:uppercase;
+  border-radius:6px;
+  border:none;
+`;
+
+gameWrap.appendChild(nameInput);
+  
   createPlayAgainButton() {
     var gameWrap = document.getElementById("game-wrap");
     if (!gameWrap) return;
@@ -671,10 +695,36 @@ y = Math.max(0, Math.min(this.baseHeight - height, y));
 
     gameWrap.appendChild(playAgainButton);
 
-    playAgainButton.addEventListener("click", () => {
-      playAgainButton.disabled = true;
-      this.resetGame();
+playAgainButton.addEventListener("click", async () => {
+
+  const input = document.getElementById("playerInitials");
+  let name = input ? input.value.toUpperCase().trim() : "";
+
+  if (!this.validateInitials(name)) {
+    alert("Enter 2-3 letters only (A-Z)");
+    return;
+  }
+
+  try {
+    await fetch("https://script.google.com/macros/s/AKfycbz8hdcKBk_ut0IdQPhGPt8IfPcgIvoyUNwOXVEsRL8QulPALVEsSDnofNBt47AxGcB2/exec", {
+      method: "POST",
+      body: JSON.stringify({
+        name: name,
+        score: this.score
+      }),
+      headers: {
+        "Content-Type": "application/json"
+      }
     });
+  } catch (e) {
+    console.warn("Score submit failed", e);
+  }
+
+  if (input) input.remove();
+
+  playAgainButton.disabled = true;
+  this.resetGame();
+});
   }
 
   resetGame() {
