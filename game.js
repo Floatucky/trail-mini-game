@@ -704,16 +704,24 @@ if (!this.leaderboard) {
       
 if (this.isNewHighScore) {
   this.ctx.font = '28px "Permanent Marker", cursive';
-  this.ctx.fillStyle = "#FFD700"; // gold
+
+  // ✨ GLOW EFFECT START
+  this.ctx.fillStyle = "#FFD700";
+  this.ctx.shadowColor = "#FFD700";
+  this.ctx.shadowBlur = 25;
 
   this.ctx.fillText(
     "🔥 NEW HIGH SCORE! 🔥",
     this.baseWidth / 2,
     this.baseHeight / 2 + 20
   );
+
+  // ✨ RESET so it doesn’t affect other text
+  this.ctx.shadowBlur = 0;
 }
+  
 // show leaderboard when loaded
-else if (this.leaderboard && this.leaderboard.length) {
+if (this.leaderboard && this.leaderboard.length) {
   this.ctx.textAlign = "center";
   this.ctx.fillStyle = "#FFF";
 
