@@ -600,8 +600,8 @@ if (allowBucket && Math.random() < bucketChance) {
     try {
       this.backgroundMusic.pause();
     } catch (e) {}
-this.shakeTimer = 20;       // frames (~300ms)
-this.shakeIntensity = 18;   // how violent the shake is
+this.shakeTimer = 16;       // frames (~300ms)
+this.shakeIntensity = 14;   // how violent the shake is
     this.collisionSound.currentTime = 0;
     this.collisionSound.play().catch(() => {});
 const qualifiesTop5 =
@@ -655,16 +655,16 @@ validateInitials(name) {
     this.ctx.scale(dpr, dpr);
     this.ctx.scale(this.scale, this.scale);
 
-    // ===== SCREEN SHAKE =====
+// ===== SCREEN SHAKE =====
 if (this.shakeTimer > 0) {
+  this.ctx.save();
+
   const shakeX = (Math.random() - 0.5) * this.shakeIntensity;
   const shakeY = (Math.random() - 0.5) * this.shakeIntensity;
 
   this.ctx.translate(shakeX, shakeY);
 
   this.shakeTimer--;
-
-  // fade out shake over time
   this.shakeIntensity *= 0.92;
 }
 
@@ -731,12 +731,12 @@ if (!this.leaderboard) {
   this.ctx.fillStyle = "#DDD";
   this.ctx.textAlign = "center";
 
+const offset = this.isNewHighScore ? 40 : 0;
+
 this.ctx.fillText(
   "TOP RIDERS",
   this.baseWidth / 2,
-  const offset = this.isNewHighScore ? 40 : 0;
-
-this.baseHeight / 2 + 90 + offset
+  this.baseHeight / 2 + 90 + offset
 );
 }
       
@@ -786,7 +786,9 @@ if (this.leaderboard && this.leaderboard.length) {
       this.createPlayAgainButton();
     }
 
-    this.ctx.restore();
+    if (this.shakeTimer > 0) {
+  this.ctx.restore();
+}
   }
  
   createPlayAgainButton() {
