@@ -672,7 +672,15 @@ validateInitials(name) {
       this.ctx.textAlign = "center";
       this.ctx.fillText("Game Over!", this.baseWidth / 2, this.baseHeight / 2 - 50);
       this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2);
-      if (this.leaderboard && this.leaderboard.length) {
+      if if (!this.leaderboard) {
+  this.ctx.font = '18px "Permanent Marker", cursive';
+  this.ctx.fillStyle = "#DDD";
+  this.ctx.fillText(
+    "Loading top riders...",
+    this.baseWidth / 2,
+    this.baseHeight / 2 + 80
+  );
+}(this.leaderboard && this.leaderboard.length) {
   this.ctx.textAlign = "center";
   this.ctx.fillStyle = "#FFF";
 
@@ -680,13 +688,7 @@ validateInitials(name) {
   this.ctx.fillText("TOP RIDERS", this.baseWidth / 2, this.baseHeight / 2 + 60);
 
   this.ctx.font = '20px "Permanent Marker", cursive';
-if (!this.leaderboard) {
-  this.ctx.fillText(
-    "Loading leaderboard...",
-    this.baseWidth / 2,
-    this.baseHeight / 2 + 80
-  );
-}
+
   this.leaderboard.forEach((row, i) => {
     const name = row[0];
     const score = row[1];
