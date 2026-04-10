@@ -593,6 +593,7 @@ if (allowBucket && Math.random() < bucketChance) {
 
     this.collisionSound.currentTime = 0;
     this.collisionSound.play().catch(() => {});
+    this.fetchLeaderboard();
   }
 
 validateInitials(name) {
@@ -671,6 +672,26 @@ validateInitials(name) {
       this.ctx.textAlign = "center";
       this.ctx.fillText("Game Over!", this.baseWidth / 2, this.baseHeight / 2 - 50);
       this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2);
+      if (this.leaderboard && this.leaderboard.length) {
+  this.ctx.textAlign = "center";
+  this.ctx.fillStyle = "#FFF";
+
+  this.ctx.font = '24px "Permanent Marker", cursive';
+  this.ctx.fillText("TOP RIDERS", this.baseWidth / 2, this.baseHeight / 2 + 60);
+
+  this.ctx.font = '20px "Permanent Marker", cursive';
+
+  this.leaderboard.forEach((row, i) => {
+    const name = row[0];
+    const score = row[1];
+
+    this.ctx.fillText(
+      `${i + 1}. ${name} - ${score}`,
+      this.baseWidth / 2,
+      this.baseHeight / 2 + 100 + (i * 28)
+    );
+  });
+}
       this.createPlayAgainButton();
     }
 
@@ -871,6 +892,20 @@ this.resetGame();
       }
     } catch (e) {}
   }
+  
+fetchLeaderboard() {
+  const url = "https://script.google.com/macros/s/AKfycbz8hdcKBk_ut0IdQPhGPt8IfPcgIvoyUNwOXVEsRL8QulPALVEsSDnofNBt47AxGcB2/exec?t=" + Date.now();
+
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      this.leaderboard = data;
+    })
+    .catch(() => {
+      this.leaderboard = [];
+    });
+}
+  
 }
 
 window.__floatuckyGameInstance = null;
