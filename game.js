@@ -709,10 +709,14 @@ playAgainButton.addEventListener("click", () => {
     "&score=" + encodeURIComponent(this.score) +
     "&t=" + Date.now();
 
-  const img = new Image();
-  img.onload = () => finishSave.call(this);
-  img.onerror = () => finishSave.call(this);
-  img.src = url;
+// fire and forget (no waiting)
+const img = new Image();
+img.src = url;
+
+// immediately continue
+if (input) input.remove();
+this.isSubmittingScore = false;
+this.resetGame();
 
   const finishSave = function () {
     if (input) input.remove();
