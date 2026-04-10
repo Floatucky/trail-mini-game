@@ -706,7 +706,7 @@ if (this.highScoreFlashTimer > 0) {
       this.ctx.font = `700 40px "Permanent Marker", cursive`;
       this.ctx.textAlign = "center";
       this.ctx.fillText("Game Over!", this.baseWidth / 2, this.baseHeight / 2 - 50);
-      this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2);
+      this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2 - 10);
       // ===== LEADERBOARD DISPLAY =====
 
 // show loading text first
@@ -715,11 +715,13 @@ if (!this.leaderboard) {
   this.ctx.fillStyle = "#DDD";
   this.ctx.textAlign = "center";
 
-  this.ctx.fillText(
-    "Loading top riders...",
-    this.baseWidth / 2,
-    this.baseHeight / 2 + 80
-  );
+this.ctx.fillText(
+  "TOP RIDERS",
+  this.baseWidth / 2,
+  const offset = this.isNewHighScore ? 40 : 0;
+
+this.baseHeight / 2 + 90 + offset
+);
 }
       
 if (this.isNewHighScore) {
@@ -730,11 +732,11 @@ if (this.isNewHighScore) {
   this.ctx.shadowColor = "#FFD700";
   this.ctx.shadowBlur = 25;
 
-  this.ctx.fillText(
-    "🔥 NEW HIGH SCORE! 🔥",
-    this.baseWidth / 2,
-    this.baseHeight / 2 + 20
-  );
+this.ctx.fillText(
+  "🔥 NEW HIGH SCORE! 🔥",
+  this.baseWidth / 2,
+  this.baseHeight / 2 + 40
+);
 
   // ✨ RESET so it doesn’t affect other text
   this.ctx.shadowBlur = 0;
@@ -761,7 +763,7 @@ if (this.leaderboard && this.leaderboard.length) {
     this.ctx.fillText(
       `${i + 1}. ${name} - ${score}`,
       this.baseWidth / 2,
-      this.baseHeight / 2 + 100 + (i * 28)
+      this.baseHeight / 2 + 130 + (i * 28)
     );
   });
 }
