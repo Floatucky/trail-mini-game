@@ -72,6 +72,7 @@ class Game {
         : { xOffset: 5, yOffset: 10, width: 85, height: 25 }
     );
 this.isNewHighScore = false;
+    this.highScoreFlashTimer = 0;
     this.initEventListeners();
     this.resizeCanvas();
     this.startGameLoop();
@@ -597,9 +598,10 @@ if (allowBucket && Math.random() < bucketChance) {
   if (this.leaderboard && this.leaderboard.length > 0) {
     const topScore = this.leaderboard[0][1];
 
-    if (this.score > topScore) {
-      this.isNewHighScore = true;
-    } else {
+ if (this.score > topScore) {
+  this.isNewHighScore = true;
+  this.highScoreFlashTimer = 30; // ~0.5 second flash
+} else {
       this.isNewHighScore = false;
     }
   } else {
@@ -680,6 +682,15 @@ validateInitials(name) {
     }
 
     if (this.gameOver) {
+      // ===== HIGH SCORE FLASH =====
+if (this.highScoreFlashTimer > 0) {
+  const alpha = this.highScoreFlashTimer / 30;
+
+  this.ctx.fillStyle = `rgba(255, 255, 200, ${alpha})`;
+  this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
+
+  this.highScoreFlashTimer--;
+}
       this.ctx.fillStyle = "rgba(0,0,0,0.55)";
       this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
       this.ctx.fillStyle = "#FFF";
