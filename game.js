@@ -250,9 +250,11 @@ this.slowMoFactor = 1;
   this.canvas.addEventListener("touchend", this._onTouchEnd);
 
   document.addEventListener("visibilitychange", this._onVisibilityChange);
-    this._onViewportChange = () => {
-  this.setLogicalResolution();
-  this.resizeCanvas();
+this._onViewportChange = () => {
+  setTimeout(() => {
+    this.setLogicalResolution();
+    this.resizeCanvas();
+  }, 50);
 };
 
 window.addEventListener("orientationchange", this._onViewportChange);
@@ -263,11 +265,8 @@ window.visualViewport?.addEventListener("resize", this._onViewportChange);
     const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   const dpr = window.devicePixelRatio || 1;
 
-  const container = this.canvas.parentElement;
-  const rect = container.getBoundingClientRect();
-
-  const width = rect.width;
-  const height = rect.height;
+const width = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
 
   this.scale = Math.min(
     width / this.baseWidth,
