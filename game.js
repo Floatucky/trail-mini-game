@@ -72,7 +72,7 @@ this.fetchLeaderboard();
         : { xOffset: 5, yOffset: 10, width: 85, height: 25 }
     );
 this.preGameTopScore = 0;
-    this.isNewHighScore = false;
+    this.isTopScore = false;
     this.highScoreFlashTimer = 0;
     this.shakeTimer = 0;
 this.shakeIntensity = 0;
@@ -623,13 +623,13 @@ const qualifiesTop5 =
   this.score > this.leaderboard[this.leaderboard.length - 1][1];
 
 if (qualifiesTop5) {
-  this.isNewHighScore = true;
+  this.isTopScore = true;
   this.highScoreFlashTimer = 30;
 
   // 🎉 CONFETTI
   this.spawnConfetti();
 } else {
-  this.isNewHighScore = false;
+  this.isTopScore = false;
 }
 
 // still fetch AFTER for display
@@ -692,25 +692,6 @@ if (this.shakeTimer > 0) {
     for (let i = 0; i < this.powerUps.length; i++) this.powerUps[i].draw(this.ctx);
     for (let i = 0; i < this.explosions.length; i++) this.explosions[i].draw(this.ctx);
 
-    // 🎉 DRAW CONFETTI
-if (this.confetti && this.confetti.length) {
-  for (let i = this.confetti.length - 1; i >= 0; i--) {
-    const c = this.confetti[i];
-
-    this.ctx.fillStyle = c.color;
-    this.ctx.fillRect(c.x, c.y, c.size, c.size);
-
-    c.x += c.vx;
-    c.y += c.vy;
-    c.vy += 0.3; // gravity
-    c.life--;
-
-    if (c.life <= 0) {
-      this.confetti.splice(i, 1);
-    }
-  }
-}
-
     const fontSizeScore = this.isMobilePortrait ? 34 : Math.min(this.baseWidth / 20, this.baseHeight / 20);
     this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
     this.ctx.font = `700 ${fontSizeScore}px "Permanent Marker", cursive`;
@@ -766,7 +747,7 @@ if (!this.leaderboard) {
   this.ctx.fillStyle = "#DDD";
   this.ctx.textAlign = "center";
 
-const offset = this.isNewHighScore ? 40 : 0;
+const offset = this.isTopScore ? 40 : 0;
 
 this.ctx.fillText(
   "TOP RIDERS",
@@ -775,7 +756,7 @@ this.ctx.fillText(
 );
 }
       
-if (this.isNewHighScore) {
+if (this.isTopScore) {
   this.ctx.font = '28px "Permanent Marker", cursive';
 
   // ✨ GLOW EFFECT START
@@ -784,7 +765,7 @@ if (this.isNewHighScore) {
   this.ctx.shadowBlur = 25;
 
 this.ctx.fillText(
-  "🔥 NEW HIGH SCORE! 🔥",
+  "🔥 NEW TOP SCORE! 🔥",
   this.baseWidth / 2,
   this.baseHeight / 2 + 40
 );
@@ -817,6 +798,29 @@ if (this.leaderboard && this.leaderboard.length) {
       this.baseHeight / 2 + 130 + (i * 28)
     );
   });
+}
+      // show leaderboard when loaded
+if (this.leaderboard && this.leaderboard.length) {
+  ...
+}
+
+// 🎉 DRAW CONFETTI LAST (ON TOP OF EVERYTHING)
+if (this.confetti && this.confetti.length) {
+  for (let i = this.confetti.length - 1; i >= 0; i--) {
+    const c = this.confetti[i];
+
+    this.ctx.fillStyle = c.color;
+    this.ctx.fillRect(c.x, c.y, c.size, c.size);
+
+    c.x += c.vx;
+    c.y += c.vy;
+    c.vy += 0.3;
+    c.life--;
+
+    if (c.life <= 0) {
+      this.confetti.splice(i, 1);
+    }
+  }
 }
       this.createPlayAgainButton();
     }
