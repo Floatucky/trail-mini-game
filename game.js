@@ -71,7 +71,7 @@ class Game {
         ? { xOffset: 8, yOffset: 12, width: 98, height: 28 }
         : { xOffset: 5, yOffset: 10, width: 85, height: 25 }
     );
-
+this.isNewHighScore = false;
     this.initEventListeners();
     this.resizeCanvas();
     this.startGameLoop();
@@ -593,7 +593,22 @@ if (allowBucket && Math.random() < bucketChance) {
 
     this.collisionSound.currentTime = 0;
     this.collisionSound.play().catch(() => {});
-    this.fetchLeaderboard();
+    this.fetchLeaderboard().then(() => {
+  if (this.leaderboard && this.leaderboard.length > 0) {
+    const topScore = this.leaderboard[0][1];
+
+    if (this.score > topScore) {
+      this.isNewHighScore = true;
+    } else {
+      this.isNewHighScore = false;
+    }
+  } else {
+    // first ever score = high score
+    this.isNewHighScore = true;
+  }
+
+  this.draw();
+});
   }
 
 validateInitials(name) {
@@ -686,7 +701,17 @@ if (!this.leaderboard) {
     this.baseHeight / 2 + 80
   );
 }
+      
+if (this.isNewHighScore) {
+  this.ctx.font = '28px "Permanent Marker", cursive';
+  this.ctx.fillStyle = "#FFD700"; // gold
 
+  this.ctx.fillText(
+    "🔥 NEW HIGH SCORE! 🔥",
+    this.baseWidth / 2,
+    this.baseHeight / 2 + 20
+  );
+}
 // show leaderboard when loaded
 else if (this.leaderboard && this.leaderboard.length) {
   this.ctx.textAlign = "center";
@@ -910,13 +935,10 @@ this.resetGame();
 fetchLeaderboard() {
   const url = "https://script.google.com/macros/s/AKfycbz8hdcKBk_ut0IdQPhGPt8IfPcgIvoyUNwOXVEsRL8QulPALVEsSDnofNBt47AxGcB2/exec?t=" + Date.now();
 
-  fetch(url)
+  return fetch(url)
     .then(res => res.json())
     .then(data => {
       this.leaderboard = data;
-
-      // 🔥 FORCE redraw after data arrives
-      this.draw();
     })
     .catch(() => {
       this.leaderboard = [];
