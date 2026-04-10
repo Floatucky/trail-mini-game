@@ -672,20 +672,32 @@ validateInitials(name) {
       this.ctx.textAlign = "center";
       this.ctx.fillText("Game Over!", this.baseWidth / 2, this.baseHeight / 2 - 50);
       this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2);
-      if if (!this.leaderboard) {
+      // ===== LEADERBOARD DISPLAY =====
+
+// show loading text first
+if (!this.leaderboard) {
   this.ctx.font = '18px "Permanent Marker", cursive';
   this.ctx.fillStyle = "#DDD";
+  this.ctx.textAlign = "center";
+
   this.ctx.fillText(
     "Loading top riders...",
     this.baseWidth / 2,
     this.baseHeight / 2 + 80
   );
-}(this.leaderboard && this.leaderboard.length) {
+}
+
+// show leaderboard when loaded
+else if (this.leaderboard && this.leaderboard.length) {
   this.ctx.textAlign = "center";
   this.ctx.fillStyle = "#FFF";
 
   this.ctx.font = '24px "Permanent Marker", cursive';
-  this.ctx.fillText("TOP RIDERS", this.baseWidth / 2, this.baseHeight / 2 + 60);
+  this.ctx.fillText(
+    "TOP RIDERS",
+    this.baseWidth / 2,
+    this.baseHeight / 2 + 60
+  );
 
   this.ctx.font = '20px "Permanent Marker", cursive';
 
