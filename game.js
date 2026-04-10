@@ -470,18 +470,16 @@ this.createObstacle(numObstacles);
 // ===== SMART BUCKET CONTROL =====
 let allowBucket = true;
 
-// 🚫 STOP bucket stacking when timer is high
-if (this.isFullSendMode && this.fullSendModeTimer > 420) { 
-  // 420 frames ≈ 7 seconds
+// 🚫 HARD STOP if timer is too high
+if (this.isFullSendMode && this.fullSendModeTimer > 420) {
   allowBucket = false;
 }
 
-// 🎲 allow buckets again when timer is low
-const bucketChance = Math.max(0.2, 0.6 - (this.score * 0.002));
+// 🎯 Dynamic spawn chance
+const bucketChance = Math.max(0.15, 0.5 - (this.score * 0.002));
 
+// ONLY spawn if allowed
 if (allowBucket && Math.random() < bucketChance) {
-  this.createPowerUp();
-} {
   this.createPowerUp();
 }
   this.lastSpawnTime = currentTime;
