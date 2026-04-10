@@ -464,8 +464,19 @@ y = Math.max(0, Math.min(this.baseHeight - height, y));
   const maxSpawn = Math.min(4, 1 + Math.floor(this.score / 120));
   const numObstacles = Math.floor(Math.random() * maxSpawn) + 1;
 
-  this.createObstacle(numObstacles);
+// ALWAYS spawn obstacles
+this.createObstacle(numObstacles);
+
+// ===== SMART BUCKET CONTROL =====
+let allowBucket = true;
+
+if (this.fullSendActive && this.fullSendTimer > 7) {
+  allowBucket = false;
+}
+
+if (allowBucket) {
   this.createPowerUp();
+}
   this.lastSpawnTime = currentTime;
 
   // ===== SPAWN SPEED (keeps getting faster forever) =====
