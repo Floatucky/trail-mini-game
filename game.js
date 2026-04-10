@@ -474,7 +474,7 @@ if (this.fullSendActive && this.fullSendTimer > 7) {
   allowBucket = false;
 }
 
-if (allowBucket) {
+if (allowBucket && Math.random() < 0.6) {
   this.createPowerUp();
 }
   this.lastSpawnTime = currentTime;
