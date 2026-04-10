@@ -470,11 +470,18 @@ this.createObstacle(numObstacles);
 // ===== SMART BUCKET CONTROL =====
 let allowBucket = true;
 
-if (this.fullSendActive && this.fullSendTimer > 7) {
+// 🚫 STOP bucket stacking when timer is high
+if (this.isFullSendMode && this.fullSendModeTimer > 420) { 
+  // 420 frames ≈ 7 seconds
   allowBucket = false;
 }
 
-if (allowBucket && Math.random() < 0.6) {
+// 🎲 allow buckets again when timer is low
+const bucketChance = Math.max(0.2, 0.6 - (this.score * 0.002));
+
+if (allowBucket && Math.random() < bucketChance) {
+  this.createPowerUp();
+} {
   this.createPowerUp();
 }
   this.lastSpawnTime = currentTime;
