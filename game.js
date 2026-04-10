@@ -602,8 +602,21 @@ if (allowBucket && Math.random() < bucketChance) {
     } catch (e) {}
 this.shakeTimer = 16;       // frames (~300ms)
 this.shakeIntensity = 14;   // how violent the shake is
-    this.collisionSound.currentTime = 0;
-    this.collisionSound.play().catch(() => {});
+// 💥 PLAYER EXPLOSION
+this.explosions.push(
+  new GameObject(
+    this.player.x,
+    this.player.y,
+    80,
+    80,
+    this.images.explosion,
+    { xOffset: 0, yOffset: 0, width: 80, height: 80 }
+  )
+);
+
+// 🔊 SOUND
+this.collisionSound.currentTime = 0;
+this.collisionSound.play().catch(() => {});
 const qualifiesTop5 =
   this.leaderboard &&
   this.leaderboard.length < 5 ||
@@ -612,6 +625,9 @@ const qualifiesTop5 =
 if (qualifiesTop5) {
   this.isNewHighScore = true;
   this.highScoreFlashTimer = 30;
+
+  // 🎉 CONFETTI
+  this.spawnConfetti();
 } else {
   this.isNewHighScore = false;
 }
@@ -675,6 +691,25 @@ if (this.shakeTimer > 0) {
     for (let i = 0; i < this.obstacles.length; i++) this.obstacles[i].draw(this.ctx);
     for (let i = 0; i < this.powerUps.length; i++) this.powerUps[i].draw(this.ctx);
     for (let i = 0; i < this.explosions.length; i++) this.explosions[i].draw(this.ctx);
+
+    // 🎉 DRAW CONFETTI
+if (this.confetti && this.confetti.length) {
+  for (let i = this.confetti.length - 1; i >= 0; i--) {
+    const c = this.confetti[i];
+
+    this.ctx.fillStyle = c.color;
+    this.ctx.fillRect(c.x, c.y, c.size, c.size);
+
+    c.x += c.vx;
+    c.y += c.vy;
+    c.vy += 0.3; // gravity
+    c.life--;
+
+    if (c.life <= 0) {
+      this.confetti.splice(i, 1);
+    }
+  }
+}
 
     const fontSizeScore = this.isMobilePortrait ? 34 : Math.min(this.baseWidth / 20, this.baseHeight / 20);
     this.ctx.fillStyle = this.isFullSendMode ? "#000" : "#FFF";
@@ -1001,6 +1036,21 @@ fetchLeaderboard() {
     });
 }
   
+  spawnConfetti() {
+  this.confetti = [];
+
+  for (let i = 0; i < 80; i++) {
+    this.confetti.push({
+      x: this.baseWidth / 2,
+      y: this.baseHeight / 2,
+      vx: (Math.random() - 0.5) * 10,
+      vy: (Math.random() - 1.5) * 10,
+      size: Math.random() * 6 + 4,
+      life: 60,
+      color: ["#FFD700", "#14BAA0", "#FFFFFF"][Math.floor(Math.random() * 3)]
+    });
+  }
+}
 }
 
 window.__floatuckyGameInstance = null;
