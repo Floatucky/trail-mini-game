@@ -680,7 +680,13 @@ validateInitials(name) {
   this.ctx.fillText("TOP RIDERS", this.baseWidth / 2, this.baseHeight / 2 + 60);
 
   this.ctx.font = '20px "Permanent Marker", cursive';
-
+if (!this.leaderboard) {
+  this.ctx.fillText(
+    "Loading leaderboard...",
+    this.baseWidth / 2,
+    this.baseHeight / 2 + 80
+  );
+}
   this.leaderboard.forEach((row, i) => {
     const name = row[0];
     const score = row[1];
@@ -754,12 +760,6 @@ img.src = url;
 if (input) input.remove();
 this.isSubmittingScore = false;
 this.resetGame();
-
-  const finishSave = function () {
-    if (input) input.remove();
-    this.isSubmittingScore = false;
-    this.resetGame();
-  };
 });
   }
 
@@ -900,6 +900,9 @@ fetchLeaderboard() {
     .then(res => res.json())
     .then(data => {
       this.leaderboard = data;
+
+      // 🔥 FORCE redraw after data arrives
+      this.draw();
     })
     .catch(() => {
       this.leaderboard = [];
