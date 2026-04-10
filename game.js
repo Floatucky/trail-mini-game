@@ -112,6 +112,7 @@ class Game {
     this.musicStarted = false;
     this.audioEnabled = false;
     this.soundsPreloaded = false;
+    this.isSubmittingScore = false;
   }
 
   setLogicalResolution() {
@@ -686,33 +687,38 @@ gameWrap.appendChild(nameInput);
 
     gameWrap.appendChild(playAgainButton);
 
-playAgainButton.addEventListener("click", async () => {
+playAgainButton.addEventListener("click", () => {
+  if (this.isSubmittingScore) return;
+  this.isSubmittingScore = true;
 
   const input = document.getElementById("playerInitials");
-  let name = input ? input.value.toUpperCase().trim() : "";
+  const name = input ? input.value.toUpperCase().trim() : "";
 
   if (!this.validateInitials(name)) {
     alert("Enter 2-3 letters only (A-Z)");
+    this.isSubmittingScore = false;
     return;
   }
 
-  try {
-await fetch("https://script.google.com/macros/s/AKfycbz8hdcKBk_ut0IdQPhGPt8IfPcgIvoyUNwOXVEsRL8QulPALVEsSDnofNBt47AxGcB2/exec", {
-  method: "POST",
-  mode: "no-cors",
-  body: JSON.stringify({
-    name: name,
-    score: this.score
-  })
-});
-  } catch (e) {
-    console.warn("Score submit failed", e);
-  }
-
-  if (input) input.remove();
-
   playAgainButton.disabled = true;
-  this.resetGame();
+  playAgainButton.textContent = "Saving...";
+
+  const url =
+    "https://script.google.com/macros/s/AKfycbz8hdcKBk_ut0IdQPhGPt8IfPcgIvoyUNwOXVEsRL8QulPALVEsSDnofNBt47AxGcB2/exec" +
+    "?name=" + encodeURIComponent(name) +
+    "&score=" + encodeURIComponent(this.score) +
+    "&t=" + Date.now();
+
+  const img = new Image();
+  img.onload = () => finishSave.call(this);
+  img.onerror = () => finishSave.call(this);
+  img.src = url;
+
+  const finishSave = function () {
+    if (input) input.remove();
+    this.isSubmittingScore = false;
+    this.resetGame();
+  };
 });
   }
 
