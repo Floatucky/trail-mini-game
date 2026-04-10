@@ -261,12 +261,16 @@ window.addEventListener("orientationchange", this._onViewportChange);
 window.visualViewport?.addEventListener("resize", this._onViewportChange);
 }
   
-  resizeCanvas() {
-    const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
 
-const width = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const width = window.visualViewport
+    ? window.visualViewport.width
+    : window.innerWidth;
+
+  const height = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
 
   this.scale = Math.min(
     width / this.baseWidth,
