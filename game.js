@@ -242,7 +242,6 @@ this.slowMoFactor = 1;
   document.addEventListener("keydown", this._onKeyDown);
   document.addEventListener("keyup", this._onKeyUp);
 
-  // 🔥 THIS IS THE MAGIC
   document.addEventListener("pointerdown", this._onAnyClick);
   document.addEventListener("pointerdown", this._onOutsideClick);
 
@@ -251,9 +250,17 @@ this.slowMoFactor = 1;
   this.canvas.addEventListener("touchend", this._onTouchEnd);
 
   document.addEventListener("visibilitychange", this._onVisibilityChange);
+    this._onViewportChange = () => {
+  this.setLogicalResolution();
+  this.resizeCanvas();
+};
+
+window.addEventListener("orientationchange", this._onViewportChange);
+window.visualViewport?.addEventListener("resize", this._onViewportChange);
 }
   
   resizeCanvas() {
+    const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   const dpr = window.devicePixelRatio || 1;
 
   const container = this.canvas.parentElement;
