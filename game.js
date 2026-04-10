@@ -71,7 +71,8 @@ class Game {
         ? { xOffset: 8, yOffset: 12, width: 98, height: 28 }
         : { xOffset: 5, yOffset: 10, width: 85, height: 25 }
     );
-this.isNewHighScore = false;
+this.preGameTopScore = 0;
+    this.isNewHighScore = false;
     this.highScoreFlashTimer = 0;
     this.initEventListeners();
     this.resizeCanvas();
@@ -594,19 +595,13 @@ if (allowBucket && Math.random() < bucketChance) {
 
     this.collisionSound.currentTime = 0;
     this.collisionSound.play().catch(() => {});
-    this.fetchLeaderboard().then(() => {
-  if (this.leaderboard && this.leaderboard.length > 0) {
-    const topScore = this.leaderboard[0][1];
+this.fetchLeaderboard().then(() => {
 
- if (this.score > topScore) {
-  this.isNewHighScore = true;
-  this.highScoreFlashTimer = 30; // ~0.5 second flash
-} else {
-      this.isNewHighScore = false;
-    }
-  } else {
-    // first ever score = high score
+  if (this.score > this.preGameTopScore) {
     this.isNewHighScore = true;
+    this.highScoreFlashTimer = 30;
+  } else {
+    this.isNewHighScore = false;
   }
 
   this.draw();
@@ -958,9 +953,17 @@ fetchLeaderboard() {
     .then(res => res.json())
     .then(data => {
       this.leaderboard = data;
+
+      // 👇 STORE TOP SCORE BEFORE RUN
+      if (data && data.length > 0) {
+        this.preGameTopScore = data[0][1];
+      } else {
+        this.preGameTopScore = 0;
+      }
     })
     .catch(() => {
       this.leaderboard = [];
+      this.preGameTopScore = 0;
     });
 }
   
