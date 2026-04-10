@@ -611,11 +611,6 @@ if (qualifiesTop5) {
   this.highScoreFlashTimer = 30;
 } else {
   this.isNewHighScore = false;
-} {
-  this.isNewHighScore = true;
-  this.highScoreFlashTimer = 30;
-} else {
-  this.isNewHighScore = false;
 }
 
 // still fetch AFTER for display
