@@ -459,7 +459,10 @@ y = Math.max(0, Math.min(this.baseHeight - height, y));
   }
 
   update(deltaTime) {
-    if (this.gameOver || this.isPaused) return;
+    if (this.isPaused) return;
+
+// allow slow-mo to continue after death
+if (this.gameOver && this.slowMoTimer <= 0) return;
 if (this.slowMoTimer > 0) {
   deltaTime *= this.slowMoFactor;
   this.slowMoTimer--;
@@ -636,17 +639,18 @@ this.collisionSound.play().catch(() => {});
 setTimeout(() => {
   this.deathBassSound.currentTime = 0;
   this.deathBassSound.play().catch(() => {});
-}, 80);
+}, 120);
 
 // 🎮 GAME OVER SOUND (after slow-mo finishes)
 setTimeout(() => {
   this.gameOverSound.currentTime = 0;
   this.gameOverSound.play().catch(() => {});
-}, 450);
+}, 600);
 
-  const qualifiesTop5 =
-    (this.leaderboard && this.leaderboard.length < 5) ||
-    (this.leaderboard && this.leaderboard.length >= 5 && this.score > this.leaderboard[this.leaderboard.length - 1][1]);
+const qualifiesTop5 =
+  !this.leaderboard ||
+  this.leaderboard.length < 5 ||
+  this.score > this.leaderboard[this.leaderboard.length - 1][1];
 
   if (qualifiesTop5) {
     this.isTopScore = true;
