@@ -74,8 +74,10 @@ this.fetchLeaderboard();
 this.preGameTopScore = 0;
     this.isTopScore = false;
     this.highScoreFlashTimer = 0;
-    this.shakeTimer = 0;
+  this.shakeTimer = 0;
 this.shakeIntensity = 0;
+this.slowMoTimer = 0;
+this.slowMoFactor = 1;
     this.initEventListeners();
     this.resizeCanvas();
     this.startGameLoop();
@@ -456,7 +458,10 @@ y = Math.max(0, Math.min(this.baseHeight - height, y));
 
   update(deltaTime) {
     if (this.gameOver || this.isPaused) return;
-
+if (this.slowMoTimer > 0) {
+  deltaTime *= this.slowMoFactor;
+  this.slowMoTimer--;
+}
     const currentTime = performance.now();
 
    if (currentTime - this.lastSpawnTime > this.spawnInterval) {
@@ -591,53 +596,56 @@ if (allowBucket && Math.random() < bucketChance) {
     }
   }
 
-  triggerGameOver() {
-    if (this.gameOver) return;
+triggerGameOver() {
+  if (this.gameOver) return;
 
-    this.gameOver = true;
-    this.isPaused = false;
+  this.gameOver = true;
+  this.isPaused = false;
 
-    try {
-      this.backgroundMusic.pause();
-    } catch (e) {}
-this.shakeTimer = 16;       // frames (~300ms)
-this.shakeIntensity = 14;   // how violent the shake is
-// 💥 PLAYER EXPLOSION
-this.explosions.push(
-  new GameObject(
-    this.player.x,
-    this.player.y,
-    80,
-    80,
-    this.images.explosion,
-    { xOffset: 0, yOffset: 0, width: 80, height: 80 }
-  )
-);
+  try {
+    this.backgroundMusic.pause();
+  } catch (e) {}
 
-// 🔊 SOUND
-this.collisionSound.currentTime = 0;
-this.collisionSound.play().catch(() => {});
-const qualifiesTop5 =
-  this.leaderboard &&
-  this.leaderboard.length < 5 ||
-  this.score > this.leaderboard[this.leaderboard.length - 1][1];
+  // 🎥 slow motion death
+  this.slowMoTimer = 18;
+  this.slowMoFactor = 0.35;
 
-if (qualifiesTop5) {
-  this.isTopScore = true;
-  this.highScoreFlashTimer = 30;
+  // 🤜 shake
+  this.shakeTimer = 16;
+  this.shakeIntensity = 14;
 
-  // 🎉 CONFETTI
-  this.spawnConfetti();
-} else {
-  this.isTopScore = false;
-}
+  // 💥 player explosion
+  this.explosions.push(
+    new GameObject(
+      this.player.x,
+      this.player.y,
+      80,
+      80,
+      this.images.explosion,
+      { xOffset: 0, yOffset: 0, width: 80, height: 80 }
+    )
+  );
 
-// still fetch AFTER for display
-this.fetchLeaderboard().then(() => {
-  this.draw();
-});
+  // 🔊 bass drop / death sound
+  this.collisionSound.currentTime = 0;
+  this.collisionSound.play().catch(() => {});
+
+  const qualifiesTop5 =
+    (this.leaderboard && this.leaderboard.length < 5) ||
+    (this.leaderboard && this.leaderboard.length >= 5 && this.score > this.leaderboard[this.leaderboard.length - 1][1]);
+
+  if (qualifiesTop5) {
+    this.isTopScore = true;
+    this.highScoreFlashTimer = 30;
+    this.spawnConfetti();
+  } else {
+    this.isTopScore = false;
   }
 
+  this.fetchLeaderboard().then(() => {
+    this.draw();
+  });
+}
 validateInitials(name) {
   return /^[A-Z]{2,3}$/.test(name);
 }
@@ -719,113 +727,99 @@ if (this.shakeTimer > 0) {
       this.drawPauseOverlay();
     }
 
-    if (this.gameOver) {
-      // ===== HIGH SCORE FLASH =====
-// DARK OVERLAY FIRST
-this.ctx.fillStyle = "rgba(0,0,0,0.55)";
-this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
-
-// THEN FLASH ON TOP
-if (this.highScoreFlashTimer > 0) {
-  const alpha = this.highScoreFlashTimer / 30;
-
-  this.ctx.fillStyle = `rgba(255, 215, 0, ${alpha})`;
+if (this.gameOver) {
+  // DARK OVERLAY FIRST
+  this.ctx.fillStyle = "rgba(0,0,0,0.55)";
   this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
 
-  this.highScoreFlashTimer--;
-}
-      this.ctx.fillStyle = "#FFF";
-      this.ctx.font = `700 40px "Permanent Marker", cursive`;
-      this.ctx.textAlign = "center";
-      this.ctx.fillText("Game Over!", this.baseWidth / 2, this.baseHeight / 2 - 50);
-      this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2 - 10);
-      // ===== LEADERBOARD DISPLAY =====
+  // THEN FLASH ON TOP
+  if (this.highScoreFlashTimer > 0) {
+    const alpha = this.highScoreFlashTimer / 30;
+    this.ctx.fillStyle = `rgba(255, 215, 0, ${alpha})`;
+    this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
+    this.highScoreFlashTimer--;
+  }
 
-// show loading text first
-if (!this.leaderboard) {
-  this.ctx.font = '18px "Permanent Marker", cursive';
-  this.ctx.fillStyle = "#DDD";
-  this.ctx.textAlign = "center";
-
-const offset = this.isTopScore ? 40 : 0;
-
-this.ctx.fillText(
-  "TOP RIDERS",
-  this.baseWidth / 2,
-  this.baseHeight / 2 + 90 + offset
-);
-}
-      
-if (this.isTopScore) {
-  this.ctx.font = '28px "Permanent Marker", cursive';
-
-  // ✨ GLOW EFFECT START
-  this.ctx.fillStyle = "#FFD700";
-  this.ctx.shadowColor = "#FFD700";
-  this.ctx.shadowBlur = 25;
-
-this.ctx.fillText(
-  "🔥 NEW TOP SCORE! 🔥",
-  this.baseWidth / 2,
-  this.baseHeight / 2 + 40
-);
-
-  // ✨ RESET so it doesn’t affect other text
-  this.ctx.shadowBlur = 0;
-}
-  
-// show leaderboard when loaded
-if (this.leaderboard && this.leaderboard.length) {
-  this.ctx.textAlign = "center";
   this.ctx.fillStyle = "#FFF";
+  this.ctx.font = `700 40px "Permanent Marker", cursive`;
+  this.ctx.textAlign = "center";
+  this.ctx.fillText("Game Over!", this.baseWidth / 2, this.baseHeight / 2 - 50);
+  this.ctx.fillText(`Final Score: ${this.score}`, this.baseWidth / 2, this.baseHeight / 2 - 10);
 
-  this.ctx.font = '24px "Permanent Marker", cursive';
-  this.ctx.fillText(
-    "TOP RIDERS",
-    this.baseWidth / 2,
-    this.baseHeight / 2 + 60
-  );
+  const topOffset = this.isTopScore ? 40 : 0;
 
-  this.ctx.font = '20px "Permanent Marker", cursive';
+  if (!this.leaderboard) {
+    this.ctx.font = '18px "Permanent Marker", cursive';
+    this.ctx.fillStyle = "#DDD";
+    this.ctx.fillText(
+      "Loading top riders...",
+      this.baseWidth / 2,
+      this.baseHeight / 2 + 90 + topOffset
+    );
+  }
 
-  this.leaderboard.forEach((row, i) => {
-    const name = row[0];
-    const score = row[1];
+  if (this.isTopScore) {
+    this.ctx.font = '28px "Permanent Marker", cursive';
+    this.ctx.fillStyle = "#FFD700";
+    this.ctx.shadowColor = "#FFD700";
+    this.ctx.shadowBlur = 25;
 
     this.ctx.fillText(
-      `${i + 1}. ${name} - ${score}`,
+      "🔥 NEW TOP SCORE! 🔥",
       this.baseWidth / 2,
-      this.baseHeight / 2 + 130 + (i * 28)
+      this.baseHeight / 2 + 40
     );
-  });
-}
-      // show leaderboard when loaded
-if (this.leaderboard && this.leaderboard.length) {
-  ...
-}
 
-// 🎉 DRAW CONFETTI LAST (ON TOP OF EVERYTHING)
-if (this.confetti && this.confetti.length) {
-  for (let i = this.confetti.length - 1; i >= 0; i--) {
-    const c = this.confetti[i];
+    this.ctx.shadowBlur = 0;
+  }
 
-    this.ctx.fillStyle = c.color;
-    this.ctx.fillRect(c.x, c.y, c.size, c.size);
+  if (this.leaderboard && this.leaderboard.length) {
+    this.ctx.textAlign = "center";
+    this.ctx.fillStyle = "#FFF";
+    this.ctx.font = '24px "Permanent Marker", cursive';
+    this.ctx.fillText(
+      "TOP RIDERS",
+      this.baseWidth / 2,
+      this.baseHeight / 2 + 60 + topOffset
+    );
 
-    c.x += c.vx;
-    c.y += c.vy;
-    c.vy += 0.3;
-    c.life--;
+    this.ctx.font = '20px "Permanent Marker", cursive';
 
-    if (c.life <= 0) {
-      this.confetti.splice(i, 1);
+    this.leaderboard.forEach((row, i) => {
+      const name = row[0];
+      const score = row[1];
+
+      this.ctx.fillText(
+        `${i + 1}. ${name} - ${score}`,
+        this.baseWidth / 2,
+        this.baseHeight / 2 + 100 + topOffset + (i * 28)
+      );
+    });
+  }
+
+  // 🎉 CONFETTI LAST
+  if (this.confetti && this.confetti.length) {
+    for (let i = this.confetti.length - 1; i >= 0; i--) {
+      const c = this.confetti[i];
+
+      this.ctx.fillStyle = c.color;
+      this.ctx.fillRect(c.x, c.y, c.size, c.size);
+
+      c.x += c.vx;
+      c.y += c.vy;
+      c.vy += 0.3;
+      c.life--;
+
+      if (c.life <= 0) {
+        this.confetti.splice(i, 1);
+      }
     }
   }
-}
-      this.createPlayAgainButton();
-    }
 
-    if (this.shakeTimer > 0) {
+  this.createPlayAgainButton();
+}
+
+if (this.shakeTimer > 0) {
   this.ctx.restore();
 }
   }
