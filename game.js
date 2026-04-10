@@ -74,6 +74,8 @@ this.fetchLeaderboard();
 this.preGameTopScore = 0;
     this.isNewHighScore = false;
     this.highScoreFlashTimer = 0;
+    this.shakeTimer = 0;
+this.shakeIntensity = 0;
     this.initEventListeners();
     this.resizeCanvas();
     this.startGameLoop();
@@ -598,7 +600,8 @@ if (allowBucket && Math.random() < bucketChance) {
     try {
       this.backgroundMusic.pause();
     } catch (e) {}
-
+this.shakeTimer = 20;       // frames (~300ms)
+this.shakeIntensity = 18;   // how violent the shake is
     this.collisionSound.currentTime = 0;
     this.collisionSound.play().catch(() => {});
 const qualifiesTop5 =
@@ -651,6 +654,19 @@ validateInitials(name) {
 
     this.ctx.scale(dpr, dpr);
     this.ctx.scale(this.scale, this.scale);
+
+    // ===== SCREEN SHAKE =====
+if (this.shakeTimer > 0) {
+  const shakeX = (Math.random() - 0.5) * this.shakeIntensity;
+  const shakeY = (Math.random() - 0.5) * this.shakeIntensity;
+
+  this.ctx.translate(shakeX, shakeY);
+
+  this.shakeTimer--;
+
+  // fade out shake over time
+  this.shakeIntensity *= 0.92;
+}
 
     this.ctx.fillStyle = this.isFullSendMode ? "#FFEA00" : "#D2B48C";
     this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
