@@ -50,6 +50,8 @@ class Game {
     this.pointSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/point-beep.mp3");
     this.powerUpSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/powerup-recieved.mp3");
     this.explosionSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2025/01/explosion.mp3");
+    this.deathBassSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2026/04/videogame-death.mp3");
+this.gameOverSound = new Audio("https://floatuckytrailderby.com/wp-content/uploads/2026/04/pixel-game-over.mp3");
 
     this.images = {
       player: this.loadImage("https://floatuckytrailderby.com/wp-content/uploads/2025/01/Blue-wheel.png"),
@@ -299,7 +301,7 @@ this.slowMoFactor = 1;
 
   startSoundPlayback() {
     if (!this.soundsPreloaded) {
-      [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
+      [   this.collisionSound,   this.pointSound,   this.explosionSound,   this.powerUpSound,   this.deathBassSound,   this.gameOverSound ].forEach(sound => {
         sound.play().catch(() => {});
         sound.pause();
       });
@@ -626,9 +628,21 @@ triggerGameOver() {
     )
   );
 
-  // 🔊 bass drop / death sound
-  this.collisionSound.currentTime = 0;
-  this.collisionSound.play().catch(() => {});
+// 🔊 INITIAL IMPACT
+this.collisionSound.currentTime = 0;
+this.collisionSound.play().catch(() => {});
+
+// 🔊 BASS DROP (slight delay for effect)
+setTimeout(() => {
+  this.deathBassSound.currentTime = 0;
+  this.deathBassSound.play().catch(() => {});
+}, 80);
+
+// 🎮 GAME OVER SOUND (after slow-mo finishes)
+setTimeout(() => {
+  this.gameOverSound.currentTime = 0;
+  this.gameOverSound.play().catch(() => {});
+}, 450);
 
   const qualifiesTop5 =
     (this.leaderboard && this.leaderboard.length < 5) ||
@@ -913,7 +927,7 @@ this.resetGame();
       this.backgroundMusic.currentTime = 0;
     } catch (e) {}
 
-    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
+    [   this.collisionSound,   this.pointSound,   this.explosionSound,   this.powerUpSound,   this.deathBassSound,   this.gameOverSound ].forEach(sound => {
       try {
         sound.pause();
         sound.currentTime = 0;
@@ -999,7 +1013,7 @@ this.resetGame();
       this.musicStarted = false;
     } catch (e) {}
 
-    [this.collisionSound, this.pointSound, this.explosionSound, this.powerUpSound].forEach(sound => {
+    [   this.collisionSound,   this.pointSound,   this.explosionSound,   this.powerUpSound,   this.deathBassSound,   this.gameOverSound ].forEach(sound => {
       try {
         sound.pause();
         sound.currentTime = 0;
