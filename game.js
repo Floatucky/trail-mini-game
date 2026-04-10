@@ -1,6 +1,6 @@
 const FPS_INTERVAL = 1000 / 60;
 const MAX_OBSTACLES = 40;
-const MAX_POWERUPS = 3;
+const MAX_POWERUPS = 4;
 const MIN_SPAWN_INTERVAL = 550;
 
 class GameObject {
@@ -264,6 +264,8 @@ this.preGameTopScore = 0;
   const cw = this.baseWidth * this.scale;
   const ch = this.baseHeight * this.scale;
 
+  this.fetchLeaderboard();
+    
   this.canvas.width = cw * dpr;
   this.canvas.height = ch * dpr;
 
@@ -471,14 +473,16 @@ this.createObstacle(numObstacles);
 
 // ===== SMART BUCKET CONTROL =====
 let allowBucket = true;
+     if (this.score < 20) return; // no buckets early game
 
 // 🚫 HARD STOP if timer is too high
-if (this.isFullSendMode && this.fullSendModeTimer > 420) {
+if (this.isFullSendMode && this.fullSendModeTimer > 600) {
   allowBucket = false;
+ 
 }
 
 // 🎯 Dynamic spawn chance
-const bucketChance = Math.max(0.15, 0.5 - (this.score * 0.002));
+const bucketChance = Math.max(0.25, 0.55 - (this.score * 0.0015));
 
 // ONLY spawn if allowed
 if (allowBucket && Math.random() < bucketChance) {
@@ -595,15 +599,15 @@ if (allowBucket && Math.random() < bucketChance) {
 
     this.collisionSound.currentTime = 0;
     this.collisionSound.play().catch(() => {});
+if (this.score > this.preGameTopScore) {
+  this.isNewHighScore = true;
+  this.highScoreFlashTimer = 30;
+} else {
+  this.isNewHighScore = false;
+}
+
+// still fetch AFTER for display
 this.fetchLeaderboard().then(() => {
-
-  if (this.score > this.preGameTopScore) {
-    this.isNewHighScore = true;
-    this.highScoreFlashTimer = 30;
-  } else {
-    this.isNewHighScore = false;
-  }
-
   this.draw();
 });
   }
