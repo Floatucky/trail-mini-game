@@ -686,7 +686,7 @@ validateInitials(name) {
 if (this.highScoreFlashTimer > 0) {
   const alpha = this.highScoreFlashTimer / 30;
 
-  this.ctx.fillStyle = `rgba(255, 255, 200, ${alpha})`;
+  this.ctx.fillStyle = `rgba(255, 215, 0, alpha)`;
   this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
 
   this.highScoreFlashTimer--;
