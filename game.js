@@ -60,7 +60,7 @@ class Game {
     };
 
     this.resetCoreState();
-
+this.fetchLeaderboard();
     this.player = new GameObject(
       0,
       0,
@@ -263,9 +263,7 @@ this.preGameTopScore = 0;
 
   const cw = this.baseWidth * this.scale;
   const ch = this.baseHeight * this.scale;
-
-  this.fetchLeaderboard();
-    
+   
   this.canvas.width = cw * dpr;
   this.canvas.height = ch * dpr;
 
@@ -473,7 +471,11 @@ this.createObstacle(numObstacles);
 
 // ===== SMART BUCKET CONTROL =====
 let allowBucket = true;
-     if (this.score < 20) return; // no buckets early game
+
+// 🚫 no buckets early game (but DON'T break the game loop)
+if (this.score < 20) {
+  allowBucket = false;
+}
 
 // 🚫 HARD STOP if timer is too high
 if (this.isFullSendMode && this.fullSendModeTimer > 600) {
@@ -685,7 +687,7 @@ validateInitials(name) {
 if (this.highScoreFlashTimer > 0) {
   const alpha = this.highScoreFlashTimer / 30;
 
-  this.ctx.fillStyle = `rgba(255, 215, 0, alpha)`;
+  this.ctx.fillStyle = `rgba(255, 215, 0, ${alpha})`;
   this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
 
   this.highScoreFlashTimer--;
