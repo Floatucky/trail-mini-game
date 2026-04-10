@@ -673,6 +673,9 @@ const qualifiesTop5 =
   this.fetchLeaderboard().then(() => {
     this.draw();
   });
+  if (navigator.vibrate) {
+  navigator.vibrate([100, 50, 150]);
+}
 }
 validateInitials(name) {
   return /^[A-Z]{2,3}$/.test(name);
