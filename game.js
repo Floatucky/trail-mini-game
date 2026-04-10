@@ -601,7 +601,17 @@ if (allowBucket && Math.random() < bucketChance) {
 
     this.collisionSound.currentTime = 0;
     this.collisionSound.play().catch(() => {});
-if (this.score > this.preGameTopScore) {
+const qualifiesTop5 =
+  this.leaderboard &&
+  this.leaderboard.length < 5 ||
+  this.score > this.leaderboard[this.leaderboard.length - 1][1];
+
+if (qualifiesTop5) {
+  this.isNewHighScore = true;
+  this.highScoreFlashTimer = 30;
+} else {
+  this.isNewHighScore = false;
+} {
   this.isNewHighScore = true;
   this.highScoreFlashTimer = 30;
 } else {
@@ -684,6 +694,11 @@ validateInitials(name) {
 
     if (this.gameOver) {
       // ===== HIGH SCORE FLASH =====
+// DARK OVERLAY FIRST
+this.ctx.fillStyle = "rgba(0,0,0,0.55)";
+this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
+
+// THEN FLASH ON TOP
 if (this.highScoreFlashTimer > 0) {
   const alpha = this.highScoreFlashTimer / 30;
 
@@ -692,8 +707,6 @@ if (this.highScoreFlashTimer > 0) {
 
   this.highScoreFlashTimer--;
 }
-      this.ctx.fillStyle = "rgba(0,0,0,0.55)";
-      this.ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
       this.ctx.fillStyle = "#FFF";
       this.ctx.font = `700 40px "Permanent Marker", cursive`;
       this.ctx.textAlign = "center";
